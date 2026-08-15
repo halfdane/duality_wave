@@ -5,3 +5,4 @@
 *.stl
 *.step
 *.3mf
+__pycache__
