@@ -39,9 +39,13 @@ class WaveCase:
 
         self.create_accessories()
         
-        xiao_plane = Plane.XY
-        xiao_plane = xiao_plane.rotated((180,0,0)).move(Location(self.dims.xiao_position))
-        xiao_mirrored_plane = xiao_plane.rotated((180,0,0)).move(Location(self.dims.xiao_mirror_position))
+        # Plane.move() applies the Location in the plane's own (already-rotated) frame, so
+        # rotating then moving flips the sign of any axis touched by the rotation. Rotate at
+        # the origin first, then rebuild the plane with the absolute target origin instead.
+        xiao_plane = Plane.XY.rotated((180,0,0))
+        xiao_plane = Plane(self.dims.xiao_position, x_dir=xiao_plane.x_dir, z_dir=xiao_plane.z_dir)
+        xiao_mirrored_plane = xiao_plane.rotated((180,0,0))
+        xiao_mirrored_plane = Plane(self.dims.xiao_mirror_position, x_dir=xiao_mirrored_plane.x_dir, z_dir=xiao_mirrored_plane.z_dir)
         self.xiao = Xiao(xiao_plane, clearance=self.dims.clearance)
 
         accessories = {}
