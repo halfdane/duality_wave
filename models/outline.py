@@ -161,7 +161,14 @@ class Outline:
                             add(c, mode=Mode.SUBTRACT)
                             self.cirque_recess_position = loc
                             found_position = True
-            # fillet(vertices(), radius=1)1
+            # fillet all vertices except self.mid_right: there's no corner, it's a tangent arc
+            # Vertex.__eq__ compares OCCT TShape identity, not position, so compare coordinates instead
+            fillet(
+                vertices().filter_by(
+                    lambda v: (Vector(v.X, v.Y, v.Z) - self.mid_right).length > 1e-6
+                ),
+                radius=1,
+            )
         return self.reorient_edges(outline.sketch)
     
     def create_inner_outline(self, offset_by=-1.8):
@@ -242,7 +249,7 @@ if __name__ == "__main__":
     from models.cherry import Cherry
 
     switch = Choc()
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ergogen', 'snap_fit.yml')
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ergogen', 'wave.yml')
     points = get_points(file_path=config_path)
     keys = ErgoKeys(points=points)
     
