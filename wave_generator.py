@@ -29,7 +29,7 @@ class WaveCase:
         self.outline = outline
         self.bumper = RubberBumper()
 
-        self.debug_content: list = []
+        self.debug_content: dict = {}
 
         print("Creating case...")
 
@@ -44,16 +44,16 @@ class WaveCase:
         xiao_mirrored_plane = xiao_plane.rotated((180,0,0)).move(Location(self.dims.xiao_mirror_position))
         self.xiao = Xiao(xiao_plane, clearance=self.dims.clearance)
 
-        accessories = []
-        accessories.append({"chocs": self.switches})
-        accessories.append({"xiao": self.xiao.model})
-        accessories.append({"bumpers": self.bumpers})
-        accessories.append({"power_switch": self.powerswitch})
-        accessories.append({"pins": self.pins})
+        accessories = {}
+        accessories["chocs"] = self.switches
+        accessories["xiao"] = self.xiao.model
+        accessories["bumpers"] = self.bumpers
+        accessories["power_switch"] = self.powerswitch
+        accessories["pins"] = self.pins
 
         battery = Box(self.dims.battery_pd.d.X, self.dims.battery_pd.d.Y, self.dims.battery_pd.d.Z)
         battery = battery.translate(self.dims.battery_pd.p)
-        accessories.append({"battery": battery})
+        accessories["battery"] = battery
 
         if self.dims.magnet_positions:
             with BuildPart() as magnets: 
@@ -61,7 +61,7 @@ class WaveCase:
                     with Locations(self.dims.magnet_positions):
                         Circle(self.dims.magnet_d.radius)
                 extrude(amount=-self.dims.magnet_d.Z)
-            accessories.append({"magnets": magnets})
+            accessories["magnets"] = magnets
 
         if self.dims.weight_positions:
             with BuildPart() as weights:
@@ -69,7 +69,7 @@ class WaveCase:
                     with Locations(self.dims.weight_positions):
                         Rectangle(self.dims.weight_d.X, self.dims.weight_d.Y)
                 extrude(amount=-self.dims.weight_d.Z)
-            accessories.append({"weights": weights})
+            accessories["weights"] = weights
 
         push_object(accessories, name="accessories")
 
@@ -102,34 +102,34 @@ class WaveCase:
                 self.bottom_right, xiao_mirrored_plane.offset(self.dims.keyplate_z + self.dims.bottom_plate_z + self.dims.xiao_position.Z))
             push_object(self.bottom_right, name="bottom_right") if self.debug else None
 
-            accessories.append({"chocs_right": mirror(self.switches, about=Plane.YZ)})
-            accessories.append({"xiao_right": Xiao(xiao_mirrored_plane).model})
-            accessories.append({"bumpers_right": mirror(self.bumpers, about=Plane.YZ)})
+            accessories["chocs_right"] = mirror(self.switches, about=Plane.YZ)
+            accessories["xiao_right"] = Xiao(xiao_mirrored_plane).model
+            accessories["bumpers_right"] = mirror(self.bumpers, about=Plane.YZ)
         print("Done creating case.")
 
     def create_keyplate(self):
         print("Creating keyplate...")
-        debug_content = []
-        self.debug_content.append({"keyplate": debug_content}) if self.debug else None
+        debug_content = {}
+        self.debug_content["keyplate"] = debug_content if self.debug else None
         with BuildPart() as keyplate:
             base=add(self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness - self.dims.clearance))
             extrude(amount=-self.dims.keyplate_z)
-            debug_content.append({"base": base}) if self.debug else None
+            debug_content["base"] = base if self.debug else None
 
             chamfer(objects=faces().filter_by(Axis.Z).edges(), length=0.1)
 
-            debug_content.append({"base edges": base.edges()}) if self.debug else None
+            debug_content["base edges"] = base.edges() if self.debug else None
 
             edges_to_add_clips = self.filter_clip_edges(base.edges())
             c = self.add_bottom_clips(edges_to_add_clips, clips_on_outside=True, z_position=-self.dims.keyplate_z/2)
-            debug_content.append({"clips": c}) if self.debug else None
+            debug_content["clips"] = c if self.debug else None
 
             print("  key holes...")
             with BuildSketch() as key_holes:
                 for key in self.keys.keys:
                     with Locations(key.p):
                         Rectangle(self.switch.below.d.X + self.dims.clearance, self.switch.below.d.Y + self.dims.clearance, rotation=key.r)
-            debug_content.append({"key_holes": key_holes}) if self.debug else None
+            debug_content["key_holes"] = key_holes if self.debug else None
             extrude(amount=-self.switch.clamp_clearance_z, mode=Mode.SUBTRACT)
 
             with BuildSketch(Plane.XY.offset(-self.switch.clamp_clearance_z)) as keyholes_with_space:
@@ -205,7 +205,7 @@ class WaveCase:
                 make_face()
 
             extrude(amount=self.dims.keyplate_z - self.switch.bottom_housing.d.Z, mode=Mode.SUBTRACT)
-            debug_content.append({"connector_sketch": connector_sketch}) if self.debug else None
+            debug_content["connector_sketch"] = connector_sketch if self.debug else None
 
             print("  powerswitch...")
             with BuildSketch(Plane(self.dims.powerswitch_position).rotated(self.dims.powerswitch_rotation)) as powerswitch_cut:
@@ -214,7 +214,7 @@ class WaveCase:
                 with Locations((0, pin_clearance_y/2)):
                     Rectangle(PowerSwitch.dims.d.X - 3, pin_clearance_y)
             extrude(amount=-PowerSwitch.dims.d.Z, mode=Mode.SUBTRACT)
-            debug_content.append({"powerswitch_cut": powerswitch_cut}) if self.debug else None
+            debug_content["powerswitch_cut"] = powerswitch_cut if self.debug else None
 
             print("  pin extrusion...")
             with BuildSketch(Plane.XY.offset(-self.dims.keyplate_z)) as pin_space_sketch:
@@ -222,12 +222,12 @@ class WaveCase:
                                 self.outline.top_left.Y - 1.5*self.dims.wall_thickness - 0.5)):
                     Rectangle(self.dims.wall_thickness*2 + 0.5, self.dims.wall_thickness*3 + 0.5)
             pin_space =extrude(amount=self.dims.keyplate_z, mode=Mode.SUBTRACT)
-            debug_content.append({"pin_space": pin_space}) if self.debug else None
+            debug_content["pin_space"] = pin_space if self.debug else None
 
             print("  pin holes...")
             with BuildSketch(self.dims.pin_plane) as pin_holes:
                 Circle(self.dims.pin_radius)
-            debug_content.append({"pin_holes": pin_holes}) if self.debug else None
+            debug_content["pin_holes"] = pin_holes if self.debug else None
             extrude(amount=self.pin.dims.length, mode=Mode.SUBTRACT)
 
 
@@ -235,8 +235,8 @@ class WaveCase:
     
     def create_keywell(self):
         print("Creating keywell...")
-        debug_content = []
-        self.debug_content.append({"keywell": debug_content}) if self.debug else None
+        debug_content = {}
+        self.debug_content["keywell"] = debug_content if self.debug else None
         with BuildPart() as keywell:
             with BuildSketch(Plane.XY.offset(self.dims.above_z)) as body_sketch:
                 add(self.outline.create_outline())
@@ -251,8 +251,8 @@ class WaveCase:
             extrude(amount=-self.dims.below_z, mode=Mode.SUBTRACT)
 
             print("  skulpting thumb cut...")
-            debug_thumb_content = []
-            debug_content.append({"thumb_cut": debug_thumb_content}) if self.debug else None
+            debug_thumb_content = {}
+            debug_content["thumb_cut"] = debug_thumb_content if self.debug else None
 
             thumb_x_from_top = self.switch.cap.d.Z + self.switch.stem.d.Z
             taper = 35
@@ -274,13 +274,13 @@ class WaveCase:
                             with Locations(loc):
                                 Rectangle(x, y)
 
-            debug_thumb_content.append({"sketch": thumb_cut_sketch}) if self.debug else None
+            debug_thumb_content["sketch"] = thumb_cut_sketch if self.debug else None
             thumb_cut=extrude(amount=thumb_x_from_top, mode=Mode.SUBTRACT, taper=-taper)
 
             # every face thats not top or bottom
             outside = [f for f in body.faces() if f not in body.faces().filter_by(Axis.Z)]
             outside_faces = keywell.faces().filter_by(intersect_faces(outside))
-            debug_content.append({"outside_faces": outside_faces}) if self.debug else None
+            debug_content["outside_faces"] = outside_faces if self.debug else None
             
             # fillet(outside_faces.edges(), radius=0.95)
             
@@ -292,16 +292,16 @@ class WaveCase:
             edges_to_add_clips = self.filter_clip_edges(keywell_wall.edges())
             long_clips, short_clips = self.split_off_clips_that_should_be_longer(edges_to_add_clips)
             c = self.add_bottom_clips(long_clips, clips_on_outside=False, z_position=self.dims.clip_lower_z, extralong=True)
-            debug_content.append({"bottom long clips": c}) if self.debug else None
+            debug_content["bottom long clips"] = c if self.debug else None
             c = self.add_bottom_clips(short_clips, clips_on_outside=False, z_position=self.dims.clip_lower_z)
-            debug_content.append({"bottom short clips": c}) if self.debug else None
+            debug_content["bottom short clips"] = c if self.debug else None
             c = self.add_bottom_clips(edges_to_add_clips, clips_on_outside=False, z_position=self.dims.clip_upper_z)
-            debug_content.append({"keyplate clips": c}) if self.debug else None
+            debug_content["keyplate clips"] = c if self.debug else None
 
             print("  pin holes...")
             with BuildSketch(self.dims.pin_plane) as pin_holes:
                 Circle(self.dims.pin_radius)
-            debug_content.append({"pin_holes": pin_holes}) if self.debug else None
+            debug_content["pin_holes"] = pin_holes if self.debug else None
             extrude(amount=self.pin.dims.length, mode=Mode.SUBTRACT)
 
             print("  battery recess...")
@@ -310,7 +310,7 @@ class WaveCase:
                 with Locations((battery_pd.p.X, battery_pd.p.Y)):
                     Rectangle(battery_pd.d.X + 2*self.dims.clearance, battery_pd.d.Y + 2*self.dims.clearance)
             extrude(amount=-battery_pd.d.Z - self.dims.wall_thickness, mode=Mode.SUBTRACT)
-            debug_content.append({"battery_sketch": battery_sketch}) if self.debug else None
+            debug_content["battery_sketch"] = battery_sketch if self.debug else None
 
             if self.dims.magnet_positions:
                 print("  magnet recesses...")
@@ -318,7 +318,7 @@ class WaveCase:
                     with Locations(self.dims.magnet_positions):
                         Circle(self.dims.magnet_d.radius + self.dims.clearance)
                 extrude(amount=-self.dims.above_z - self.dims.magnet_d.Z - 0.5, mode=Mode.SUBTRACT)
-                debug_content.append({"magnet_sketch": magnet_sketch}) if self.debug else None
+                debug_content["magnet_sketch"] = magnet_sketch if self.debug else None
 
             if self.dims.weight_positions:
                 print("  weight recesses...")
@@ -326,7 +326,7 @@ class WaveCase:
                     with Locations(self.dims.weight_positions):
                         Rectangle(self.dims.weight_d.X + 2*self.dims.clearance, self.dims.weight_d.Y + 2*self.dims.clearance)
                 extrude(amount=-self.dims.above_z - self.dims.weight_d.Z, mode=Mode.SUBTRACT)
-                debug_content.append({"weight_sketch": weight_sketch}) if self.debug else None
+                debug_content["weight_sketch"] = weight_sketch if self.debug else None
 
             print("  symbol...")
             with BuildSketch(Plane.XY.offset(self.dims.above_z)) as symbol_sketch:
@@ -334,7 +334,7 @@ class WaveCase:
                 with Locations(self.outline.top_left + Vector(0.65*symbol_height, -0.6*symbol_height)):
                     add(Symbol(total_height=symbol_height).sketch)
             extrude(amount=-0.5, mode=Mode.SUBTRACT)
-            debug_content.append({"symbol_sketch": symbol_sketch}) if self.debug else None
+            debug_content["symbol_sketch"] = symbol_sketch if self.debug else None
 
         return keywell.part
     
@@ -402,8 +402,8 @@ class WaveCase:
 
     def create_bottom(self):
         print("Creating bottom...")
-        debug_content = []
-        self.debug_content.append({"bottom": debug_content}) if self.debug else None
+        debug_content = {}
+        self.debug_content["bottom"] = debug_content if self.debug else None
         with BuildPart() as bottom:
             outline = self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness - self.dims.clearance)
             
@@ -415,21 +415,21 @@ class WaveCase:
             edges_to_add_clips = self.filter_clip_edges(base.edges())
             long_clips, short_clips = self.split_off_clips_that_should_be_longer(edges_to_add_clips)
             c = self.add_bottom_clips(long_clips, clips_on_outside=True, z_position=self.dims.clip_lower_z, extralong=True)
-            debug_content.append({"long clips": c}) if self.debug else None
+            debug_content["long clips"] = c if self.debug else None
             c = self.add_bottom_clips(short_clips, clips_on_outside=True, z_position=self.dims.clip_lower_z)
-            debug_content.append({"short clips": c}) if self.debug else None
+            debug_content["short clips"] = c if self.debug else None
 
             print("  xiao support...")
             with BuildSketch(Plane.XY.offset(self.dims.xiao_position.Z)) as xiao_support:
                 with Locations((self.dims.xiao_position.X, self.dims.xiao_position.Y - Xiao.processor.forward_y)):
                     Rectangle(Xiao.processor.d.X + 0.5, Xiao.processor.d.Y + 0.5)
             extrude(amount=-(Xiao.dims.d.Z + Xiao.processor.d.Z + self.dims.clearance) , mode=Mode.SUBTRACT)
-            debug_content.append({"xiao support": xiao_support}) if self.debug else None
+            debug_content["xiao support"] = xiao_support if self.debug else None
             with BuildSketch(Plane.XY.offset(self.dims.xiao_position.Z)) as xiao_cutout:
                 with Locations((self.dims.xiao_position.X, self.dims.xiao_position.Y - Xiao.processor.forward_y)):
                     Rectangle(Xiao.dims.d.X - 0.5, Xiao.dims.d.Y - Xiao.processor.forward_y*2 +4)
             extrude(amount=-(Xiao.dims.d.Z + Xiao.processor.d.Z/2) , mode=Mode.SUBTRACT)
-            debug_content.append({"xiao xiao_cutout": xiao_cutout}) if self.debug else None
+            debug_content["xiao xiao_cutout"] = xiao_cutout if self.debug else None
 
             print("  bumper cutouts...")
             with BuildSketch(Plane.XY.offset(-self.dims.below_z)):
@@ -447,7 +447,7 @@ class WaveCase:
                                     Circle(post.d.radius + 0.1)
                             add(choc_post_sketch.sketch.mirror(Plane.XZ).rotate(Axis.Z, key.r))
             extrude(amount=self.switch.posts.center.d.Z, mode=Mode.SUBTRACT)
-            debug_content.append({"chocs posts": choc_posts}) if self.debug else None
+            debug_content["chocs posts"] = choc_posts if self.debug else None
 
             with BuildSketch(Plane(self.dims.powerswitch_position).rotated(self.dims.powerswitch_rotation)) as powerswitch_cut:
                 with Locations((0, PowerSwitch.dims.pin_length/2)):
@@ -458,7 +458,7 @@ class WaveCase:
                 with Locations(-PowerSwitch.lever.p):
                     RectangleRounded(PowerSwitch.lever.clearance + 0.5, PowerSwitch.lever.d.Y +0.5, radius=0.5)
             powerswitch_lever_cut = extrude(amount=self.dims.powerswitch_position.Z + self.dims.below_z, mode=Mode.SUBTRACT)
-            debug_content.append({"powerswitch_lever_cut": powerswitch_lever_cut}) if self.debug else None  
+            debug_content["powerswitch_lever_cut"] = powerswitch_lever_cut if self.debug else None
             chamfer(powerswitch_lever_cut.edges().group_by(Axis.Z)[0], length=1.5, length2=0.5)
 
             print("  pin extrusion...")
@@ -468,12 +468,12 @@ class WaveCase:
                     Rectangle(self.dims.wall_thickness*2, self.dims.wall_thickness*2)
             pin_space =extrude(amount=self.dims.keyplate_z, taper=2)
             fillet(pin_space.edges(), radius=0.3 - self.dims.clearance)
-            debug_content.append({"pin_space": pin_space}) if self.debug else None
+            debug_content["pin_space"] = pin_space if self.debug else None
 
             print("  pin holes...")
             with BuildSketch(self.dims.pin_plane) as pin_holes:
                 Circle(self.dims.pin_radius)
-            debug_content.append({"pin_holes": pin_holes}) if self.debug else None
+            debug_content["pin_holes"] = pin_holes if self.debug else None
             extrude(amount=self.pin.dims.length, mode=Mode.SUBTRACT)
 
             print("  space invader...")
@@ -483,7 +483,7 @@ class WaveCase:
                     with Locations(self.dims.space_invader):
                         add(SpaceInvader(total_height=invader_height).sketch)
                 extrude(amount=0.5, mode=Mode.SUBTRACT)
-                debug_content.append({"invader_sketch": invader_sketch}) if self.debug else None
+                debug_content["invader_sketch"] = invader_sketch if self.debug else None
 
         return bottom.part
 
