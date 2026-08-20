@@ -106,7 +106,7 @@ class Xiao:
                           p+(-lever_width/2 -lever_gap, length))
                 g3 = Line(p+(lever_width/2 +lever_gap, 0),
                           p+(lever_width/2 +lever_gap, length))
-                h2 = EllipticalCenterArc((f3@0 + g3@0)/2, lever_width/2 + lever_gap, lever_width + lever_width/4, start_angle=180, end_angle=360)
+                h2 = EllipticalCenterArc((f3@0 + g3@0)/2, lever_width/2 + lever_gap, lever_width + lever_width/4, start_angle=180, arc_size=180)
                 i = Line(f3@1+(lever_gap/2, lever_gap/2), g3@1+(-lever_gap/2, lever_gap/2))
                 rj = RadiusArc(f3@1, i@0, radius=lever_gap/2, short_sagitta=True)
                 lj = RadiusArc(i@1, g3@1, radius=lever_gap/2, short_sagitta=True)

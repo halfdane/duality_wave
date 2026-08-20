@@ -161,7 +161,7 @@ class Outline:
                             add(c, mode=Mode.SUBTRACT)
                             self.cirque_recess_position = loc
                             found_position = True
-            fillet(vertices(), radius=1)
+            # fillet(vertices(), radius=1)1
         return self.reorient_edges(outline.sketch)
     
     def create_inner_outline(self, offset_by=-1.8):

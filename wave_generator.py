@@ -282,7 +282,7 @@ class WaveCase:
             outside_faces = keywell.faces().filter_by(intersect_faces(outside))
             debug_content.append({"outside_faces": outside_faces}) if self.debug else None
             
-            fillet(outside_faces.edges(), radius=0.95)
+            # fillet(outside_faces.edges(), radius=0.95)
             
             with BuildSketch(Plane.XY.offset(self.dims.above_z)) as key_cut_sketch:
                 add(self.outline.create_keywell_outline())

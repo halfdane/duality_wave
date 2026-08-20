@@ -1,0 +1,7 @@
+.direnv
+.venv
+
+# Generated CAD exports
+*.stl
+*.step
+*.3mf

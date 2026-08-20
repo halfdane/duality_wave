@@ -1,0 +1,49 @@
+version: "3"
+
+# Canonical entry points. Run inside the dev shell (direnv/`nix develop`),
+# which sets LD_LIBRARY_PATH so the numpy/OCP manylinux wheels can load.
+
+tasks:
+  viewer:
+    desc: Start the OCP CAD Viewer in standalone (browser) mode on port 3939.
+    summary: |
+      Runs `python -m ocp_vscode` WITHOUT --backend, which serves the
+      three-cad-viewer at http://127.0.0.1:3939, then opens it in Firefox
+      (a new tab in the existing window). Leave this running, then run
+      `task build` in another shell.
+    cmds:
+      - |
+        # Once the server is listening on 3939, open it in the existing
+        # Firefox window (new tab), then keep the server in the foreground.
+        if command -v firefox >/dev/null 2>&1; then
+          (
+            i=0
+            while [ "$i" -lt 50 ]; do
+              if python -c "import socket,sys; sys.exit(0 if socket.socket().connect_ex(('127.0.0.1', 3939)) == 0 else 1)" 2>/dev/null; then
+                firefox http://localhost:3939 >/dev/null 2>&1 &
+                break
+              fi
+              i=$((i + 1))
+              sleep 0.2
+            done
+          ) &
+        fi
+        exec python -m ocp_vscode --port 3939
+
+  build:
+    desc: Build the main wave case (duality_wave.py) and export STLs.
+    summary: |
+      Runs the primary case generator. With `task viewer` running in another
+      shell, geometry is also pushed to the browser viewer.
+    cmds:
+      - python duality_wave.py
+
+  snapfit:
+    desc: Build the snap-fit case variant (snap_fit.py) and export STLs.
+    cmds:
+      - python snap_fit.py
+
+  xiaofit:
+    desc: Build the XIAO fit prototype (xiao_fit.py) and export STLs.
+    cmds:
+      - python xiao_fit.py

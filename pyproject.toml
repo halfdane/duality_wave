@@ -1,0 +1,18 @@
+[project]
+name = "duality-wave"
+version = "0.1.0"
+# Pinned to match the flake's interpreter (Python 3.13); this keeps uv from
+# grabbing an interpreter that lacks OCP wheels.
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  # Current build123d depends on cadquery-ocp-novtk + py-lib3mf, both of which
+  # ship aarch64-linux wheels — so no dependency overrides are needed anymore.
+  "build123d",
+  "numpy",
+  # Python package for the standalone (browser) viewer: `python -m ocp_vscode`.
+  "ocp_vscode",
+  # Used by the ergogen compatibility layer (ergogen.py): YAML parsing and
+  # symbolic evaluation of ergogen config expressions.
+  "sympy",
+  "pyyaml",
+]
