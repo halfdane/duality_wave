@@ -192,16 +192,18 @@ class Outline:
         return self.reorient_edges(inner_outline.sketch)
 
     def create_keywell_outline(self):
+        # how much should key-dims be scaled for the outline, so there's no interference with the keywell
+        clearance_scale = 1.5
         with BuildSketch() as fingers_outline:
             for key in self.keys.finger_keys:
                 with BuildSketch():
                     with Locations(key.p):
-                        Rectangle(self.d_x*1.6, self.d_y*1.6, rotation=key.r)
+                        Rectangle(self.d_x*clearance_scale, self.d_y*clearance_scale, rotation=key.r)
         with BuildSketch() as thumbs_outline:
             for key in self.keys.thumb_keys:
                 with BuildSketch():
                     with Locations(key.p):
-                        Rectangle(self.d_x*1.6, self.d_y*1.6, rotation=key.r)
+                        Rectangle(self.d_x*clearance_scale, self.d_y*clearance_scale, rotation=key.r)
 
         with BuildSketch() as keywell_outline:
             add(fingers_outline)
