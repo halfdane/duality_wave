@@ -320,7 +320,7 @@ class WaveCase:
                 with BuildSketch(Plane.XY.offset(self.dims.magnet_positions[0].Z)) as magnet_sketch:
                     with Locations(self.dims.magnet_positions):
                         Circle(self.dims.magnet_d.radius + self.dims.clearance)
-                extrude(amount=-self.dims.above_z - self.dims.magnet_d.Z - 0.5, mode=Mode.SUBTRACT)
+                extrude(amount=-self.dims.above_z - self.dims.magnet_d.Z, mode=Mode.SUBTRACT)
                 debug_content["magnet_sketch"] = magnet_sketch if self.debug else None
 
             if self.dims.weight_positions:

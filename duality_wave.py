@@ -70,13 +70,12 @@ class CaseDimensions(WaveDimensions):
                 + (battery_d.X/2, - battery_d.Y/2, (self.above_z - battery_d.Z/2 - self.wall_thickness)))
         
         self.magnet_d: RoundDimensions = RoundDimensions(5, 2)
-        magnet_z: float = self.above_z - 0.5
+        magnet_z: float = self.above_z  # flush with surface: 0mm gap when halves are together
         self.magnet_positions: list[Vector] = (
-            outline.top_right + (-self.wall_thickness - self.clearance - self.magnet_d.radius - 6, -self.wall_thickness - self.clearance - self.magnet_d.radius - 1, magnet_z),
-            keys.finger_clusters[0][0][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 4, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][0][2].r),
-            keys.finger_clusters[0][2][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 1.5, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][2].r),
-            keys.finger_clusters[0][2][0].p + Vector(0, -switch.cap.d.Y/2 - self.magnet_d.radius - 1.5, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][0].r),
-            keys.finger_clusters[0][3][0].p + Vector(-3, -switch.cap.d.Y/2 - self.magnet_d.radius - 2, magnet_z),
+            outline.top_right + (-self.wall_thickness - self.clearance - self.magnet_d.radius - 4, -self.wall_thickness - self.clearance - self.magnet_d.radius - 4, magnet_z),
+            keys.finger_clusters[0][0][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 2, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][0][2].r),
+            keys.finger_clusters[0][2][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 1, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][2].r),
+            keys.finger_clusters[0][2][0].p + Vector(0, -switch.cap.d.Y/2 - self.magnet_d.radius - 4, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][0].r),
 
         )
 

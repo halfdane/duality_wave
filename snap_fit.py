@@ -72,7 +72,11 @@ class CaseDimensions(WaveDimensions):
                 + (battery_d.X/2, - battery_d.Y/2, (self.above_z - battery_d.Z/2 - self.wall_thickness)))
         
         self.magnet_d: RoundDimensions = RoundDimensions(5, 2)
-        self.magnet_positions: list[Vector] = ()
+        magnet_z: float = self.above_z  # flush with surface: 0mm gap when halves are together
+        self.magnet_positions: list[Vector] = (
+            keys.finger_clusters[0][0][0].p + Vector(switch.cap.d.X, switch.cap.d.Y/2 + self.magnet_d.radius + 2, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][0][0].r),
+
+        )
 
         self.weight_d: Vector = Vector()
         self.weight_positions: list[Vector] = ()
