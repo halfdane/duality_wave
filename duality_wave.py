@@ -62,7 +62,7 @@ class CaseDimensions(WaveDimensions):
             z_dir=-Axis.Y.direction, x_dir=Axis.X.direction)
         self.pin_location: Vector = Vector(0, 0)
 
-        battery_d: RectDimensions = RectDimensions(31, 17 , 5.5)
+        battery_d: RectDimensions = RectDimensions(31, 17 , 6)
         self.battery_pd = PosAndDims(
             d=battery_d,
             p=outline.top_left \

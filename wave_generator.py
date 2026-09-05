@@ -309,7 +309,7 @@ class WaveCase:
 
             print("  battery recess...")
             battery_pd = self.dims.battery_pd
-            with BuildSketch(Plane.XY.offset(battery_pd.p.Z)) as battery_sketch:
+            with BuildSketch(Plane.XY.offset(battery_pd.p.Z + battery_pd.d.Z/2 + self.dims.clearance)) as battery_sketch:
                 with Locations((battery_pd.p.X, battery_pd.p.Y)):
                     Rectangle(battery_pd.d.X + 2*self.dims.clearance, battery_pd.d.Y + 2*self.dims.clearance)
             extrude(amount=-battery_pd.d.Z - self.dims.wall_thickness, mode=Mode.SUBTRACT)
@@ -516,4 +516,3 @@ class WaveCase:
         with BuildPart(self.dims.pin_plane) as self.pins:
             add(self.pin.model)
         self.pins = self.pins.part
-
