@@ -193,7 +193,7 @@ class Outline:
 
     def create_keywell_outline(self):
         # how much should key-dims be scaled for the outline, so there's no interference with the keywell
-        clearance_scale = 1.5
+        clearance_scale = 1.45
         with BuildSketch() as fingers_outline:
             for key in self.keys.finger_keys:
                 with BuildSketch():
