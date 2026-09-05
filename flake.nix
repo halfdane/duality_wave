@@ -33,7 +33,7 @@
           packages = [
             python
             pkgs.uv
-            pkgs.go-task # `task` — canonical entry points (see Taskfile.yml)
+            pkgs.go-task
           ];
 
           env = {
