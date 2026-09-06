@@ -30,7 +30,7 @@ class CaseDimensions(WaveDimensions):
     clearance: float = 0.02
     wall_thickness: float = 1.8
 
-    clip_protusion: float = 0.4
+    clip_protusion: float = 0.5
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
         self.add_below_choc_posts: float = 0.7

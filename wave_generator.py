@@ -388,6 +388,8 @@ class WaveCase:
                 total_height -= self.dims.clearance * (8 if extralong else 2)
                 clip_length -= 1
                 plane = plane.offset(total_protrusion)
+            else:
+                total_protrusion -= 0.1
 
             with BuildSketch(plane) as clip:
                 Rectangle(clip_length, total_height)
