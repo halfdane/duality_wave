@@ -44,7 +44,7 @@ class CaseDimensions(WaveDimensions):
         self.clip_lower_z: float = -self.below_z + self.bottom_plate_z/2
         self.clip_upper_z: float = -self.keyplate_z/2
 
-        xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 3.5*self.wall_thickness
+        xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 3.2*self.wall_thickness
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance
         xiao_pos_z: float = -1.45
         self.xiao_position: Vector = Vector(xiao_pos_x, xiao_pos_y, xiao_pos_z)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     points = get_points(file_path=config_path)
     keys = ErgoKeys(points=points)
-    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
+    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness, additional_top_space=22)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
     case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=False)
     show_clear()
