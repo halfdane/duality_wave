@@ -4,6 +4,7 @@ if __name__ == "__main__":
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dataclasses import dataclass
+from pathlib import Path
 from build123d import *
 from models.model_types import RectDimensions, RoundDimensions, PosAndDims
 from models.switch import Switch
@@ -45,8 +46,7 @@ class StemDimensions:
 
 @dataclass
 class CapDimensions:
-    d: RectDimensions = RectDimensions(18, 17, 2.5)
-    d_without_space: RectDimensions = RectDimensions(17.45, 16.571, 2.25)
+    d: RectDimensions = RectDimensions(17.45, 16.45, 2.5)
 
 @dataclass
 class AboveDimensions:
@@ -109,15 +109,15 @@ class Choc(Switch):
                 with Locations((0, -(self.stem.d.Y+self.stem.ext_d.Y)/2, self.stem.d.Z / 2)):
                     Box(self.stem.ext_d.X, self.stem.ext_d.Y, self.stem.d.Z)
 
-            with BuildPart() as cap:
-                with BuildSketch(stem.faces().sort_by(Axis.Z)[-1]):
-                    with Locations((0, 0.05)):
-                        RectangleRounded(self.cap.d_without_space.X, self.cap.d_without_space.Y, 2)
-                extrude(amount=self.cap.d.Z)
-                fillet(cap.faces().sort_by(Axis.Z)[-1].edges(), 1.5)
-                s = 40
-                with Locations((0, 0, s+6.7)):
-                    Sphere(s, mode=Mode.SUBTRACT, rotation=(90, 0, 0))
+            with BuildPart() as cap_part:
+                cap = import_step(Path(__file__).with_name("hattara.step")).rotate(Axis.X, -90).rotate(Axis.Y, 180)
+                cap_bounds = cap.bounding_box()
+                add(cap.translate((
+                    -(cap_bounds.min.X + cap_bounds.max.X) / 2,
+                    -(cap_bounds.min.Y + cap_bounds.max.Y) / 2,
+                    self.base.d.Z + self.upper_housing.d.Z + self.stem.d.Z - cap_bounds.min.Z - 2.28,
+                )))
+            del cap, cap_bounds
 
         if show_model:
             from ocp_vscode import show_all
