@@ -15,12 +15,10 @@ units:
 points:
   key.width: sh
   key.height: sh
+  key.padding: 1ky
+  key.spread: 1kx
   zones:      
     matrix:
-      key:
-        padding: 1ky
-        spread: 1kx
-
       columns:
         index.key.stagger: 0.25ky
         inner.key.stagger: -0.25ky
