@@ -32,21 +32,21 @@ class CaseDimensions(WaveDimensions):
     clearance: float = 0.02
     wall_thickness: float = 1.8
 
-    clip_protusion: float = 0.4
+    clip_protusion: float = 0.5
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
-        self.add_below_choc_posts: float = -0.35
-        self.bottom_plate_z: float = 2.2
+        self.add_below_choc_posts: float = 0.7
+        self.bottom_plate_z: float = 3.0
         self.above_z: float = switch.above.d.Z
         self.below_z: float = switch.below.d.Z + self.add_below_choc_posts
         self.keyplate_z: float = self.below_z - self.bottom_plate_z
 
-        self.clip_lower_z: float = -self.below_z + self.bottom_plate_z*0.6
+        self.clip_lower_z: float = -self.below_z + self.bottom_plate_z/2
         self.clip_upper_z: float = -self.keyplate_z/2
 
         xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 3.5*self.wall_thickness
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance
-        xiao_pos_z: float = - self.below_z + Xiao.usb.d.Z + Xiao.dims.d.Z
+        xiao_pos_z: float = -1.45
         self.xiao_position: Vector = Vector(xiao_pos_x, xiao_pos_y, xiao_pos_z)
         self.xiao_mirror_position: Vector = Vector(-xiao_pos_x, xiao_pos_y, xiao_pos_z)
 
@@ -54,21 +54,21 @@ class CaseDimensions(WaveDimensions):
         self.powerswitch_rotation: Vector = Vector(0, 180, -90)
         self.powerswitch_position: Vector = Vector(
                 xiao_pos_x + Xiao.dims.d.X/2 + xiao_to_power_switch, 
-                xiao_pos_y - 4, 
-                -(PowerSwitch.dims.d.Z))
+                xiao_pos_y - 1, 
+                -(self.below_z - 0.75*PowerSwitch.lever.d.Z))
         
         self.pin_radius: float = Pin.dims.radius + self.clearance
         self.pin_x: float = outline.top_right.X/2
         self.pin_plane: Plane = Plane(
-            (self.pin_x, outline.top_right.Y, -self.keyplate_z+0.5), 
+            (self.pin_x, outline.top_right.Y, -self.keyplate_z), 
             z_dir=-Axis.Y.direction, x_dir=Axis.X.direction)
         self.pin_location: Vector = Vector(0, 0)
 
-        battery_d: RectDimensions = RectDimensions(31, 17 , 5.5)
+        battery_d: RectDimensions = RectDimensions(31, 17, 6)
         self.battery_pd = PosAndDims(
             d=battery_d,
             p=outline.top_left \
-                + ((self.wall_thickness + self.clearance)+1, -(self.wall_thickness + self.clearance)-1 ) \
+                + ((self.wall_thickness + self.clearance), -(self.wall_thickness + self.clearance)) \
                 + (battery_d.X/2, - battery_d.Y/2, (self.above_z - battery_d.Z/2 - self.wall_thickness)))
         
         self.magnet_d: RoundDimensions = RoundDimensions(5, 2)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     points = get_points(file_path=config_path)
     keys = ErgoKeys(points=points)
-    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness, additional_top_space=22)
+    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
     case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=False)
     show_clear()

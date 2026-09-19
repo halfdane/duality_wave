@@ -1,12 +1,20 @@
 units:
-  # MY KEYCAPS: 17.5mmx16.5mm
   # cx and cy:  18.0mmx17.0mm for kailh choc
   kx: cx
   ky: cy
+  # with padding
+  px: kx + 1
+  py: ky + 1
+
+  # size of holes in switch plate - a bit larger to account for nylon p12 shrinkage
+  sh: 14.05
+
+  thumb_rotation: -8
+  pinky_rotation: 8
 
 points:
-  key.width: 13.9
-  key.height: 13.9
+  key.width: sh
+  key.height: sh
   zones:      
     matrix:
       key:
