@@ -446,12 +446,12 @@ class WaveCase:
             with BuildSketch(Plane.XY.offset(-self.switch.below.d.Z)) as choc_posts:
                 for key in self.keys.keys:
                     with Locations(key.p):
-                        for post in [self.switch.posts.center]:
+                        for post in [self.switch.posts.center, self.switch.posts.p1, self.switch.posts.p2]:
                             with BuildSketch(mode=Mode.PRIVATE) as choc_post_sketch:
                                 with Locations(post.p):
                                     Circle(post.d.radius + 0.1)
                             add(choc_post_sketch.sketch.mirror(Plane.XZ).rotate(Axis.Z, key.r))
-            extrude(amount=self.switch.posts.center.d.Z, mode=Mode.SUBTRACT)
+            extrude(amount=max(post.d.Z for post in [self.switch.posts.center, self.switch.posts.p1, self.switch.posts.p2]), mode=Mode.SUBTRACT)
             debug_content["chocs posts"] = choc_posts if self.debug else None
 
             with BuildSketch(Plane(self.dims.powerswitch_position).rotated(self.dims.powerswitch_rotation)) as powerswitch_cut:
