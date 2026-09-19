@@ -74,7 +74,7 @@ class CaseDimensions(WaveDimensions):
         self.magnet_positions: list[Vector] = (
             outline.top_right + (-self.wall_thickness - self.clearance - self.magnet_d.radius - 4, -self.wall_thickness - self.clearance - self.magnet_d.radius - 4, magnet_z),
             keys.finger_clusters[0][0][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 2, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][0][2].r),
-            keys.finger_clusters[0][2][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 1, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][2].r),
+            keys.finger_clusters[0][2][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 1.5, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][2].r),
             keys.finger_clusters[0][2][0].p + Vector(0, -switch.cap.d.Y/2 - self.magnet_d.radius - 4, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][0].r),
 
         )
