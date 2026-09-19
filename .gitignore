@@ -2,7 +2,7 @@
 .venv
 
 # Generated CAD exports
-*.stl
-*.step
+/*.stl
+/*.step
 *.3mf
 __pycache__
