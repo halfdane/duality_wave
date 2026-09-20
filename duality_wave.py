@@ -31,6 +31,7 @@ class CaseDimensions(WaveDimensions):
     wall_thickness: float = 1.8
 
     clip_protusion: float = 0.5
+    right_side_offset: float = 200
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
         self.add_below_choc_posts: float = 0.7
@@ -46,7 +47,7 @@ class CaseDimensions(WaveDimensions):
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance
         xiao_pos_z: float = -1.45
         self.xiao_position: Vector = Vector(xiao_pos_x, xiao_pos_y, xiao_pos_z)
-        self.xiao_mirror_position: Vector = Vector(-xiao_pos_x, xiao_pos_y, xiao_pos_z)
+        self.xiao_mirror_position: Vector = Vector(-xiao_pos_x + self.right_side_offset, xiao_pos_y, xiao_pos_z)
 
         xiao_to_power_switch: float = PowerSwitch.dims.d.Y/2 + PowerSwitch.dims.pin_length/2
         self.powerswitch_rotation: Vector = Vector(0, 180, -90)
@@ -107,12 +108,15 @@ if __name__ == "__main__":
     keys = ErgoKeys(points=points)
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
-    case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=False)
+    case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=True)
     show_clear()
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     set_colormap(ColorMap.seeded(colormap="rgb", alpha=1, seed_value="wave"))
     show_objects() 
 
-    export_stl(case.keywell_left, "keywell_left.stl", tolerance=0.01) if hasattr(case, "keywell_left") else None
-    export_stl(case.keyplate_left, "keyplate_left.stl", tolerance=0.01) if hasattr(case, "keyplate_left") else None
-    export_stl(case.bottom_left, "bottom_left.stl", tolerance=0.01) if hasattr(case, "bottom_left") else None
+    export_step(case.keywell_left, "keywell_left.step") if hasattr(case, "keywell_left") else None
+    export_step(case.keyplate_left, "keyplate_left.step") if hasattr(case, "keyplate_left") else None
+    export_step(case.bottom_left, "bottom_left.step") if hasattr(case, "bottom_left") else None
+    export_step(case.keywell_right, "keywell_right.step") if hasattr(case, "keywell_right") else None
+    export_step(case.keyplate_right, "keyplate_right.step") if hasattr(case, "keyplate_right") else None
+    export_step(case.bottom_right, "bottom_right.step") if hasattr(case, "bottom_right") else None

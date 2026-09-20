@@ -48,34 +48,16 @@ class WaveCase:
         xiao_mirrored_plane = Plane(self.dims.xiao_mirror_position, x_dir=xiao_mirrored_plane.x_dir, z_dir=xiao_mirrored_plane.z_dir)
         self.xiao = Xiao(xiao_plane, clearance=self.dims.clearance)
 
-        accessories = {}
-        accessories["chocs"] = self.switches
-        accessories["xiao"] = self.xiao.model
-        accessories["bumpers"] = self.bumpers
-        accessories["power_switch"] = self.powerswitch
-        accessories["pins"] = self.pins
-
-        battery = Box(self.dims.battery_pd.d.X, self.dims.battery_pd.d.Y, self.dims.battery_pd.d.Z)
-        battery = battery.translate(self.dims.battery_pd.p)
-        accessories["battery"] = battery
-
-        if self.dims.magnet_positions:
-            with BuildPart() as magnets: 
-                with BuildSketch(Plane.XY.offset(self.dims.magnet_positions[0].Z)) as magnet_sketch:
-                    with Locations(self.dims.magnet_positions):
-                        Circle(self.dims.magnet_d.radius)
-                extrude(amount=-self.dims.magnet_d.Z)
-            accessories["magnets"] = magnets
-
-        if self.dims.weight_positions:
-            with BuildPart() as weights:
-                with BuildSketch(Plane.XY.offset(self.dims.weight_positions[0].Z)) as weight_sketch:
-                    with Locations(self.dims.weight_positions):
-                        Rectangle(self.dims.weight_d.X, self.dims.weight_d.Y)
-                extrude(amount=-self.dims.weight_d.Z)
-            accessories["weights"] = weights
-
-        push_object(accessories, name="accessories")
+        accessories_left = {}
+        accessories_left["chocs"] = self.switches
+        accessories_left["xiao"] = self.xiao.model
+        accessories_left["bumpers"] = self.bumpers
+        accessories_left["power_switch"] = self.powerswitch
+        accessories_left["pins"] = self.pins
+        accessories_left["battery"] = self.battery
+        accessories_left["magnets"] = self.magnets
+        accessories_left["weights"] = self.weights
+        push_object(accessories_left, name="accessories_left")
 
         self.keywell_left = self.create_keywell()
         self.keywell_left = self.xiao.add_usb_cutouts(self.keywell_left)
@@ -92,23 +74,36 @@ class WaveCase:
         push_object(self.bottom_left, name="bottom_left") if self.debug else None
 
         if both_sides:
-            self.keywell_right = mirror(self.keywell_left, about=Plane.YZ)
+            right_mirror_plane = Plane(
+                (self.dims.right_side_offset / 2, 0, 0),
+                x_dir=Plane.YZ.x_dir,
+                z_dir=Plane.YZ.z_dir,
+            )
+
+            accessories_right = {}
+            accessories_right["chocs_right"] = mirror(self.switches, about=right_mirror_plane)
+            accessories_right["xiao_right"] = Xiao(xiao_mirrored_plane).model
+            accessories_right["bumpers_right"] = mirror(self.bumpers, about=right_mirror_plane)
+            accessories_right["power_switch_right"] = mirror(self.powerswitch, about=right_mirror_plane)
+            accessories_right["pins_right"] = mirror(self.pins, about=right_mirror_plane)
+            accessories_right["battery_right"] = mirror(self.battery, about=right_mirror_plane)
+            accessories_right["magnets_right"] = mirror(self.magnets, about=right_mirror_plane)
+            accessories_right["weights_right"] = mirror(self.weights, about=right_mirror_plane)
+            push_object(accessories_right, name="accessories_right") if self.debug else None
+
+            self.keywell_right = mirror(self.keywell_left, about=right_mirror_plane)
             self.keywell_right = self.xiao.add_usb_cutouts(self.keywell_right)
             push_object(self.keywell_right, name="keywell_right") if self.debug else None
 
-            self.keyplate_right = mirror(self.keyplate_left, about=Plane.YZ)
+            self.keyplate_right = mirror(self.keyplate_left, about=right_mirror_plane)
             self.keyplate_right = self.xiao.add_large_usb_cutouts(self.keyplate_right)
             push_object(self.keyplate_right, name="keyplate_right") if self.debug else None
 
-            self.bottom_right = mirror(self.bottom_left, about=Plane.YZ)
+            self.bottom_right = mirror(self.bottom_left, about=right_mirror_plane)
             self.bottom_right = self.xiao.add_large_usb_cutouts(self.bottom_right)
             self.bottom_right = self.xiao.add_reset_lever(
                 self.bottom_right, xiao_mirrored_plane.offset(self.dims.keyplate_z + self.dims.bottom_plate_z + self.dims.xiao_position.Z))
             push_object(self.bottom_right, name="bottom_right") if self.debug else None
-
-            accessories["chocs_right"] = mirror(self.switches, about=Plane.YZ)
-            accessories["xiao_right"] = Xiao(xiao_mirrored_plane).model
-            accessories["bumpers_right"] = mirror(self.bumpers, about=Plane.YZ)
         print("Done creating case.")
 
     def create_keyplate(self):
@@ -518,3 +513,25 @@ class WaveCase:
         with BuildPart(self.dims.pin_plane) as self.pins:
             add(self.pin.model)
         self.pins = self.pins.part
+
+
+        battery = Box(self.dims.battery_pd.d.X, self.dims.battery_pd.d.Y, self.dims.battery_pd.d.Z)
+        battery = battery.translate(self.dims.battery_pd.p)
+        self.battery = battery
+
+        if self.dims.magnet_positions:
+            with BuildPart() as magnets: 
+                with BuildSketch(Plane.XY.offset(self.dims.magnet_positions[0].Z)) as magnet_sketch:
+                    with Locations(self.dims.magnet_positions):
+                        Circle(self.dims.magnet_d.radius)
+                extrude(amount=-self.dims.magnet_d.Z)
+            self.magnets = magnets.part
+
+        if self.dims.weight_positions:
+            with BuildPart() as weights:
+                with BuildSketch(Plane.XY.offset(self.dims.weight_positions[0].Z)) as weight_sketch:
+                    with Locations(self.dims.weight_positions):
+                        Rectangle(self.dims.weight_d.X, self.dims.weight_d.Y)
+                extrude(amount=-self.dims.weight_d.Z)
+            self.weights = weights.part
+
