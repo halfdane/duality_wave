@@ -43,7 +43,7 @@ class CaseDimensions(WaveDimensions):
         self.clip_lower_z: float = -self.below_z + self.bottom_plate_z/2
         self.clip_upper_z: float = -self.keyplate_z/2
 
-        xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 9.5
+        xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 5
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance
         xiao_pos_z: float = -1.45
         self.xiao_position: Vector = Vector(xiao_pos_x, xiao_pos_y, xiao_pos_z)
@@ -90,7 +90,7 @@ class CaseDimensions(WaveDimensions):
             keys.thumb_clusters[0][1][0].p + Vector(switch.cap.d.X/2 - bumpers_radius/2 - 0.5, -switch.cap.d.Y/2+bumpers_radius/2 + 0.5).rotate(Axis.Z, keys.thumb_clusters[0][1][0].r),
             outline.top_right + Vector(-bumpers_radius, -bumpers_radius),
             outline.bottom_left + Vector(bumpers_radius, bumpers_radius),
-            outline.top_left + Vector(bumpers_radius, -bumpers_radius),
+            outline.top_left + Vector(bumpers_radius, -bumpers_radius- 10),
             (keys.finger_clusters[0][2][0].p + keys.finger_clusters[0][2][1].p) / 2 + (8, 0),
         ]
 
