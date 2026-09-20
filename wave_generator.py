@@ -44,8 +44,6 @@ class WaveCase:
         # the origin first, then rebuild the plane with the absolute target origin instead.
         xiao_plane = Plane.XY.rotated((180,0,0))
         xiao_plane = Plane(self.dims.xiao_position, x_dir=xiao_plane.x_dir, z_dir=xiao_plane.z_dir)
-        xiao_mirrored_plane = xiao_plane.rotated((180,0,0))
-        xiao_mirrored_plane = Plane(self.dims.xiao_mirror_position, x_dir=xiao_mirrored_plane.x_dir, z_dir=xiao_mirrored_plane.z_dir)
         self.xiao = Xiao(xiao_plane, clearance=self.dims.clearance)
 
         accessories_left = {}
@@ -59,16 +57,16 @@ class WaveCase:
         accessories_left["weights"] = self.weights
         push_object(accessories_left, name="accessories_left")
 
-        self.keywell_left = self.create_keywell()
-        self.keywell_left = self.xiao.add_usb_cutouts(self.keywell_left)
+        self.keywell = self.create_keywell()
+        self.keywell_left = self.xiao.add_usb_cutouts(self.keywell)
         push_object(self.keywell_left, name="keywell_left") if self.debug else None
 
-        self.keyplate_left = self.create_keyplate()
-        self.keyplate_left = self.xiao.add_large_usb_cutouts(self.keyplate_left)
+        self.keyplate = self.create_keyplate()
+        self.keyplate_left = self.xiao.add_large_usb_cutouts(self.keyplate)
         push_object(self.keyplate_left, name="keyplate_left") if self.debug else None
 
-        self.bottom_left = self.create_bottom()
-        self.bottom_left = self.xiao.add_large_usb_cutouts(self.bottom_left)
+        self.bottom = self.create_bottom()
+        self.bottom_left = self.xiao.add_large_usb_cutouts(self.bottom)
         self.bottom_left = self.xiao.add_reset_lever(
             self.bottom_left, xiao_plane.offset(self.dims.keyplate_z + self.dims.bottom_plate_z + self.dims.xiao_position.Z)) 
         push_object(self.bottom_left, name="bottom_left") if self.debug else None
@@ -79,10 +77,18 @@ class WaveCase:
                 x_dir=Plane.YZ.x_dir,
                 z_dir=Plane.YZ.z_dir,
             )
+            xiao_right_plane = Plane(
+                (self.dims.right_side_offset - xiao_plane.origin.X,
+                xiao_plane.origin.Y,
+                xiao_plane.origin.Z),
+                x_dir=xiao_plane.x_dir,
+                z_dir=xiao_plane.z_dir,
+            )
 
             accessories_right = {}
+            xiao_right = Xiao(xiao_right_plane, clearance=self.dims.clearance)
             accessories_right["chocs_right"] = mirror(self.switches, about=right_mirror_plane)
-            accessories_right["xiao_right"] = Xiao(xiao_mirrored_plane).model
+            accessories_right["xiao_right"] = xiao_right.model
             accessories_right["bumpers_right"] = mirror(self.bumpers, about=right_mirror_plane)
             accessories_right["power_switch_right"] = mirror(self.powerswitch, about=right_mirror_plane)
             accessories_right["pins_right"] = mirror(self.pins, about=right_mirror_plane)
@@ -91,18 +97,18 @@ class WaveCase:
             accessories_right["weights_right"] = mirror(self.weights, about=right_mirror_plane)
             push_object(accessories_right, name="accessories_right") if self.debug else None
 
-            self.keywell_right = mirror(self.keywell_left, about=right_mirror_plane)
-            self.keywell_right = self.xiao.add_usb_cutouts(self.keywell_right)
+            self.keywell_right = mirror(self.keywell, about=right_mirror_plane)
+            self.keywell_right = xiao_right.add_usb_cutouts(self.keywell_right)
             push_object(self.keywell_right, name="keywell_right") if self.debug else None
 
-            self.keyplate_right = mirror(self.keyplate_left, about=right_mirror_plane)
-            self.keyplate_right = self.xiao.add_large_usb_cutouts(self.keyplate_right)
+            self.keyplate_right = mirror(self.keyplate, about=right_mirror_plane)
+            self.keyplate_right = xiao_right.add_large_usb_cutouts(self.keyplate_right)
             push_object(self.keyplate_right, name="keyplate_right") if self.debug else None
 
-            self.bottom_right = mirror(self.bottom_left, about=right_mirror_plane)
-            self.bottom_right = self.xiao.add_large_usb_cutouts(self.bottom_right)
-            self.bottom_right = self.xiao.add_reset_lever(
-                self.bottom_right, xiao_mirrored_plane.offset(self.dims.keyplate_z + self.dims.bottom_plate_z + self.dims.xiao_position.Z))
+            self.bottom_right = mirror(self.bottom, about=right_mirror_plane)
+            self.bottom_right = xiao_right.add_large_usb_cutouts(self.bottom_right)
+            self.bottom_right = xiao_right.add_reset_lever(
+                self.bottom_right, xiao_right_plane.offset(self.dims.keyplate_z + self.dims.bottom_plate_z + self.dims.xiao_position.Z))
             push_object(self.bottom_right, name="bottom_right") if self.debug else None
         print("Done creating case.")
 

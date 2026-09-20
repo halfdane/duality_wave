@@ -32,7 +32,6 @@ class WaveDimensions:
     clip_upper_z: float
 
     xiao_position: Vector
-    xiao_mirror_position: Vector
 
     powerswitch_position: Vector
     powerswitch_rotation: Vector
