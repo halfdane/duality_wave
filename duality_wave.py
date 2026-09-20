@@ -43,7 +43,7 @@ class CaseDimensions(WaveDimensions):
         self.clip_lower_z: float = -self.below_z + self.bottom_plate_z/2
         self.clip_upper_z: float = -self.keyplate_z/2
 
-        xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 9
+        xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 9.5
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance
         xiao_pos_z: float = -1.45
         self.xiao_position: Vector = Vector(xiao_pos_x, xiao_pos_y, xiao_pos_z)

@@ -143,7 +143,7 @@ class WaveCase:
 
             print("  xiao hole...")
             with BuildSketch(Plane((self.dims.xiao_position.X, self.dims.xiao_position.Y, 0))) as xiao_hole:
-                Rectangle(Xiao.dims.d.X - 1.5, Xiao.dims.d.Y - 1.5)
+                Rectangle(Xiao.dims.d.X - 1.5, Xiao.dims.d.Y - 4)
             extrude(amount=self.dims.xiao_position.Z, mode=Mode.SUBTRACT)
             with BuildSketch(Plane(self.dims.xiao_position)) as xiao_cut:
                 Rectangle(Xiao.dims.d.X + 2*self.dims.clearance, Xiao.dims.d.Y + 2*self.dims.clearance)
@@ -205,7 +205,7 @@ class WaveCase:
                     make_face()
                 
                 top_pinkie = self.keys.finger_clusters[0][0][len(self.keys.finger_clusters[0][0])-1].p
-                l=Line(top_pinkie, self.dims.xiao_position)
+                l=Line(top_pinkie, (self.dims.xiao_position.X - self.xiao.dims.d.X/4, self.dims.xiao_position.Y, self.dims.xiao_position.Z))
                 offset(l, amount=connector_width, side=Side.BOTH)
                 make_face()
 
