@@ -108,8 +108,7 @@ class Xiao:
                           p+(lever_width/2 +lever_gap, length))
                 h2 = EllipticalCenterArc((f3@0 + g3@0)/2, lever_width/2 + lever_gap, lever_width, start_angle=180, arc_size=180)
                 i = Line(f3@1+(lever_gap/2, lever_gap/2), g3@1+(-lever_gap/2, lever_gap/2))
-                rj = RadiusArc(f3@1, i@0, radius=lever_gap/2, short_sagitta=True)
-                lj = RadiusArc(i@1, g3@1, radius=lever_gap/2, short_sagitta=True)
+                j = Line(f3@1, g3@1)
             make_face()
 
         return reset_sketch.sketch
@@ -183,8 +182,7 @@ class Xiao:
                 add(offset(lever, amount=-self.reset_lever_dims.gap))
                 with Locations((0, self.reset_lever_dims.gap)):
                     add(offset(lever, amount=-self.reset_lever_dims.gap))
-            actual_lever = extrude(dir=-plane.z_dir, amount=1.18, mode=Mode.ADD)
-            #fillet(objects=actual_lever.edges().filter_by(Axis.Z), radius=0.1)
+            extrude(dir=-plane.z_dir, amount=1.18, mode=Mode.ADD)
 
             with BuildSketch(plane) as reset_button_bump:
                 add(self.reset_button_bump)
