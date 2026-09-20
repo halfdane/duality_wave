@@ -106,7 +106,7 @@ class Xiao:
                           p+(-lever_width/2 -lever_gap, length))
                 g3 = Line(p+(lever_width/2 +lever_gap, 0),
                           p+(lever_width/2 +lever_gap, length))
-                h2 = EllipticalCenterArc((f3@0 + g3@0)/2, lever_width/2 + lever_gap, lever_width + lever_width/4, start_angle=180, arc_size=180)
+                h2 = EllipticalCenterArc((f3@0 + g3@0)/2, lever_width/2 + lever_gap, lever_width, start_angle=180, arc_size=180)
                 i = Line(f3@1+(lever_gap/2, lever_gap/2), g3@1+(-lever_gap/2, lever_gap/2))
                 rj = RadiusArc(f3@1, i@0, radius=lever_gap/2, short_sagitta=True)
                 lj = RadiusArc(i@1, g3@1, radius=lever_gap/2, short_sagitta=True)
@@ -119,7 +119,7 @@ class Xiao:
         p = self.reset_lever_dims.p
         with BuildSketch() as reset_bump:
             with Locations(p):
-                Ellipse(lever_width/2, lever_width)
+                Ellipse(lever_width/2, 0.75*lever_width)
 
         return reset_bump.sketch
 
@@ -183,7 +183,9 @@ class Xiao:
                 add(offset(lever, amount=-self.reset_lever_dims.gap))
                 with Locations((0, self.reset_lever_dims.gap)):
                     add(offset(lever, amount=-self.reset_lever_dims.gap))
-            extrude(dir=-plane.z_dir, amount=1.18, mode=Mode.ADD)
+            actual_lever = extrude(dir=-plane.z_dir, amount=1.18, mode=Mode.ADD)
+            #fillet(objects=actual_lever.edges().filter_by(Axis.Z), radius=0.1)
+
             with BuildSketch(plane) as reset_button_bump:
                 add(self.reset_button_bump)
             extrude(amount=dist, mode=Mode.ADD)
