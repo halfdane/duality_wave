@@ -33,6 +33,7 @@ class CaseDimensions(WaveDimensions):
     wall_thickness: float = 1.8
 
     clip_protusion: float = 0.5
+    right_side_offset: float = 10.0
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
         self.add_below_choc_posts: float = 0.7
@@ -101,13 +102,16 @@ if __name__ == "__main__":
     keys = ErgoKeys(points=points)
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness, additional_top_space=22)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
-    case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=False)
+    case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=True)
     show_clear()
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     set_colormap(ColorMap.seeded(colormap="rgb", alpha=1, seed_value="wave"))
     show_objects() 
 
-    export_stl(case.keywell_left, "keywell_left_snap_fit.stl") if hasattr(case, "keywell_left") else None
-    export_stl(case.keyplate_left, "keyplate_left_snap_fit.stl") if hasattr(case, "keyplate_left") else None
-    export_stl(case.bottom_left, "bottom_left_snap_fit.stl") if hasattr(case, "bottom_left") else None
+    export_step(case.keywell_left, "keywell_left_snap_fit.step") if hasattr(case, "keywell_left") else None
+    export_step(case.keyplate_left, "keyplate_left_snap_fit.step") if hasattr(case, "keyplate_left") else None
+    export_step(case.bottom_left, "bottom_left_snap_fit.step") if hasattr(case, "bottom_left") else None
+    export_step(case.keywell_right, "keywell_right_snap_fit.step") if hasattr(case, "keywell_right") else None
+    export_step(case.keyplate_right, "keyplate_right_snap_fit.step") if hasattr(case, "keyplate_right") else None
+    export_step(case.bottom_right, "bottom_right_snap_fit.step") if hasattr(case, "bottom_right") else None
 

@@ -54,7 +54,7 @@ class WaveCase:
         accessories_left["pins"] = self.pins
         accessories_left["battery"] = self.battery
         accessories_left["magnets"] = self.magnets
-        accessories_left["weights"] = self.weights
+        accessories_left["weights"] = self.weights if hasattr(self, "weights") else None
         push_object(accessories_left, name="accessories_left")
 
         self.keywell = self.create_keywell()
@@ -94,7 +94,7 @@ class WaveCase:
             accessories_right["pins_right"] = mirror(self.pins, about=right_mirror_plane)
             accessories_right["battery_right"] = mirror(self.battery, about=right_mirror_plane)
             accessories_right["magnets_right"] = mirror(self.magnets, about=right_mirror_plane)
-            accessories_right["weights_right"] = mirror(self.weights, about=right_mirror_plane)
+            accessories_right["weights_right"] = mirror(self.weights, about=right_mirror_plane) if hasattr(self, "weights") else None
             push_object(accessories_right, name="accessories_right") if self.debug else None
 
             self.keywell_right = mirror(self.keywell, about=right_mirror_plane)
