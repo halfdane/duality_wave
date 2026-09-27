@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field, InitVar
 import math
-import copy
 
 from wave_generator import WaveCase
 from build123d import *
+from part_packing import pack_parts_for_jlcpcb
 from models.choc import Choc
 from models.cherry import Cherry
 from models.switch import Switch
@@ -108,6 +108,8 @@ if __name__ == "__main__":
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
     case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=True)
+    # packed_jlcpcb = pack_parts_for_jlcpcb(case)
+    # push_object(packed_jlcpcb, name="packed_jlcpcb")
     show_clear()
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     set_colormap(ColorMap.seeded(colormap="rgb", alpha=1, seed_value="wave"))
@@ -119,3 +121,4 @@ if __name__ == "__main__":
     export_step(case.keywell_right, "keywell_right.step") if hasattr(case, "keywell_right") else None
     export_step(case.keyplate_right, "keyplate_right.step") if hasattr(case, "keyplate_right") else None
     export_step(case.bottom_right, "bottom_right.step") if hasattr(case, "bottom_right") else None
+    # export_step(packed_jlcpcb, "packed_jlcpcb.step")
