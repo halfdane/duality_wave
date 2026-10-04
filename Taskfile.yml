@@ -39,9 +39,14 @@ tasks:
       - python duality_wave.py
 
   snapfit:
-    desc: Build the snap-fit case variant (snap_fit.py) and export STLs.
+    desc: Build the compact case variant (snap_fit.py) and export STLs.
     cmds:
       - python snap_fit.py
+
+  insert-coupon:
+    desc: Export an M2 heat-set insert pilot-hole calibration coupon.
+    cmds:
+      - python insert_coupon.py
 
   xiaofit:
     desc: Build the XIAO fit prototype (xiao_fit.py) and export STLs.

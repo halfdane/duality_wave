@@ -13,6 +13,8 @@ from models.space_invader import SpaceInvader
 from models.keys import ErgoKeys, Point, get_points
 from models.rubber_bumper import RubberBumper, BumperDimensions
 from models.pin import Pin
+from models.heat_set_insert import HeatSetInsert
+from models.screw import LowProfileScrew
 from models.model_types import WaveDimensions
 
 from ocp_vscode import *
@@ -28,6 +30,8 @@ class WaveCase:
         self.dims = caseDimensions
         self.outline = outline
         self.bumper = RubberBumper()
+        self.insert = HeatSetInsert(self.dims.insert_profile)
+        self.screw = LowProfileScrew()
 
         self.debug_content: dict = {}
 
@@ -55,6 +59,8 @@ class WaveCase:
         accessories_left["battery"] = self.battery
         accessories_left["magnets"] = self.magnets
         accessories_left["weights"] = self.weights if hasattr(self, "weights") else None
+        accessories_left["inserts"] = self.inserts
+        accessories_left["screws"] = self.screws
         push_object(accessories_left, name="accessories_left")
 
         self.keywell = self.create_keywell()
@@ -95,6 +101,8 @@ class WaveCase:
             accessories_right["battery_right"] = mirror(self.battery, about=right_mirror_plane)
             accessories_right["magnets_right"] = mirror(self.magnets, about=right_mirror_plane)
             accessories_right["weights_right"] = mirror(self.weights, about=right_mirror_plane) if hasattr(self, "weights") else None
+            accessories_right["inserts_right"] = mirror(self.inserts, about=right_mirror_plane)
+            accessories_right["screws_right"] = mirror(self.screws, about=right_mirror_plane)
             push_object(accessories_right, name="accessories_right") if self.debug else None
 
             self.keywell_right = mirror(self.keywell, about=right_mirror_plane)
@@ -125,9 +133,12 @@ class WaveCase:
 
             debug_content["base edges"] = base.edges() if self.debug else None
 
-            edges_to_add_clips = self.filter_clip_edges(base.edges())
-            c = self.add_bottom_clips(edges_to_add_clips, clips_on_outside=True, z_position=-self.dims.keyplate_z/2)
-            debug_content["clips"] = c if self.debug else None
+            print("  fastener holes...")
+            with BuildSketch() as fastener_holes:
+                with Locations(self.dims.fastener_positions):
+                    Circle(self.screw.mount.clearance.radius)
+            extrude(to_extrude=fastener_holes.sketch, amount=-self.dims.keyplate_z, mode=Mode.SUBTRACT)
+            debug_content["fastener holes"] = fastener_holes if self.debug else None
 
             print("  key holes...")
             with BuildSketch() as key_holes:
@@ -292,15 +303,20 @@ class WaveCase:
                 add(self.outline.create_keywell_outline())
             extrude(to_extrude=key_cut_sketch.sketch, amount=-self.dims.below_z - self.dims.above_z, mode=Mode.SUBTRACT)
 
-            print("  clips...")
-            edges_to_add_clips = self.filter_clip_edges(keywell_wall.edges())
-            long_clips, short_clips = self.split_off_clips_that_should_be_longer(edges_to_add_clips)
-            c = self.add_bottom_clips(long_clips, clips_on_outside=False, z_position=self.dims.clip_lower_z, extralong=True)
-            debug_content["bottom long clips"] = c if self.debug else None
-            c = self.add_bottom_clips(short_clips, clips_on_outside=False, z_position=self.dims.clip_lower_z)
-            debug_content["bottom short clips"] = c if self.debug else None
-            c = self.add_bottom_clips(edges_to_add_clips, clips_on_outside=False, z_position=self.dims.clip_upper_z)
-            debug_content["keyplate clips"] = c if self.debug else None
+            print("  heat-set insert pilots...")
+            with BuildSketch(Plane.XY.offset(self.dims.heat_insert_z)) as insert_pilots:
+                with Locations(self.dims.fastener_positions):
+                    Circle(self.insert.mount.pilot.radius)
+            extrude(amount=-20, mode=Mode.SUBTRACT)
+            debug_content["insert pilots"] = insert_pilots if self.debug else None
+
+            print("  fastener holes...")
+            bottom_plane = Plane.XY.offset(-self.dims.below_z)
+            with BuildSketch(bottom_plane) as fastener_holes:
+                with Locations(self.dims.fastener_positions):
+                    Circle(self.screw.mount.clearance.radius)
+            extrude(amount=self.screw.dims.shaft.Z + self.screw.dims.head.Z + 0.1, mode=Mode.SUBTRACT)
+            debug_content["fastener holes"] = fastener_holes if self.debug else None
 
             print("  pin holes...")
             with BuildSketch(self.dims.pin_plane) as pin_holes:
@@ -321,7 +337,7 @@ class WaveCase:
                 with BuildSketch(Plane.XY.offset(self.dims.above_z)) as magnet_sketch:
                     with Locations(self.dims.magnet_positions):
                         Circle(self.dims.magnet_d.radius + self.dims.clearance)
-                extrude(amount= - 3*self.dims.magnet_d.Z, mode=Mode.SUBTRACT)
+                extrude(amount= - 2*self.dims.magnet_d.Z, mode=Mode.SUBTRACT)
                 debug_content["magnet_sketch"] = magnet_sketch if self.debug else None
 
             if self.dims.weight_positions:
@@ -342,70 +358,6 @@ class WaveCase:
 
         return keywell.part
     
-    def split_off_clips_that_should_be_longer(self, edges: ShapeList[Edge] | Edge) -> tuple[ShapeList[Edge], ShapeList[Edge]]:
-        """Split edges into two lists: those that should have long clips and those that should have short clips
-            @return: (long_clip_edges, short_clip_edges)
-        ."""
-        if isinstance(edges, Edge):
-            edges = ShapeList([edges])
-        # the last one is usually the top edge, so skip it
-        long_clip_edges = edges.sort_by(Axis.Y)[:-1]
-
-        # keep only long clip edges that are roughly horizontal
-        def is_horizontal(edge: Edge) -> bool:
-            direction = edge.end_point() - edge.start_point()
-            return abs(direction.X) > abs(direction.Y)
-        long_clip_edges = long_clip_edges.filter_by(is_horizontal)
-
-        short_clip_edges = ShapeList([e for e in edges if e not in long_clip_edges])
-        return long_clip_edges, short_clip_edges
-
-    def filter_clip_edges(self, edges: ShapeList[Edge] | Edge) -> ShapeList[Edge]:
-        """Filter edges to only include straight edges longer than 5mm."""
-        if isinstance(edges, Edge):
-            edges = ShapeList([edges])
-        filtered_edges = edges\
-            .filter_by(GeomType.LINE)\
-            .filter_by(lambda e: e.length > 5)
-        return filtered_edges
-
-    def add_bottom_clips(self, edges: ShapeList[Edge] | Edge, clips_on_outside: bool = False, z_position: float = 0, extralong=False) -> list[Sketch]:
-        if isinstance(edges, Edge):
-            edges = ShapeList([edges])
-        clips = []
-        for e in edges:
-            edge_center = e.center()
-            edge_direction = (e.end_point() - e.start_point()).normalized()
-            plane_normal = Vector(edge_direction.Y, -edge_direction.X, 0)  # Perpendicular to edge in XY plane
-            plane_origin = Vector(edge_center.X, edge_center.Y, z_position)
-            plane = Plane(origin=plane_origin, z_dir=plane_normal, x_dir=edge_direction)
-
-            clip_xy_ratio: float = 0.6
-            clip_length = e.length * clip_xy_ratio
-            total_height = 2*self.dims.clip_protusion
-            total_protrusion = self.dims.clip_protusion * (2 if extralong else 1)
-
-            if clips_on_outside: 
-                total_height -= self.dims.clearance * (8 if extralong else 2)
-                clip_length -= 1
-                plane = plane.offset(total_protrusion)
-            else:
-                total_protrusion += 0.1
-
-            with BuildSketch(plane) as clip:
-                Rectangle(clip_length, total_height)
-            clip = clip.sketch
-
-            dir = -1 if clips_on_outside else 1
-            mode = Mode.ADD if clips_on_outside else Mode.SUBTRACT
-            taper = 5 if extralong else 0
-            extrude(to_extrude=clip, amount=dir*total_protrusion, mode=mode, taper=dir*taper)
-            if clips_on_outside:
-                fillet(clip.edges(), radius=self.dims.clip_protusion - 0.2)
-            clips.append(clip)
-        return clips
-
-
     def create_bottom(self):
         print("Creating bottom...")
         debug_content = {}
@@ -418,12 +370,19 @@ class WaveCase:
             extrude(amount=self.dims.bottom_plate_z)
             chamfer(objects=faces().filter_by(Axis.Z).edges(), length=0.1)
 
-            edges_to_add_clips = self.filter_clip_edges(base.edges())
-            long_clips, short_clips = self.split_off_clips_that_should_be_longer(edges_to_add_clips)
-            c = self.add_bottom_clips(long_clips, clips_on_outside=True, z_position=self.dims.clip_lower_z, extralong=True)
-            debug_content["long clips"] = c if self.debug else None
-            c = self.add_bottom_clips(short_clips, clips_on_outside=True, z_position=self.dims.clip_lower_z)
-            debug_content["short clips"] = c if self.debug else None
+            print("  fastener holes...")
+            bottom_plane = Plane.XY.offset(-self.dims.below_z)
+            with BuildSketch(bottom_plane) as fastener_holes:
+                with Locations(self.dims.fastener_positions):
+                    Circle(self.screw.mount.clearance.radius)
+            extrude(to_extrude=fastener_holes.sketch, amount=self.dims.bottom_plate_z, mode=Mode.SUBTRACT)
+            debug_content["fastener holes"] = fastener_holes if self.debug else None
+
+            with BuildSketch(bottom_plane) as head_recesses:
+                with Locations(self.dims.fastener_positions):
+                    Circle(self.screw.mount.head_recess.radius)
+            extrude(to_extrude=head_recesses.sketch, amount=self.screw.mount.head_recess.Z, mode=Mode.SUBTRACT)
+            debug_content["head recesses"] = head_recesses if self.debug else None
 
             print("  xiao support...")
             with BuildSketch(Plane.XY.offset(self.dims.xiao_position.Z)) as xiao_support:
@@ -520,6 +479,22 @@ class WaveCase:
             add(self.pin.model)
         self.pins = self.pins.part
 
+        with BuildPart() as inserts:
+            with Locations([
+                Vector(position.X, position.Y, self.dims.heat_insert_z - self.insert.dims.d.Z/2 - self.dims.clearance)
+                for position in self.dims.fastener_positions
+            ]):
+                add(self.insert.model)
+        self.inserts = inserts.part
+
+        with BuildPart() as screws:
+            with Locations([
+                Vector(position.X, position.Y, -self.dims.below_z + self.screw.dims.shaft.Z/2 + self.screw.dims.head.Z)
+                for position in self.dims.fastener_positions
+            ]):
+                add(self.screw.model.rotate(Axis.X, 180))
+        self.screws = screws.part
+
 
         battery = Box(self.dims.battery_pd.d.X, self.dims.battery_pd.d.Y, self.dims.battery_pd.d.Z)
         battery = battery.translate(self.dims.battery_pd.p)
@@ -540,4 +515,3 @@ class WaveCase:
                         Rectangle(self.dims.weight_d.X, self.dims.weight_d.Y)
                 extrude(amount=-self.dims.weight_d.Z)
             self.weights = weights.part
-

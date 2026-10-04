@@ -29,8 +29,9 @@ class CaseDimensions(WaveDimensions):
 
     clearance: float = 0.02
     wall_thickness: float = 1.8
+    insert_profile: str = "mjf_pa12"
+    heat_insert_z: float = 3.5
 
-    clip_protusion: float = 0.5
     right_side_offset: float = 200
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
@@ -40,8 +41,13 @@ class CaseDimensions(WaveDimensions):
         self.below_z: float = switch.below.d.Z + self.add_below_choc_posts
         self.keyplate_z: float = self.below_z - self.bottom_plate_z
 
-        self.clip_lower_z: float = -self.below_z + self.bottom_plate_z/2
-        self.clip_upper_z: float = -self.keyplate_z/2
+        self.fastener_positions = [
+            Vector(-12.5, 12),
+            Vector(22, 62),
+            Vector(52, 68),
+            Vector(92, 7),
+            Vector(43, 10),
+        ]
 
         xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 5
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance

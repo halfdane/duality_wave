@@ -27,9 +27,9 @@ class WaveDimensions:
     bottom_plate_z: float
     keyplate_z: float
 
-    clip_protusion: float
-    clip_lower_z: float
-    clip_upper_z: float
+    insert_profile: str
+    heat_insert_z: float
+    fastener_positions: list[Vector]
 
     xiao_position: Vector
 

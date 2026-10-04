@@ -4,6 +4,7 @@ import copy
 
 from sympy import shape
 
+from models.heat_set_insert import HeatSetInsert
 from wave_generator import WaveCase
 from part_packing import pack_parts_for_jlcpcb
 from build123d import *
@@ -32,8 +33,8 @@ class CaseDimensions(WaveDimensions):
 
     clearance: float = 0.02
     wall_thickness: float = 1.8
+    insert_profile: str = "mjf_pa12"
 
-    clip_protusion: float = 0.5
     right_side_offset: float = 100
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
@@ -43,8 +44,12 @@ class CaseDimensions(WaveDimensions):
         self.below_z: float = switch.below.d.Z + self.add_below_choc_posts
         self.keyplate_z: float = self.below_z - self.bottom_plate_z
 
-        self.clip_lower_z: float = -self.below_z + self.bottom_plate_z/2
-        self.clip_upper_z: float = -self.keyplate_z/2
+        self.fastener_positions = [
+            Vector(24, 23),
+            Vector(34, -10),
+            Vector(0, -14),
+        ]
+        self.heat_insert_z: float = HeatSetInsert.dims.d.Z
 
         xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 5
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance
@@ -74,10 +79,10 @@ class CaseDimensions(WaveDimensions):
         
         self.magnet_d: RoundDimensions = RoundDimensions(5, 2)
         magnet_z: float = self.above_z  # flush with surface: 0mm gap when halves are together
-        self.magnet_positions: list[Vector] = (
-            keys.finger_clusters[0][0][0].p + Vector(switch.cap.d.X + 2, switch.cap.d.Y/2 + self.magnet_d.radius + 2, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][0][0].r),
+        self.magnet_positions: list[Vector] = [
+            Vector(-3, -11, magnet_z),
+        ]
 
-        )
 
         self.weight_d: Vector = Vector()
         self.weight_positions: list[Vector] = ()
@@ -91,7 +96,7 @@ class CaseDimensions(WaveDimensions):
             outline.top_left + Vector(bumpers_radius, -bumpers_radius -10),
         ]
 
-        self.space_invader: Location = Location((29, -10), (0, 0, -45))
+        self.space_invader: Location = Location((24, -6), (0, 0, -50))
 
 
 if __name__ == "__main__":
@@ -103,9 +108,9 @@ if __name__ == "__main__":
     keys = ErgoKeys(points=points)
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness, additional_top_space=22)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
-    case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=True)
-    packed_jlcpcb = pack_parts_for_jlcpcb(case)
-    push_object(packed_jlcpcb, name="packed_jlcpcb")
+    case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=False)
+    # packed_jlcpcb = pack_parts_for_jlcpcb(case)
+    # push_object(packed_jlcpcb, name="packed_jlcpcb")
 
     show_clear()
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
@@ -118,4 +123,4 @@ if __name__ == "__main__":
     export_step(case.keywell_right, "keywell_right_snap_fit.step") if hasattr(case, "keywell_right") else None
     export_step(case.keyplate_right, "keyplate_right_snap_fit.step") if hasattr(case, "keyplate_right") else None
     export_step(case.bottom_right, "bottom_right_snap_fit.step") if hasattr(case, "bottom_right") else None
-    export_step(packed_jlcpcb, "snap_packed_jlcpcb.step")
+    # export_step(packed_jlcpcb, "snap_packed_jlcpcb.step")
