@@ -72,7 +72,9 @@ class WaveCase:
         push_object(self.keyplate_left, name="keyplate_left") if self.debug else None
 
         self.bottom = self.create_bottom()
-        self.bottom_left = self.xiao.add_large_usb_cutouts(self.bottom)
+        left_switch_locations = [Location(key.p, (0, 0, key.r)) for key in self.keys.keys]
+        self.bottom_left = self.add_switch_post_cutouts(self.bottom, left_switch_locations)
+        self.bottom_left = self.xiao.add_large_usb_cutouts(self.bottom_left)
         self.bottom_left = self.xiao.add_reset_lever(
             self.bottom_left, xiao_plane.offset(self.dims.keyplate_z + self.dims.bottom_plate_z + self.dims.xiao_position.Z)) 
         push_object(self.bottom_left, name="bottom_left") if self.debug else None
@@ -93,7 +95,14 @@ class WaveCase:
 
             accessories_right = {}
             xiao_right = Xiao(xiao_right_plane, clearance=self.dims.clearance)
-            accessories_right["chocs_right"] = mirror(self.switches, about=right_mirror_plane)
+            right_switch_locations = [
+                Location((self.dims.right_side_offset - key.p.X, key.p.Y, key.p.Z), (0, 0, -key.r))
+                for key in self.keys.keys
+            ]
+            with BuildPart() as switches_right:
+                with Locations(right_switch_locations):
+                    add(self.switch.model.part)
+            accessories_right["chocs_right"] = switches_right.part
             accessories_right["xiao_right"] = xiao_right.model
             accessories_right["bumpers_right"] = mirror(self.bumpers, about=right_mirror_plane)
             accessories_right["power_switch_right"] = mirror(self.powerswitch, about=right_mirror_plane)
@@ -114,6 +123,7 @@ class WaveCase:
             push_object(self.keyplate_right, name="keyplate_right") if self.debug else None
 
             self.bottom_right = mirror(self.bottom, about=right_mirror_plane)
+            self.bottom_right = self.add_switch_post_cutouts(self.bottom_right, right_switch_locations)
             self.bottom_right = xiao_right.add_large_usb_cutouts(self.bottom_right)
             self.bottom_right = xiao_right.add_reset_lever(
                 self.bottom_right, xiao_right_plane.offset(self.dims.keyplate_z + self.dims.bottom_plate_z + self.dims.xiao_position.Z))
@@ -402,18 +412,6 @@ class WaveCase:
                     Circle(self.bumper.dims.radius)
             extrude(amount=self.bumper.dims.base_z, mode=Mode.SUBTRACT)
 
-            print("  switch post cutouts")
-            with BuildSketch(Plane.XY.offset(-self.switch.below.d.Z)) as choc_posts:
-                for key in self.keys.keys:
-                    with Locations(key.p):
-                        for post in [self.switch.posts.center, self.switch.posts.p1, self.switch.posts.p2]:
-                            with BuildSketch(mode=Mode.PRIVATE) as choc_post_sketch:
-                                with Locations(post.p):
-                                    Circle(post.d.radius + 0.1)
-                            add(choc_post_sketch.sketch.mirror(Plane.XZ).rotate(Axis.Z, key.r))
-            extrude(amount=max(post.d.Z for post in [self.switch.posts.center, self.switch.posts.p1, self.switch.posts.p2]), mode=Mode.SUBTRACT)
-            debug_content["chocs posts"] = choc_posts if self.debug else None
-
             with BuildSketch(Plane(self.dims.powerswitch_position).rotated(self.dims.powerswitch_rotation)) as powerswitch_cut:
                 with Locations((0, PowerSwitch.dims.pin_length/2)):
                     Rectangle(PowerSwitch.dims.d.X + 1, PowerSwitch.dims.d.Y + 1 + PowerSwitch.dims.pin_length)
@@ -451,6 +449,29 @@ class WaveCase:
                 debug_content["invader_sketch"] = invader_sketch if self.debug else None
 
         return bottom.part
+
+    def add_switch_post_cutouts(self, bottom: Shape, placements: list[Location]) -> Part:
+        print("  switch post cutouts...")
+        posts = [self.switch.posts.center, 
+                 self.switch.posts.a1, 
+                 self.switch.posts.a2, 
+                 self.switch.posts.p1, 
+                 self.switch.posts.p2]
+        with BuildPart() as result:
+            add(bottom)
+            with BuildSketch(Plane.XY.offset(-self.switch.below.d.Z + self.dims.bottom_plate_z)):
+                with Locations(placements):
+                    for post in posts:
+                        # The underside workplane flips local Y, not the physical footprint's X.
+                        with Locations((post.p.X, -post.p.Y)):
+                            Circle(post.d.radius + 0.1)
+            extrude(amount=-max(post.d.Z for post in posts), mode=Mode.SUBTRACT)
+            with BuildSketch(Plane.XY.offset(-self.switch.below.d.Z + self.dims.bottom_plate_z)):
+                with Locations([p.position+Vector(0, -4.5) for p in placements]):
+                    Rectangle(12, 4)
+            extrude(amount=-max(post.d.Z/2 for post in posts), mode=Mode.SUBTRACT)
+
+        return result.part
 
     def create_accessories(self):
         if not self.debug:
