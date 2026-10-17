@@ -42,11 +42,12 @@ class CaseDimensions(WaveDimensions):
         self.keyplate_z: float = self.below_z - self.bottom_plate_z
 
         self.fastener_positions = [
-            Vector(-12.5, 12),
+            Vector(-12, 2),
             Vector(22, 62),
-            Vector(52, 68),
-            Vector(92, 7),
-            Vector(43, 10),
+            Vector(-12, 50),
+            Vector(70, 65),
+            Vector(86, 7),
+            Vector(36, 6),
         ]
 
         xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 5
