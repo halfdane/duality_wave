@@ -47,8 +47,3 @@ tasks:
     desc: Export an M2 heat-set insert pilot-hole calibration coupon.
     cmds:
       - python insert_coupon.py
-
-  xiaofit:
-    desc: Build the XIAO fit prototype (xiao_fit.py) and export STLs.
-    cmds:
-      - python xiao_fit.py

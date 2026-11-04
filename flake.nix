@@ -62,7 +62,7 @@
               echo ""
               echo "Viewer (browser, works in this VM):  task viewer   -> http://127.0.0.1:3939"
               echo "Then build the case:                 task build"
-              echo "Variants:                            task snapfit | task xiaofit"
+              echo "Variants:                            task snapfit"
             else
               echo "uv sync FAILED — see error above."
             fi
