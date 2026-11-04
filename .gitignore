@@ -8,3 +8,6 @@
 __pycache__
 # Render meshes
 /build/
+
+# Personal notes
+/REVIEW.md
