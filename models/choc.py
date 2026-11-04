@@ -4,7 +4,6 @@ if __name__ == "__main__":
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dataclasses import dataclass
-from pathlib import Path
 from build123d import *
 from models.model_types import RectDimensions, RoundDimensions, PosAndDims
 from models.switch import Switch
@@ -79,6 +78,10 @@ class Choc(Switch):
 
     clamp_clearance_z: float = BottomHousingDimensions.d.Z - ClampDimensions.d.Z
 
+    # keycap stand-in for the preview: total height and how far it reaches down over the stem
+    cap_model_z: float = 4.5
+    cap_model_overlap: float = 2.28
+
     def __init__(self, show_model=False):
         with BuildPart() as self.model:
             with BuildPart() as main_housing_base:
@@ -109,15 +112,11 @@ class Choc(Switch):
                 with Locations((0, -(self.stem.d.Y+self.stem.ext_d.Y)/2, self.stem.d.Z / 2)):
                     Box(self.stem.ext_d.X, self.stem.ext_d.Y, self.stem.d.Z)
 
+            # simple stand-in for a keycap, same footprint and height as a Hattara cap
             with BuildPart() as cap_part:
-                cap = import_step(Path(__file__).with_name("hattara.step")).rotate(Axis.X, -90).rotate(Axis.Y, 180)
-                cap_bounds = cap.bounding_box()
-                add(cap.translate((
-                    -(cap_bounds.min.X + cap_bounds.max.X) / 2,
-                    -(cap_bounds.min.Y + cap_bounds.max.Y) / 2,
-                    self.base.d.Z + self.upper_housing.d.Z + self.stem.d.Z - cap_bounds.min.Z - 2.28,
-                )))
-            del cap, cap_bounds
+                with Locations((0, 0, self.base.d.Z + self.upper_housing.d.Z + self.stem.d.Z - self.cap_model_overlap)):
+                    Box(self.cap.d.X, self.cap.d.Y, self.cap_model_z, align=(Align.CENTER, Align.CENTER, Align.MIN))
+                fillet(cap_part.edges().filter_by(Axis.Z, reverse=True).group_by(Axis.Z)[-1], radius=1.0)
 
         if show_model:
             from ocp_vscode import show_all
