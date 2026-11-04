@@ -211,17 +211,53 @@ def pocket_coupon(
     return engrave(coupon.part, plate_z, labels, size=1.8)
 
 
-def arrange(parts: dict[str, Shape], max_width: float = 240.0, gap: float = 6.0) -> dict[str, Shape]:
-    """Lay the parts out in rows on one print bed."""
-    x = y = row_height = 0.0
+def arrange(parts: dict[str, Shape], max_width: float = 172.0, gap: float = 6.0) -> dict[str, Shape]:
+    """Pack the parts onto one print bed, turning a part by 90 degrees where that helps.
+
+    Several simple packing orders are tried and the lowest layout wins. The default width leaves
+    room on a 180 mm bed. A part wider than max_width gets a spot above the rest.
+    """
+    sizes = {name: part.bounding_box().size for name, part in parts.items()}
+    orders = [
+        sorted(parts, key=lambda n: -sizes[n].X * sizes[n].Y),
+        sorted(parts, key=lambda n: -max(sizes[n].X, sizes[n].Y)),
+        sorted(parts, key=lambda n: -min(sizes[n].X, sizes[n].Y)),
+    ]
+    scores = [
+        lambda x, y, depth, height: (max(height, y + depth), y + depth, x),
+        lambda x, y, depth, height: (y, x),
+    ]
+
+    def pack(order, score):
+        taken: list[tuple[float, float, float, float]] = []
+        layout = {}
+        for name in order:
+            height = max((box[3] for box in taken), default=0.0)
+            best = None
+            for angle in (0, 90):
+                width, depth = (sizes[name].X, sizes[name].Y) if angle == 0 else (sizes[name].Y, sizes[name].X)
+                for y in sorted({0.0, *(other[3] + gap for other in taken)}):
+                    for x in sorted({0.0, *(other[2] + gap for other in taken)}):
+                        if x + width > max_width and x > 0:
+                            continue
+                        if any(x < o[2] + gap and o[0] < x + width + gap and y < o[3] + gap and o[1] < y + depth + gap for o in taken):
+                            continue
+                        candidate = (score(x, y, depth, height), angle, x, y, width, depth)
+                        if best is None or candidate[0] < best[0]:
+                            best = candidate
+            if best is None:
+                best = (None, 0, 0.0, height + gap if taken else 0.0, sizes[name].X, sizes[name].Y)
+            _, angle, x, y, width, depth = best
+            layout[name] = (angle, x, y)
+            taken.append((x, y, x + width, y + depth))
+        return max(box[3] for box in taken), max(box[2] for box in taken), layout
+
+    _, _, layout = min((pack(order, score) for order in orders for score in scores), key=lambda r: r[:2])
     placed = {}
-    for name, part in parts.items():
+    for name, (angle, x, y) in layout.items():
+        part = parts[name].rotate(Axis.Z, angle) if angle else parts[name]
         box = part.bounding_box()
-        if x > 0 and x + box.size.X > max_width:
-            x, y, row_height = 0.0, y + row_height + gap, 0.0
         placed[name] = part.translate((x - box.min.X, y - box.min.Y, -box.min.Z))
-        x += box.size.X + gap
-        row_height = max(row_height, box.size.Y)
     return placed
 
 

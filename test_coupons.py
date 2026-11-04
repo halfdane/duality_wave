@@ -3,7 +3,7 @@ import unittest
 
 from build123d import Vector
 
-from coupons import create_coupons, plate_fit_coupon, pocket_coupon, round_hole_coupon, switch_plate_coupon
+from coupons import create_coupon_parts, create_coupons, plate_fit_coupon, pocket_coupon, round_hole_coupon, switch_plate_coupon
 from duality_wave import CaseDimensions
 from models.choc import Choc
 from models.xiao import Xiao
@@ -93,12 +93,22 @@ class CouponTests(unittest.TestCase):
         self.assertFalse(coupon.is_inside(Vector(x, y, top - 1.0)))
         self.assertTrue(coupon.is_inside(Vector(x, y, top - 2.5)))
 
-    def test_all_coupons_fit_on_the_print_bed(self):
+    def test_all_coupons_fit_on_a_small_print_bed(self):
         coupons = create_coupons(self.switch, self.dims)
         self.assertEqual(len(coupons.solids()), 9)
         size = coupons.bounding_box().size
-        self.assertLessEqual(max(size.X, size.Y), 256)
+        self.assertLessEqual(max(size.X, size.Y), 180)
         self.assertAlmostEqual(coupons.bounding_box().min.Z, 0, places=6)
+
+    def test_coupons_do_not_touch_each_other(self):
+        boxes = [part.bounding_box() for part in create_coupon_parts(self.switch, self.dims).values()]
+        for index, a in enumerate(boxes):
+            for b in boxes[index + 1:]:
+                separated = (
+                    a.max.X + 5 <= b.min.X or b.max.X + 5 <= a.min.X
+                    or a.max.Y + 5 <= b.min.Y or b.max.Y + 5 <= a.min.Y
+                )
+                self.assertTrue(separated)
 
 
 if __name__ == "__main__":
