@@ -7,7 +7,7 @@ settings as the final case, then copy the winning values into the PrintProfile.
   A  switch plate     switch cutout size, with and without corner relief
   B  plate in cavity  plate clearance (try each plate both ways round)
   C  round holes      magnet recess size and heat-set insert pilot size
-  D  pockets          the battery pocket
+  D  pockets          XIAO pocket clearance and the battery pocket
 
 Run `task coupons` to export coupons.stl and to preview the coupons in the OCP viewer.
 """
@@ -17,10 +17,11 @@ from build123d import *
 from build123d import Shape
 
 from models.choc import Choc
-from models.features import magnet_recess_cutter, switch_cutter
+from models.features import magnet_recess_cutter, switch_cutter, xiao_pocket_cutter
 from models.model_types import RectDimensions, RoundDimensions
 from models.print_profile import PrintProfile
 from models.switch import Switch
+from models.xiao import Xiao
 
 LABEL_DEPTH = 0.4
 LABEL_SIZE = 2.2
@@ -165,27 +166,49 @@ def round_hole_coupon(
 
 def pocket_coupon(
     profile: PrintProfile,
+    xiao_z: float,
+    plate_z: float,
     battery: RectDimensions,
-    depth: float = 2.0,
-    thickness: float = 3.0,
+    xiao_clearances: tuple[float, ...] = (0.0, 0.05, 0.10, 0.15),
+    battery_depth: float = 2.0,
     margin: float = 3.0,
 ) -> Part:
-    """D: the battery pocket at the profile clearance, open upwards."""
-    pocket_x = battery.X + 2 * profile.battery_clearance
-    pocket_y = battery.Y + 2 * profile.battery_clearance
-    width = pocket_x + 2 * margin
-    height = pocket_y + 2 * margin + 4
+    """D: XIAO pockets with different clearances in a keyplate-like plate, plus the battery pocket.
 
+    Everything opens upwards. The XIAO pockets have the window and the pocket of the keyplate.
+    """
+    columns = 2
+    rows = -(-len(xiao_clearances) // columns)
+    pitch_x = Xiao.dims.d.X + 2 * max(xiao_clearances) + 4
+    pitch_y = Xiao.dims.d.Y + 2 * max(xiao_clearances) + 5
+    battery_x = battery.X + 2 * profile.battery_clearance
+    battery_y = battery.Y + 2 * profile.battery_clearance
+    width = columns * pitch_x + battery_x + 3 * margin
+    height = max(rows * pitch_y, battery_y + 8) + 2 * margin
+
+    labels = []
     with BuildPart() as coupon:
         with BuildSketch():
             with Locations((width / 2, height / 2)):
                 RectangleRounded(width, height, CORNER_RADIUS)
-        extrude(amount=thickness)
-        with BuildSketch(Plane.XY.offset(thickness)):
-            with Locations((width / 2, margin + pocket_y / 2)):
-                Rectangle(pocket_x, pocket_y)
-        extrude(amount=-depth, mode=Mode.SUBTRACT)
-    return engrave(coupon.part, thickness, [("battery", width / 2, height - margin / 2 - 0.5)], size=1.8)
+        extrude(amount=plate_z)
+
+        for index, clearance in enumerate(xiao_clearances):
+            row, column = divmod(index, columns)
+            x = margin + pitch_x * (column + 0.5)
+            y = margin + pitch_y * (row + 0.5)
+            # the cutter is modelled like the keyplate, so y is mirrored by the flip
+            cutter = xiao_pocket_cutter(replace(profile, xiao_clearance=clearance), Vector(x, -y, xiao_z), plate_z)
+            add(to_bed(cutter, 0), mode=Mode.SUBTRACT)
+            labels.append((f"{clearance:.2f}", x, y - pitch_y / 2 + 1.5))
+
+        battery_center = (width - margin - battery_x / 2, height / 2)
+        with BuildSketch(Plane.XY.offset(plate_z)):
+            with Locations(battery_center):
+                Rectangle(battery_x, battery_y)
+        extrude(amount=-battery_depth, mode=Mode.SUBTRACT)
+        labels.append(("battery", battery_center[0], battery_center[1] - battery_y / 2 - 3))
+    return engrave(coupon.part, plate_z, labels, size=1.8)
 
 
 def arrange(parts: dict[str, Shape], max_width: float = 240.0, gap: float = 6.0) -> dict[str, Shape]:
@@ -211,7 +234,7 @@ def create_coupon_parts(switch: Switch, dims, profile: PrintProfile | None = Non
         "B cavity": cavity,
         **{f"B plate {index + 1}": plate for index, plate in enumerate(plates)},
         "C round holes": round_hole_coupon(profile, dims.magnet_d, dims.above_z, dims.heat_insert_z),
-        "D pockets": pocket_coupon(profile, dims.battery_pd.d),
+        "D pockets": pocket_coupon(profile, dims.xiao_position.Z, dims.keyplate_z, dims.battery_pd.d),
     }
     return arrange(parts)
 

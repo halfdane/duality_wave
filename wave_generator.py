@@ -15,7 +15,7 @@ from models.rubber_bumper import RubberBumper, BumperDimensions
 from models.heat_set_insert import HeatSetInsert
 from models.screw import LowProfileScrew
 from models.model_types import WaveDimensions
-from models.features import switch_cutter, magnet_recess_cutter
+from models.features import switch_cutter, magnet_recess_cutter, xiao_pocket_cutter
 
 from ocp_vscode import *
 
@@ -161,12 +161,9 @@ class WaveCase:
             add(key_holes, mode=Mode.SUBTRACT)
 
             print("  xiao hole...")
-            with BuildSketch(Plane((self.dims.xiao_position.X, self.dims.xiao_position.Y, 0))) as xiao_hole:
-                Rectangle(Xiao.dims.d.X - 1.5, Xiao.dims.d.Y - 4)
-            extrude(amount=self.dims.xiao_position.Z, mode=Mode.SUBTRACT)
-            with BuildSketch(Plane(self.dims.xiao_position)) as xiao_cut:
-                Rectangle(Xiao.dims.d.X + 2*self.dims.clearance, Xiao.dims.d.Y + 2*self.dims.clearance)
-            extrude(amount=-self.dims.below_z, mode=Mode.SUBTRACT)
+            xiao_pocket = xiao_pocket_cutter(self.dims.print_profile, self.dims.xiao_position, plate_z=self.dims.below_z)
+            debug_content["xiao_pocket"] = xiao_pocket if self.debug else None
+            add(xiao_pocket, mode=Mode.SUBTRACT)
 
             print("  connector cut...")
             connector_width: float = 2

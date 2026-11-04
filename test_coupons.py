@@ -6,6 +6,7 @@ from build123d import Vector
 from coupons import create_coupons, plate_fit_coupon, pocket_coupon, round_hole_coupon, switch_plate_coupon
 from duality_wave import CaseDimensions
 from models.choc import Choc
+from models.xiao import Xiao
 from models.keys import ErgoKeys, get_points
 from models.outline import Outline
 
@@ -64,8 +65,33 @@ class CouponTests(unittest.TestCase):
         self.assertTrue(coupon.is_inside(Vector(x, pilot_y, block_z - pilot_depth - 0.1)))
         self.assertTrue(coupon.is_inside(Vector(x + 1.6, pilot_y, block_z - 1.0)))
 
-    def test_pocket_coupon_is_a_single_valid_part(self):
-        self.assertSingleSolid(pocket_coupon(self.profile, self.dims.battery_pd.d))
+    def test_xiao_pockets_have_a_window_and_a_pocket_of_the_requested_size(self):
+        clearances = (0.0, 0.10)
+        xiao_z, plate_z = self.dims.xiao_position.Z, self.dims.keyplate_z
+        coupon = pocket_coupon(self.profile, xiao_z, plate_z, self.dims.battery_pd.d, xiao_clearances=clearances)
+        self.assertSingleSolid(coupon)
+        pitch_x = Xiao.dims.d.X + 2 * max(clearances) + 4
+        pitch_y = Xiao.dims.d.Y + 2 * max(clearances) + 5
+        for column, clearance in enumerate(clearances):
+            x, y = 3 + pitch_x * (column + 0.5), 3 + pitch_y * 0.5
+            half_x, half_y = Xiao.dims.d.X / 2 + clearance, Xiao.dims.d.Y / 2 + clearance
+            with self.subTest(clearance=clearance):
+                # the window at the bed side is smaller than the board, the pocket above it fits the board
+                self.assertFalse(coupon.is_inside(Vector(x, y, 0.5)))
+                self.assertTrue(coupon.is_inside(Vector(x + Xiao.dims.d.X / 2 - 0.5, y, 0.5)))
+                self.assertFalse(coupon.is_inside(Vector(x + half_x - 0.02, y + half_y - 0.5, plate_z - 0.5)))
+                self.assertTrue(coupon.is_inside(Vector(x + half_x + 0.02, y, plate_z - 0.5)))
+                self.assertTrue(coupon.is_inside(Vector(x, y + half_y + 0.02, plate_z - 0.5)))
+
+    def test_battery_pocket_is_open_upwards(self):
+        battery = self.dims.battery_pd.d
+        coupon = pocket_coupon(self.profile, self.dims.xiao_position.Z, self.dims.keyplate_z, battery, xiao_clearances=(0.05,), battery_depth=2.0)
+        top = self.dims.keyplate_z
+        box = coupon.bounding_box()
+        y = box.size.Y / 2
+        x = box.size.X - 3 - (battery.X + 2 * self.profile.battery_clearance) / 2
+        self.assertFalse(coupon.is_inside(Vector(x, y, top - 1.0)))
+        self.assertTrue(coupon.is_inside(Vector(x, y, top - 2.5)))
 
     def test_all_coupons_fit_on_the_print_bed(self):
         coupons = create_coupons(self.switch, self.dims)

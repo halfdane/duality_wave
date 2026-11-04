@@ -3,6 +3,7 @@ from build123d import *
 from models.model_types import RoundDimensions
 from models.print_profile import PrintProfile
 from models.switch import Switch
+from models.xiao import Xiao
 
 
 def switch_cutter(switch: Switch, profile: PrintProfile, placements: list[Location], plate_z: float) -> Part:
@@ -33,6 +34,22 @@ def switch_cutter(switch: Switch, profile: PrintProfile, placements: list[Locati
             with BuildSketch():
                 offset(holes.sketch, profile.mouth_chamfer)
             extrude(amount=-profile.mouth_chamfer, taper=45)
+    return cutter.part
+
+
+def xiao_pocket_cutter(profile: PrintProfile, position: Vector, plate_z: float) -> Part:
+    """Cutter for the XIAO in a keyplate whose switch-side face is at z=0.
+
+    A window through the top of the plate lets the board's components show, and the full-size
+    pocket below it starts at position.Z.
+    """
+    with BuildPart() as cutter:
+        with BuildSketch(Plane((position.X, position.Y, 0))):
+            Rectangle(Xiao.dims.d.X - 1.5, Xiao.dims.d.Y - 4)
+        extrude(amount=position.Z)
+        with BuildSketch(Plane(position)):
+            Rectangle(Xiao.dims.d.X + 2 * profile.xiao_clearance, Xiao.dims.d.Y + 2 * profile.xiao_clearance)
+        extrude(amount=-plate_z)
     return cutter.part
 
 

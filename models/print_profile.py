@@ -16,6 +16,8 @@ class PrintProfile:
     plate_clearance: float = 0.02
     # switch cutouts in the keyplate
     switch_clearance: float = 0.01
+    # XIAO pocket in the keyplate
+    xiao_clearance: float = 0.02
     magnet_clearance: float = 0.02
     battery_clearance: float = 0.02
 
