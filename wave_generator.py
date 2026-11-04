@@ -12,7 +12,6 @@ from models.symbol import Symbol
 from models.space_invader import SpaceInvader
 from models.keys import ErgoKeys, Point, get_points
 from models.rubber_bumper import RubberBumper, BumperDimensions
-from models.pin import Pin
 from models.heat_set_insert import HeatSetInsert
 from models.screw import LowProfileScrew
 from models.model_types import WaveDimensions
@@ -33,7 +32,6 @@ class WaveCase:
         self.bumper = RubberBumper()
         self.insert = HeatSetInsert(self.dims.print_profile.insert_pilot_radius)
         self.screw = LowProfileScrew()
-        self.pin = Pin()
 
         self.debug_content: dict = {}
 
@@ -58,7 +56,6 @@ class WaveCase:
             accessories_left["xiao"] = self.xiao.model
             accessories_left["bumpers"] = self.bumpers
             accessories_left["power_switch"] = self.powerswitch
-            accessories_left["pins"] = self.pins
             accessories_left["battery"] = self.battery
             accessories_left["magnets"] = self.magnets
             accessories_left["weights"] = self.weights if hasattr(self, "weights") else None
@@ -111,7 +108,6 @@ class WaveCase:
                 accessories_right["xiao_right"] = xiao_right.model
                 accessories_right["bumpers_right"] = mirror(self.bumpers, about=right_mirror_plane)
                 accessories_right["power_switch_right"] = mirror(self.powerswitch, about=right_mirror_plane)
-                accessories_right["pins_right"] = mirror(self.pins, about=right_mirror_plane)
                 accessories_right["battery_right"] = mirror(self.battery, about=right_mirror_plane)
                 accessories_right["magnets_right"] = mirror(self.magnets, about=right_mirror_plane)
                 accessories_right["weights_right"] = mirror(self.weights, about=right_mirror_plane) if hasattr(self, "weights") else None
@@ -246,20 +242,6 @@ class WaveCase:
             extrude(amount=-PowerSwitch.dims.d.Z, mode=Mode.SUBTRACT)
             debug_content["powerswitch_cut"] = powerswitch_cut if self.debug else None
 
-            print("  pin extrusion...")
-            with BuildSketch(Plane.XY.offset(-self.dims.keyplate_z)) as pin_space_sketch:
-                with Locations((self.dims.pin_plane.origin.X, 
-                                self.outline.top_left.Y - 1.5*self.dims.wall_thickness - 0.5)):
-                    Rectangle(self.dims.wall_thickness*2 + 0.5, self.dims.wall_thickness*3 + 0.5)
-            pin_space =extrude(amount=self.dims.keyplate_z, mode=Mode.SUBTRACT)
-            debug_content["pin_space"] = pin_space if self.debug else None
-
-            print("  pin holes...")
-            with BuildSketch(self.dims.pin_plane) as pin_holes:
-                Circle(self.dims.pin_radius)
-            debug_content["pin_holes"] = pin_holes if self.debug else None
-            extrude(amount=self.pin.dims.length, mode=Mode.SUBTRACT)
-
 
         return keyplate.part
     
@@ -331,12 +313,6 @@ class WaveCase:
                     Circle(self.screw.mount.clearance.radius)
             extrude(amount=self.screw.dims.shaft.Z + self.screw.dims.head.Z + 0.1, mode=Mode.SUBTRACT)
             debug_content["fastener holes"] = fastener_holes if self.debug else None
-
-            print("  pin holes...")
-            with BuildSketch(self.dims.pin_plane) as pin_holes:
-                Circle(self.dims.pin_radius)
-            debug_content["pin_holes"] = pin_holes if self.debug else None
-            extrude(amount=self.pin.dims.length, mode=Mode.SUBTRACT)
 
             print("  battery recess...")
             battery_pd = self.dims.battery_pd
@@ -430,21 +406,6 @@ class WaveCase:
             debug_content["powerswitch_lever_cut"] = powerswitch_lever_cut if self.debug else None
             chamfer(powerswitch_lever_cut.edges().group_by(Axis.Z)[0], length=1.5, length2=0.5)
 
-            print("  pin extrusion...")
-            with BuildSketch(Plane.XY.offset(-self.dims.below_z + self.dims.bottom_plate_z)) as pin_space_sketch:
-                with Locations((self.dims.pin_x, 
-                                self.outline.top_left.Y - self.dims.wall_thickness*2 - 0.5)):
-                    Rectangle(self.dims.wall_thickness*2, self.dims.wall_thickness*2)
-            pin_space =extrude(amount=self.dims.keyplate_z, taper=2)
-            fillet(pin_space.edges(), radius=0.3 - self.dims.clearance)
-            debug_content["pin_space"] = pin_space if self.debug else None
-
-            print("  pin holes...")
-            with BuildSketch(self.dims.pin_plane) as pin_holes:
-                Circle(self.dims.pin_radius)
-            debug_content["pin_holes"] = pin_holes if self.debug else None
-            extrude(amount=self.pin.dims.length, mode=Mode.SUBTRACT)
-
             print("  space invader...")
             if self.dims.space_invader is not None:
                 with BuildSketch(Plane.XY.offset(-self.dims.below_z)) as invader_sketch:
@@ -500,10 +461,6 @@ class WaveCase:
             .rotate(Axis.Y, self.dims.powerswitch_rotation.Y )\
             .rotate(Axis.Z, self.dims.powerswitch_rotation.Z )\
             .translate(self.dims.powerswitch_position)
-
-        with BuildPart(self.dims.pin_plane) as self.pins:
-            add(self.pin.model)
-        self.pins = self.pins.part
 
         with BuildPart() as inserts:
             with Locations([

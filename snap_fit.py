@@ -16,7 +16,6 @@ from models.symbol import Symbol
 from models.space_invader import SpaceInvader
 from models.keys import ErgoKeys, Point, get_points
 from models.rubber_bumper import RubberBumper, BumperDimensions
-from models.pin import Pin
 from models.model_types import RoundDimensions, PosAndDims, RectDimensions
 
 from ocp_vscode import *
@@ -61,13 +60,6 @@ class CaseDimensions(WaveDimensions):
                 xiao_pos_y - 1, 
                 -(self.below_z - 0.75*PowerSwitch.lever.d.Z))
         
-        self.pin_radius: float = Pin.dims.radius + self.clearance
-        self.pin_x: float = outline.top_right.X/2
-        self.pin_plane: Plane = Plane(
-            (self.pin_x, outline.top_right.Y, -self.keyplate_z), 
-            z_dir=-Axis.Y.direction, x_dir=Axis.X.direction)
-        self.pin_location: Vector = Vector(0, 0)
-
         battery_d: RectDimensions = RectDimensions(31, 17, 6)
         self.battery_pd = PosAndDims(
             d=battery_d,

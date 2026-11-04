@@ -37,10 +37,6 @@ class WaveDimensions:
     powerswitch_position: Vector
     powerswitch_rotation: Vector
 
-    pin_radius: float
-    pin_plane: Plane
-    pin_locations: list[Vector]
-
     battery_pd: PosAndDims
 
     magnet_d: RoundDimensions
