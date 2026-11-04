@@ -27,7 +27,7 @@ class PrintProfile:
 
     # chamfers that counter elephant foot on the side of a part that faces the print bed
     plate_bed_chamfer: float = 0.25
-    # chamfer on the edge of a plate that enters the keywell cavity first
-    plate_lead_chamfer: float = 0.1
+    # chamfer on the plate edges that do not face the print bed
+    plate_edge_chamfer: float = 0.1
     # chamfer where a hole opens towards the print bed (switch cutouts, magnet recesses)
     mouth_chamfer: float = 0.2

@@ -140,9 +140,9 @@ class WaveCase:
             extrude(amount=-self.dims.keyplate_z)
             debug_content["base"] = base if self.debug else None
 
-            # the face at z=0 is printed on the bed and enters the keywell cavity first
+            # the face at z=0 is printed on the bed
             plate_faces = faces().filter_by(Axis.Z).sort_by(Axis.Z)
-            chamfer(objects=plate_faces[0].edges(), length=self.dims.print_profile.plate_lead_chamfer)
+            chamfer(objects=plate_faces[0].edges(), length=self.dims.print_profile.plate_edge_chamfer)
             chamfer(objects=plate_faces[-1].edges(), length=self.dims.print_profile.plate_bed_chamfer)
 
             debug_content["base edges"] = base.edges() if self.debug else None
@@ -377,10 +377,10 @@ class WaveCase:
             with BuildSketch(Plane.XY.offset(-self.dims.below_z)) as base:
                 add(outline)
             extrude(amount=self.dims.bottom_plate_z)
-            # the outer face at -below_z is printed on the bed; the other face enters the keywell cavity first
+            # the outer face at -below_z is printed on the bed
             plate_faces = faces().filter_by(Axis.Z).sort_by(Axis.Z)
             chamfer(objects=plate_faces[0].edges(), length=self.dims.print_profile.plate_bed_chamfer)
-            chamfer(objects=plate_faces[-1].edges(), length=self.dims.print_profile.plate_lead_chamfer)
+            chamfer(objects=plate_faces[-1].edges(), length=self.dims.print_profile.plate_edge_chamfer)
 
             print("  fastener holes...")
             bottom_plane = Plane.XY.offset(-self.dims.below_z)
