@@ -504,7 +504,7 @@ class WaveCase:
 
         with BuildPart() as inserts:
             with Locations([
-                Vector(position.X, position.Y, self.dims.heat_insert_z - self.insert.dims.d.Z/2 - self.dims.clearance)
+                Vector(position.X, position.Y, self.insert.dims.d.Z/2)  # pressed in flush with the face at z=0
                 for position in self.dims.fastener_positions
             ]):
                 add(self.insert.model)
