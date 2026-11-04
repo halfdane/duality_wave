@@ -32,7 +32,7 @@ def width_at(part, z):
 
 class FeatureTests(unittest.TestCase):
     def test_switch_cutter_widens_at_the_bed_side_mouth(self):
-        profile = PrintProfile()
+        profile = replace(PrintProfile(), switch_corner_relief=0)
         cutter = switch_cutter(Choc(), profile, [Location((0, 0, 0))], plate_z=2.9)
         hole = Choc.below.d.X + 2 * profile.switch_clearance
         self.assertTrue(cutter.is_valid)
@@ -41,12 +41,12 @@ class FeatureTests(unittest.TestCase):
         self.assertAlmostEqual(width_at(cutter, -2.0), hole + 1.0, places=3)
 
     def test_switch_cutter_without_mouth_chamfer_is_a_plain_hole(self):
-        profile = replace(PrintProfile(), mouth_chamfer=0)
+        profile = replace(PrintProfile(), mouth_chamfer=0, switch_corner_relief=0)
         cutter = switch_cutter(Choc(), profile, [Location((0, 0, 0))], plate_z=2.9)
         self.assertAlmostEqual(width_at(cutter, -0.001), Choc.below.d.X + 2 * profile.switch_clearance, places=3)
 
     def test_switch_corner_relief_cuts_into_the_corners(self):
-        profile = replace(PrintProfile(), mouth_chamfer=0)
+        profile = replace(PrintProfile(), mouth_chamfer=0, switch_corner_relief=0)
         plain = switch_cutter(Choc(), profile, [Location((0, 0, 0))], plate_z=2.9)
         relieved = switch_cutter(Choc(), replace(profile, switch_corner_relief=0.3), [Location((0, 0, 0))], plate_z=2.9)
         self.assertGreater(relieved.volume, plain.volume)

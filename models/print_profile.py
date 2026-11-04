@@ -23,7 +23,7 @@ class PrintProfile:
     insert_pilot_radius: float = 1.6
 
     # radius of the circles that relieve the corners of the switch cutouts (0 = no relief)
-    switch_corner_relief: float = 0.0
+    switch_corner_relief: float = 0.3
 
     # chamfers that counter elephant foot on the side of a part that faces the print bed
     plate_bed_chamfer: float = 0.25

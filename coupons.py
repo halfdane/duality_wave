@@ -61,7 +61,7 @@ def switch_plate_coupon(
     profile: PrintProfile,
     plate_z: float,
     sizes: tuple[float, ...] = (13.8, 13.9, 14.0, 14.1),
-    reliefs: tuple[float, ...] = (0.0, 0.3),
+    reliefs: tuple[float, ...] = (0.0, 0.2, 0.4),
     pitch: float = 18.0,
     margin: float = 8.0,
 ) -> Part:
