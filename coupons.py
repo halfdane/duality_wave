@@ -9,7 +9,7 @@ settings as the final case, then copy the winning values into the PrintProfile.
   C  round holes      magnet recess size and heat-set insert pilot size
   D  pockets          weight pocket clearance and the battery pocket
 
-Run `task coupons` to export coupons.stl.
+Run `task coupons` to export coupons.stl and to preview the coupons in the OCP viewer.
 """
 from dataclasses import replace
 
@@ -198,30 +198,49 @@ def pocket_coupon(
     return engrave(coupon.part, thickness, labels, size=1.8)
 
 
-def arrange(parts: list[Shape], max_width: float = 240.0, gap: float = 6.0) -> Compound:
+def arrange(parts: dict[str, Shape], max_width: float = 240.0, gap: float = 6.0) -> dict[str, Shape]:
     """Lay the parts out in rows on one print bed."""
     x = y = row_height = 0.0
-    placed = []
-    for part in parts:
+    placed = {}
+    for name, part in parts.items():
         box = part.bounding_box()
         if x > 0 and x + box.size.X > max_width:
             x, y, row_height = 0.0, y + row_height + gap, 0.0
-        placed.append(part.translate((x - box.min.X, y - box.min.Y, -box.min.Z)))
+        placed[name] = part.translate((x - box.min.X, y - box.min.Y, -box.min.Z))
         x += box.size.X + gap
         row_height = max(row_height, box.size.Y)
-    return Compound(placed)
+    return placed
+
+
+def create_coupon_parts(switch: Switch, dims, profile: PrintProfile | None = None) -> dict[str, Shape]:
+    """All coupon parts by name, arranged on one print bed."""
+    profile = profile or dims.print_profile
+    cavity, plates = plate_fit_coupon(profile, dims.keyplate_z, dims.wall_thickness)
+    parts = {
+        "A switch plate": switch_plate_coupon(switch, profile, dims.keyplate_z),
+        "B cavity": cavity,
+        **{f"B plate {index + 1}": plate for index, plate in enumerate(plates)},
+        "C round holes": round_hole_coupon(profile, dims.magnet_d, dims.above_z, dims.heat_insert_z),
+        "D pockets": pocket_coupon(profile, dims.weight_d, dims.battery_pd.d),
+    }
+    return arrange(parts)
 
 
 def create_coupons(switch: Switch, dims, profile: PrintProfile | None = None) -> Compound:
-    profile = profile or dims.print_profile
-    cavity, plates = plate_fit_coupon(profile, dims.keyplate_z, dims.wall_thickness)
-    return arrange([
-        switch_plate_coupon(switch, profile, dims.keyplate_z),
-        cavity,
-        *plates,
-        round_hole_coupon(profile, dims.magnet_d, dims.above_z, dims.heat_insert_z),
-        pocket_coupon(profile, dims.weight_d, dims.battery_pd.d),
-    ])
+    return Compound(list(create_coupon_parts(switch, dims, profile).values()))
+
+
+def preview(parts: dict[str, Shape]) -> None:
+    """Show the coupons in the OCP viewer (`task viewer`). Does nothing if no viewer is running."""
+    try:
+        from ocp_vscode import Camera, set_defaults, set_port, show_clear, show_object
+
+        set_port(3939)
+        show_clear()
+        set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
+        show_object(parts, name="coupons")
+    except Exception as error:
+        print(f"No preview: could not reach the OCP viewer ({error}). Start it with `task viewer`.")
 
 
 if __name__ == "__main__":
@@ -237,7 +256,9 @@ if __name__ == "__main__":
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
 
-    coupons = create_coupons(switch, dims)
+    parts = create_coupon_parts(switch, dims)
+    coupons = Compound(list(parts.values()))
     size = coupons.bounding_box().size
     print(f"coupons.stl: {len(coupons.solids())} parts, {size.X:.0f} x {size.Y:.0f} x {size.Z:.1f} mm")
     export_stl(coupons, "coupons.stl")
+    preview(parts)

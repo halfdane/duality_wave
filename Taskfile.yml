@@ -49,6 +49,7 @@ tasks:
       Writes coupons.stl with a switch plate, a plate-in-cavity fit test, round
       holes for magnets and heat-set inserts, and weight/battery pockets. Print it
       with the settings of the final case, then update the PrintProfile.
+      With `task viewer` running, the coupons also show up in the browser.
     cmds:
       - python coupons.py
 
