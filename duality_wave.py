@@ -78,11 +78,6 @@ class CaseDimensions(WaveDimensions):
 
         )
 
-        self.weight_d: Vector = Vector(22.9, 12.0, 4.4)
-        self.weight_positions: list[Vector] = (
-            outline.top_right + (-self.wall_thickness - self.clearance - self.weight_d.X/2, -self.wall_thickness - self.clearance - self.weight_d.Y/2, self.magnet_positions[0].Z - self.magnet_d.Z),
-        )
-
         bumpers_base_offset = 2.5
         bumpers_radius = BumperDimensions.radius + bumpers_base_offset
         self.bumper_locations = [

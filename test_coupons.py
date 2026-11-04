@@ -65,7 +65,7 @@ class CouponTests(unittest.TestCase):
         self.assertTrue(coupon.is_inside(Vector(x + 1.6, pilot_y, block_z - 1.0)))
 
     def test_pocket_coupon_is_a_single_valid_part(self):
-        self.assertSingleSolid(pocket_coupon(self.profile, self.dims.weight_d, self.dims.battery_pd.d))
+        self.assertSingleSolid(pocket_coupon(self.profile, self.dims.battery_pd.d))
 
     def test_all_coupons_fit_on_the_print_bed(self):
         coupons = create_coupons(self.switch, self.dims)

@@ -7,7 +7,7 @@ settings as the final case, then copy the winning values into the PrintProfile.
   A  switch plate     switch cutout size, with and without corner relief
   B  plate in cavity  plate clearance (try each plate both ways round)
   C  round holes      magnet recess size and heat-set insert pilot size
-  D  pockets          weight pocket clearance and the battery pocket
+  D  pockets          the battery pocket
 
 Run `task coupons` to export coupons.stl and to preview the coupons in the OCP viewer.
 """
@@ -165,37 +165,27 @@ def round_hole_coupon(
 
 def pocket_coupon(
     profile: PrintProfile,
-    weight: Vector,
     battery: RectDimensions,
-    clearances: tuple[float, ...] = (0.05, 0.15, 0.25),
     depth: float = 2.0,
     thickness: float = 3.0,
     margin: float = 3.0,
 ) -> Part:
-    """D: pockets open upwards, one per weight clearance plus the battery pocket at the profile clearance."""
-    row = weight.Y + 2 * margin + 1.5
-    width = max(weight.X, battery.X) + 2 * margin + 1
-    battery_height = battery.Y + 2 * margin
-    height = len(clearances) * row + battery_height
+    """D: the battery pocket at the profile clearance, open upwards."""
+    pocket_x = battery.X + 2 * profile.battery_clearance
+    pocket_y = battery.Y + 2 * profile.battery_clearance
+    width = pocket_x + 2 * margin
+    height = pocket_y + 2 * margin + 4
 
-    pockets = [(weight.X + 2 * c, weight.Y + 2 * c, f"{c:.2f}") for c in clearances]
-    pockets.append((battery.X + 2 * profile.battery_clearance, battery.Y + 2 * profile.battery_clearance, "battery"))
-
-    labels = []
     with BuildPart() as coupon:
         with BuildSketch():
             with Locations((width / 2, height / 2)):
                 RectangleRounded(width, height, CORNER_RADIUS)
         extrude(amount=thickness)
-        y = margin
-        for pocket_x, pocket_y, label in pockets:
-            labels.append((label, width / 2, y + pocket_y + 1.2))
-            with BuildSketch(Plane.XY.offset(thickness)):
-                with Locations((width / 2, y + pocket_y / 2)):
-                    Rectangle(pocket_x, pocket_y)
-            extrude(amount=-depth, mode=Mode.SUBTRACT)
-            y += pocket_y + margin + 1.5
-    return engrave(coupon.part, thickness, labels, size=1.8)
+        with BuildSketch(Plane.XY.offset(thickness)):
+            with Locations((width / 2, margin + pocket_y / 2)):
+                Rectangle(pocket_x, pocket_y)
+        extrude(amount=-depth, mode=Mode.SUBTRACT)
+    return engrave(coupon.part, thickness, [("battery", width / 2, height - margin / 2 - 0.5)], size=1.8)
 
 
 def arrange(parts: dict[str, Shape], max_width: float = 240.0, gap: float = 6.0) -> dict[str, Shape]:
@@ -221,7 +211,7 @@ def create_coupon_parts(switch: Switch, dims, profile: PrintProfile | None = Non
         "B cavity": cavity,
         **{f"B plate {index + 1}": plate for index, plate in enumerate(plates)},
         "C round holes": round_hole_coupon(profile, dims.magnet_d, dims.above_z, dims.heat_insert_z),
-        "D pockets": pocket_coupon(profile, dims.weight_d, dims.battery_pd.d),
+        "D pockets": pocket_coupon(profile, dims.battery_pd.d),
     }
     return arrange(parts)
 

@@ -58,7 +58,6 @@ class WaveCase:
             accessories_left["power_switch"] = self.powerswitch
             accessories_left["battery"] = self.battery
             accessories_left["magnets"] = self.magnets
-            accessories_left["weights"] = self.weights if hasattr(self, "weights") else None
             accessories_left["inserts"] = self.inserts
             accessories_left["screws"] = self.screws
             push_object(accessories_left, name="accessories_left")
@@ -110,7 +109,6 @@ class WaveCase:
                 accessories_right["power_switch_right"] = mirror(self.powerswitch, about=right_mirror_plane)
                 accessories_right["battery_right"] = mirror(self.battery, about=right_mirror_plane)
                 accessories_right["magnets_right"] = mirror(self.magnets, about=right_mirror_plane)
-                accessories_right["weights_right"] = mirror(self.weights, about=right_mirror_plane) if hasattr(self, "weights") else None
                 accessories_right["inserts_right"] = mirror(self.inserts, about=right_mirror_plane)
                 accessories_right["screws_right"] = mirror(self.screws, about=right_mirror_plane)
                 push_object(accessories_right, name="accessories_right")
@@ -329,14 +327,6 @@ class WaveCase:
                 add(magnet_recesses, mode=Mode.SUBTRACT)
                 debug_content["magnet_recesses"] = magnet_recesses if self.debug else None
 
-            if self.dims.weight_positions:
-                print("  weight recesses...")
-                with BuildSketch(Plane.XY.offset(self.dims.weight_positions[0].Z)) as weight_sketch:
-                    with Locations(self.dims.weight_positions):
-                        Rectangle(self.dims.weight_d.X + 2*self.dims.print_profile.weight_clearance, self.dims.weight_d.Y + 2*self.dims.print_profile.weight_clearance)
-                extrude(amount=-self.dims.above_z - self.dims.weight_d.Z, mode=Mode.SUBTRACT)
-                debug_content["weight_sketch"] = weight_sketch if self.debug else None
-
             print("  symbol...")
             with BuildSketch(Plane.XY.offset(self.dims.above_z)) as symbol_sketch:
                 symbol_height = 20
@@ -490,11 +480,3 @@ class WaveCase:
                         Circle(self.dims.magnet_d.radius)
                 extrude(amount=-self.dims.magnet_d.Z)
             self.magnets = magnets.part
-
-        if self.dims.weight_positions:
-            with BuildPart() as weights:
-                with BuildSketch(Plane.XY.offset(self.dims.weight_positions[0].Z)) as weight_sketch:
-                    with Locations(self.dims.weight_positions):
-                        Rectangle(self.dims.weight_d.X, self.dims.weight_d.Y)
-                extrude(amount=-self.dims.weight_d.Z)
-            self.weights = weights.part

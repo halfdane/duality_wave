@@ -42,9 +42,6 @@ class WaveDimensions:
     magnet_d: RoundDimensions
     magnet_positions: list[Vector]
 
-    weight_d: Vector
-    weight_positions: list[Vector]
-
     bumper_locations: list[Vector]
 
     space_invader: Location = None

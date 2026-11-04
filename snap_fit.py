@@ -73,10 +73,6 @@ class CaseDimensions(WaveDimensions):
             Vector(-3, -11, magnet_z),
         ]
 
-
-        self.weight_d: Vector = Vector()
-        self.weight_positions: list[Vector] = ()
-
         bumpers_base_offset = 2.5
         bumpers_radius = BumperDimensions.radius + bumpers_base_offset
         self.bumper_locations = [

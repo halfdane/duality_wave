@@ -17,7 +17,6 @@ class PrintProfile:
     # switch cutouts in the keyplate
     switch_clearance: float = 0.01
     magnet_clearance: float = 0.02
-    weight_clearance: float = 0.02
     battery_clearance: float = 0.02
 
     insert_pilot_radius: float = 1.6
