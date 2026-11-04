@@ -8,7 +8,7 @@ The case is generated from code, so you can change the layout and print it again
 
 ## Status
 
-The case design is complete.
+The case design is in progress.
 Nobody has printed or assembled the full case yet.
 Fit values can still change after the first prints.
 There is no firmware yet.
@@ -17,14 +17,15 @@ The images are renders, not photos.
 ## Features
 
 - 17 keys per half: 3 rows of 5 finger columns and 2 thumb keys.
-- Splayed pinky column, staggered finger columns and an angled thumb cluster.
+- 8 degree splayed pinky column, staggered finger columns and an angled thumb cluster.
 - Low profile. Each half is about 113 x 97 x 14 mm.
+- Protective walls around the keys for secure transportation
 - Hand-wired. There is no PCB.
 - One XIAO nRF52840, one LiPo battery and one slide power switch in each half.
 - USB-C port on each half.
 - A flexible lever in the bottom plate presses the XIAO reset button.
 - Magnets hold the two halves together.
-- A pocket for an optional weight and five rubber bumpers in each half.
+- Five rubber bumpers in each half.
 - No snap fits. Heat-set inserts and M2 screws hold the case together.
 
 ![Top view of both halves](docs/images/top.jpg)
@@ -41,7 +42,6 @@ Quantities are for both halves.
 - 16 magnets, 5 x 2 mm (two stacked in each of 8 recesses)
 - 12 M2 heat-set inserts, 3.5 mm outer diameter, 2 mm long
 - 12 low-profile M2 screws, 8 mm long
-- 2 weights, 22.9 x 12 x 4.4 mm (optional)
 - 10 rubber bumpers, 8 mm diameter
 - 34 diodes, one per key
 - 0.1 mm to 0.2 mm enamelled wire
@@ -72,8 +72,7 @@ The fit depends on your printer, your material and your slicer.
 4. Put the keyplate into the keywell, then put the bottom plate on top. Fasten the six M2 screws from the bottom.
 5. Put the rubber bumpers into their recesses.
 
-The right half is the mirror image of the left half.
-The switch cutouts and the XIAO are not mirrored, because the real parts cannot be mirrored.
+Both halves are mostly mirror images of each other.
 
 ### Magnet polarity
 
@@ -98,13 +97,14 @@ Change the profile for every new printer, material or slicer.
 
 The coupons are built in their real print orientation.
 They reuse the cutters from `models/features.py`.
+The coupons fit on a 180 mm print bed.
 
 | Coupon | Question |
 | --- | --- |
 | A, switch plate | Which switch cutout size is right? Does corner relief help? |
 | B, plate in cavity | Which plate clearance is right? Try each plate both ways round. |
 | C, round holes | Which magnet recess size and which insert pilot size is right? |
-| D, pockets | Which weight pocket clearance is right? Does the battery fit? |
+| D, pockets | Which XIAO pocket clearance is right? Does the battery fit? |
 
 The case counters elephant foot with chamfers on the side that faces the print bed.
 `plate_bed_chamfer` sets the chamfer on the plate faces.
