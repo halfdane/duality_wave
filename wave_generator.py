@@ -252,18 +252,21 @@ class WaveCase:
             def intersect_faces(faces: ShapeList[Face]) -> ShapeList[Face]:
                 return lambda aFace: len([aFace for f in faces if f.intersect(aFace) is not None]) > 0
         
-            print("  keywell cut...")
-            keywell_wall = self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness)
-            add(keywell_wall)
-            extrude(amount=-self.dims.below_z, mode=Mode.SUBTRACT)
-
             print("  skulpting thumb cut...")
             debug_thumb_content = {}
             debug_content["thumb_cut"] = debug_thumb_content if self.debug else None
 
             thumb_x_from_top = self.switch.cap.d.Z + self.switch.stem.d.Z
-            taper = 35
-            with BuildSketch(Plane.XY.offset(self.dims.above_z - thumb_x_from_top)) as thumb_cut_sketch:
+            thumb_floor_z = self.dims.above_z - thumb_x_from_top
+            # The top edge of each slope sits thumb_run_* beyond the original floor edge, away from the keys.
+            # thumb_inset_* pulls the floor edge back towards the keys, so the slope spreads in both directions.
+            thumb_run_inner = 5
+            thumb_run_outer = 15
+            thumb_inset_inner = 7
+            thumb_inset_outer = 3
+            thumb_slope_layers = 16
+
+            def thumb_cut_rectangles(inner_grow: float, outer_grow: float):
                 for thumb_cluster in self.keys.thumb_clusters:
                     for column_index, column in enumerate(thumb_cluster):
                         for key_index, key in enumerate(column):
@@ -273,23 +276,62 @@ class WaveCase:
                             if key_index == 0 and column_index == 0:
                                 # this is the innermost key - start the cut further to the right
                                 loc.position += Vector(self.switch.above.d.X/3, 0, 0).rotate(Axis.Z, key.r)
-                            
+
                             if key_index == 0:
                                 # this is the first key in the column - make the cut taller
                                 loc.position += Vector(0, -5, 0).rotate(Axis.Z, key.r)
                                 y += 10
-                            with Locations(loc):
-                                Rectangle(x, y)
 
-            debug_thumb_content["sketch"] = thumb_cut_sketch if self.debug else None
-            thumb_cut=extrude(amount=thumb_x_from_top, mode=Mode.SUBTRACT, taper=-taper)
+                            # only two edges of the cut slope: the inner end (-x) and the outer end (+y).
+                            # the other two edges lie outside the case.
+                            left = inner_grow if column_index == 0 else 0
+                            back = outer_grow if key_index == len(column) - 1 else 0
+                            loc.position += Vector(-left/2, back/2, 0).rotate(Axis.Z, key.r)
+                            with Locations(loc):
+                                Rectangle(x + left, y + back)
+
+            # Stack the cut in layers. The slope grows evenly with the layer number while the height
+            # follows a cosine ease, so the slope leaves the floor and meets the top tangentially.
+            for layer in range(thumb_slope_layers + 1):
+                progress = layer / thumb_slope_layers
+                eased = 0.5 - 0.5 * math.cos(math.pi * progress)
+                with BuildSketch(Plane.XY.offset(thumb_floor_z + thumb_x_from_top * eased)) as thumb_cut_sketch:
+                    thumb_cut_rectangles(
+                        -thumb_inset_inner + (thumb_run_inner + thumb_inset_inner) * progress,
+                        -thumb_inset_outer + (thumb_run_outer + thumb_inset_outer) * progress)
+                if layer == 0:
+                    debug_thumb_content["sketch"] = thumb_cut_sketch if self.debug else None
+            loft(mode=Mode.SUBTRACT)
+
+            print("  filleting thumb cut...")
 
             # every face thats not top or bottom
             outside = [f for f in body.faces() if f not in body.faces().filter_by(Axis.Z)]
-            outside_faces = ShapeList(f for f in keywell.faces().filter_by(intersect_faces(outside)) if f not in keywell.faces().filter_by(Axis.Z))
-            debug_content["outside_faces"] = outside_faces if self.debug else None
-            fillet(outside_faces.edges(), radius=1)
-            
+
+            def outside_edges() -> list[Edge]:
+                faces = ShapeList(f for f in keywell.faces().filter_by(intersect_faces(outside)) if f not in keywell.faces().filter_by(Axis.Z))
+                debug_content["outside_faces"] = faces if self.debug else None
+                return faces.edges()
+
+            # where the slope blends into the top or the floor it is tangent already, so there is no crease to round
+            def is_slope_silhouette(edge: Edge) -> bool:
+                return edge.geom_type == GeomType.BSPLINE and thumb_floor_z + 0.4 < edge.center().Z < self.dims.above_z - 0.4
+
+            # the fillet the curved slope edges and the rest of the thumb cut
+            slope_edge_positions = [e.center() for e in outside_edges() if is_slope_silhouette(e)]
+            for position in slope_edge_positions:
+                # earlier fillets can have rounded this edge already, or replaced it
+                edge = next((e for e in outside_edges() if is_slope_silhouette(e) and (e.center() - position).length < 0.05), None)
+                if edge is None:
+                    continue
+                fillet(edge, radius=1.0)
+            fillet([e for e in outside_edges() if e.geom_type != GeomType.BSPLINE], radius=1)
+
+            print("  keywell cut...")
+            keywell_wall = self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness)
+            add(keywell_wall)
+            extrude(amount=-self.dims.below_z, mode=Mode.SUBTRACT)
+
             with BuildSketch(Plane.XY.offset(self.dims.above_z)) as key_cut_sketch:
                 add(self.outline.create_keywell_outline())
             extrude(to_extrude=key_cut_sketch.sketch, amount=-self.dims.below_z - self.dims.above_z, mode=Mode.SUBTRACT)
