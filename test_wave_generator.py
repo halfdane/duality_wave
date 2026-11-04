@@ -10,6 +10,16 @@ from models.outline import Outline
 from wave_generator import WaveCase
 
 
+class OutlineTests(unittest.TestCase):
+    def test_inner_outline_is_deterministic(self):
+        switch = Choc()
+        keys = ErgoKeys(get_points("ergogen/wave.yml"))
+        outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
+        for offset_by in (-1.8, -1.82):
+            areas = {round(outline.create_inner_outline(offset_by=offset_by).area, 6) for _ in range(5)}
+            self.assertEqual(len(areas), 1, f"inner outline area varies between calls: {sorted(areas)}")
+
+
 class SwitchPostCutoutTests(unittest.TestCase):
     def test_complete_case_terminal_clearance(self):
         switch = Choc()

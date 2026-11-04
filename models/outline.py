@@ -171,17 +171,46 @@ class Outline:
             )
         return self.reorient_edges(outline.sketch)
     
+    def fillet_sharp_corners(self, radius: float, min_angle: float = 1.0):
+        """Fillet every sharp corner of the sketch that is currently being built.
+
+        Corners are handled one at a time in a fixed (x, y) order, and the vertices are looked up
+        again after every fillet: filleting a stale vertex changes the result depending on the
+        order in which OCCT happens to return the vertices, which differs from run to run.
+        """
+        attempted: set[tuple[float, float]] = set()
+
+        def is_sharp(vertex: Vertex) -> bool:
+            position = Vector(vertex.X, vertex.Y, vertex.Z)
+            directions = []
+            for edge in edges():
+                if (edge.start_point() - position).length < 1e-6:
+                    directions.append(edge.tangent_at(0))
+                elif (edge.end_point() - position).length < 1e-6:
+                    directions.append(-edge.tangent_at(1))
+            return len(directions) == 2 and directions[0].get_angle(directions[1]) < 180 - min_angle
+
+        while True:
+            candidates = sorted(
+                (v for v in vertices() if (round(v.X, 4), round(v.Y, 4)) not in attempted and is_sharp(v)),
+                key=lambda v: (round(v.X, 4), round(v.Y, 4)),
+            )
+            if not candidates:
+                return
+            vertex = candidates[0]
+            attempted.add((round(vertex.X, 4), round(vertex.Y, 4)))
+            try:
+                fillet(vertex, radius=radius)
+            except Exception:
+                # corners that cannot be rounded stay sharp
+                pass
+
     def create_inner_outline(self, offset_by=-1.8):
         with BuildSketch() as inner_outline:
             add(self.sketch)
             if offset_by != 0:
                 offset(amount=offset_by)
-                for vertex in vertices():
-                    try:
-                        fillet(vertex, radius=1)
-                    except Exception as e:
-                        #ignore fillet errors
-                        pass
+                self.fillet_sharp_corners(radius=1)
 
             rect_y = 15
             with Locations(self.cirque_recess_position + (0, self.cirque_recess_radius - rect_y/3)):
