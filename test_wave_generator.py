@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from dataclasses import replace
+from types import SimpleNamespace
 
 from build123d import Axis, Box, Location, Plane, Solid, Vector
 
@@ -94,6 +95,7 @@ class SwitchPostCutoutTests(unittest.TestCase):
     def test_physical_footprint_on_both_halves(self):
         case = WaveCase.__new__(WaveCase)
         case.switch = Choc
+        case.dims = SimpleNamespace(bottom_plate_z=3.0)
         for angle in (0, 23, -37):
             for right in (False, True):
                 with self.subTest(angle=angle, right=right):
