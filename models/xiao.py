@@ -93,6 +93,7 @@ class Xiao:
 
                 with Locations(self.components.loading_light_d.p) as loading_light:
                     Box(self.components.loading_light_d.d.X, self.components.loading_light_d.d.Y, self.components.loading_light_d.d.Z)
+        self.usb_connector = self.plane * usb.part
         return self.plane * model.part
 
     def _create_reset_button_lever_sketch(self):

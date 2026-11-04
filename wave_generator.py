@@ -92,7 +92,7 @@ class WaveCase:
                 z_dir=xiao_plane.z_dir,
             )
 
-            xiao_right = Xiao(xiao_right_plane, clearance=self.dims.clearance)
+            xiao_right = self.xiao_right = Xiao(xiao_right_plane, clearance=self.dims.clearance)
             right_switch_locations = [
                 Location((self.dims.right_side_offset - key.p.X, key.p.Y, key.p.Z), (0, 0, -key.r))
                 for key in self.keys.keys

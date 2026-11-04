@@ -18,7 +18,11 @@ COLORS = {
     "bottom": (0.1, 0.11, 0.12, 1),
     "switches": (0.03, 0.03, 0.035, 1),
     "caps": (0.5, 0.51, 0.54, 1),
+    "xiao": (0.02, 0.1, 0.06, 1),
+    "usb": (0.85, 0.85, 0.88, 1),
+    "magnets": (0.85, 0.85, 0.88, 1),
 }
+METALS = ("usb", "magnets")
 SIZE = (1800, 1100)
 SAMPLES = 64
 
@@ -35,19 +39,42 @@ def reset_scene():
     scene.view_settings.view_transform = "Standard"
     world = bpy.data.worlds.new("world")
     world.use_nodes = True
-    background = world.node_tree.nodes["Background"]
-    background.inputs["Color"].default_value = (0.93, 0.94, 0.96, 1)
-    background.inputs["Strength"].default_value = 0.55
+    nodes, links = world.node_tree.nodes, world.node_tree.links
+    nodes.clear()
+    # camera rays see a plain backdrop, reflections see a gradient so metal does not look flat
+    plain = nodes.new("ShaderNodeBackground")
+    plain.inputs["Color"].default_value = (0.93, 0.94, 0.96, 1)
+    plain.inputs["Strength"].default_value = 0.55
+    coords = nodes.new("ShaderNodeTexCoord")
+    split = nodes.new("ShaderNodeSeparateXYZ")
+    ramp = nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position = 0.3
+    ramp.color_ramp.elements[0].color = (0.03, 0.03, 0.035, 1)
+    ramp.color_ramp.elements[1].position = 0.7
+    ramp.color_ramp.elements[1].color = (0.8, 0.82, 0.85, 1)
+    gradient = nodes.new("ShaderNodeBackground")
+    gradient.inputs["Strength"].default_value = 0.7
+    camera_ray = nodes.new("ShaderNodeLightPath")
+    mix = nodes.new("ShaderNodeMixShader")
+    output = nodes.new("ShaderNodeOutputWorld")
+    links.new(coords.outputs["Generated"], split.inputs["Vector"])
+    links.new(split.outputs["Z"], ramp.inputs["Fac"])
+    links.new(ramp.outputs["Color"], gradient.inputs["Color"])
+    links.new(camera_ray.outputs["Is Camera Ray"], mix.inputs["Fac"])
+    links.new(gradient.outputs["Background"], mix.inputs[1])
+    links.new(plain.outputs["Background"], mix.inputs[2])
+    links.new(mix.outputs["Shader"], output.inputs["Surface"])
     scene.world = world
     return scene
 
 
-def material(name, color, roughness=0.45):
+def material(name, color, roughness=0.45, metallic=0.0):
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes["Principled BSDF"]
     bsdf.inputs["Base Color"].default_value = color
     bsdf.inputs["Roughness"].default_value = roughness
+    bsdf.inputs["Metallic"].default_value = metallic
     return mat
 
 
@@ -56,7 +83,10 @@ def load(kind, side, offset=(0, 0, 0)):
     bpy.ops.wm.stl_import(filepath=os.path.join(MESH_DIR, f"{kind}_{side}.stl"))
     obj = (set(bpy.data.objects) - before).pop()
     obj.location = Vector(offset)
-    obj.data.materials.append(material(f"{kind}_{side}", COLORS[kind], roughness=0.6 if kind == "caps" else 0.4))
+    if kind in METALS:
+        obj.data.materials.append(material(f"{kind}_{side}", COLORS[kind], roughness=0.25, metallic=1.0))
+    else:
+        obj.data.materials.append(material(f"{kind}_{side}", COLORS[kind], roughness=0.6 if kind == "caps" else 0.4))
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
     bpy.ops.object.shade_smooth_by_angle(angle=math.radians(35))
@@ -139,7 +169,7 @@ def render(name, objects, direction, ortho=False, flip=False, zoom=1.0):
     print("rendered", path)
 
 
-def assembled(sides=("left", "right"), kinds=("keywell", "keyplate", "bottom", "switches", "caps")):
+def assembled(sides=("left", "right"), kinds=("keywell", "keyplate", "bottom", "switches", "caps", "xiao", "usb", "magnets")):
     return [load(kind, side) for side in sides for kind in kinds]
 
 
@@ -152,14 +182,17 @@ reset_scene()
 render("top", assembled(), direction=(0, 0, 1), ortho=True, zoom=1.2)
 
 reset_scene()
-render("bottom", assembled(kinds=("keywell", "bottom")), direction=(0.25, -1.0, 0.85), flip=True, zoom=1.3)
+render("bottom", assembled(kinds=("keywell", "bottom", "xiao", "usb")), direction=(0.25, -1.0, 0.85), flip=True, zoom=1.3)
 
 reset_scene()
 exploded = [
     load("keywell", "left", (0, 0, 0)),
+    load("magnets", "left", (0, 0, 0)),
     load("keyplate", "left", (0, 0, -26)),
     load("switches", "left", (0, 0, -26)),
     load("caps", "left", (0, 0, -26)),
+    load("xiao", "left", (0, 0, -26)),
+    load("usb", "left", (0, 0, -26)),
     load("bottom", "left", (0, 0, -52)),
 ]
 render("exploded", exploded, direction=(0.9, -1.0, 0.75), zoom=0.95)
