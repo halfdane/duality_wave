@@ -30,7 +30,7 @@ class WaveCase:
         self.dims = caseDimensions
         self.outline = outline
         self.bumper = RubberBumper()
-        self.insert = HeatSetInsert(self.dims.insert_profile)
+        self.insert = HeatSetInsert(self.dims.print_profile.insert_pilot_radius)
         self.screw = LowProfileScrew()
 
         self.debug_content: dict = {}
@@ -135,7 +135,7 @@ class WaveCase:
         debug_content = {}
         self.debug_content["keyplate"] = debug_content if self.debug else None
         with BuildPart() as keyplate:
-            base=add(self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness - self.dims.clearance))
+            base=add(self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness - self.dims.print_profile.plate_clearance))
             extrude(amount=-self.dims.keyplate_z)
             debug_content["base"] = base if self.debug else None
 
@@ -154,7 +154,7 @@ class WaveCase:
             with BuildSketch() as key_holes:
                 for key in self.keys.keys:
                     with Locations(key.p):
-                        Rectangle(self.switch.below.d.X + self.dims.clearance, self.switch.below.d.Y + self.dims.clearance, rotation=key.r)
+                        Rectangle(self.switch.below.d.X + 2*self.dims.print_profile.switch_clearance, self.switch.below.d.Y + 2*self.dims.print_profile.switch_clearance, rotation=key.r)
             debug_content["key_holes"] = key_holes if self.debug else None
             extrude(amount=-self.switch.clamp_clearance_z, mode=Mode.SUBTRACT)
 
@@ -336,9 +336,9 @@ class WaveCase:
 
             print("  battery recess...")
             battery_pd = self.dims.battery_pd
-            with BuildSketch(Plane.XY.offset(battery_pd.p.Z + battery_pd.d.Z/2 + self.dims.clearance)) as battery_sketch:
+            with BuildSketch(Plane.XY.offset(battery_pd.p.Z + battery_pd.d.Z/2 + self.dims.print_profile.battery_clearance)) as battery_sketch:
                 with Locations((battery_pd.p.X, battery_pd.p.Y)):
-                    Rectangle(battery_pd.d.X + 2*self.dims.clearance, battery_pd.d.Y + 2*self.dims.clearance)
+                    Rectangle(battery_pd.d.X + 2*self.dims.print_profile.battery_clearance, battery_pd.d.Y + 2*self.dims.print_profile.battery_clearance)
             extrude(amount=-battery_pd.d.Z - self.dims.wall_thickness, mode=Mode.SUBTRACT)
             debug_content["battery_sketch"] = battery_sketch if self.debug else None
 
@@ -346,7 +346,7 @@ class WaveCase:
                 print("  magnet recesses...")
                 with BuildSketch(Plane.XY.offset(self.dims.above_z)) as magnet_sketch:
                     with Locations(self.dims.magnet_positions):
-                        Circle(self.dims.magnet_d.radius + self.dims.clearance)
+                        Circle(self.dims.magnet_d.radius + self.dims.print_profile.magnet_clearance)
                 extrude(amount= - 2*self.dims.magnet_d.Z, mode=Mode.SUBTRACT)
                 debug_content["magnet_sketch"] = magnet_sketch if self.debug else None
 
@@ -354,7 +354,7 @@ class WaveCase:
                 print("  weight recesses...")
                 with BuildSketch(Plane.XY.offset(self.dims.weight_positions[0].Z)) as weight_sketch:
                     with Locations(self.dims.weight_positions):
-                        Rectangle(self.dims.weight_d.X + 2*self.dims.clearance, self.dims.weight_d.Y + 2*self.dims.clearance)
+                        Rectangle(self.dims.weight_d.X + 2*self.dims.print_profile.weight_clearance, self.dims.weight_d.Y + 2*self.dims.print_profile.weight_clearance)
                 extrude(amount=-self.dims.above_z - self.dims.weight_d.Z, mode=Mode.SUBTRACT)
                 debug_content["weight_sketch"] = weight_sketch if self.debug else None
 
@@ -373,7 +373,7 @@ class WaveCase:
         debug_content = {}
         self.debug_content["bottom"] = debug_content if self.debug else None
         with BuildPart() as bottom:
-            outline = self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness - self.dims.clearance)
+            outline = self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness - self.dims.print_profile.plate_clearance)
             
             with BuildSketch(Plane.XY.offset(-self.dims.below_z)) as base:
                 add(outline)

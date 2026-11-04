@@ -14,6 +14,7 @@ from models.space_invader import SpaceInvader
 from models.keys import ErgoKeys, Point, get_points
 from models.rubber_bumper import RubberBumper, BumperDimensions
 from models.pin import Pin
+from models.print_profile import PrintProfile
 from models.model_types import RoundDimensions, PosAndDims, RectDimensions, WaveDimensions
 
 from ocp_vscode import *
@@ -27,9 +28,8 @@ class CaseDimensions(WaveDimensions):
     outline: InitVar[Outline]
     keys: InitVar[ErgoKeys]
 
-    clearance: float = 0.02
+    print_profile: PrintProfile = field(default_factory=PrintProfile)
     wall_thickness: float = 1.8
-    insert_profile: str = "mjf_pa12"
     heat_insert_z: float = 3.5
 
     right_side_offset: float = 200

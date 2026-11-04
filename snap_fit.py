@@ -2,9 +2,8 @@ from dataclasses import dataclass, field, InitVar
 import math
 import copy
 
-from sympy import shape
-
 from models.heat_set_insert import HeatSetInsert
+from models.print_profile import PrintProfile
 from wave_generator import WaveCase
 from part_packing import pack_parts_for_jlcpcb
 from build123d import *
@@ -31,9 +30,8 @@ class CaseDimensions(WaveDimensions):
     outline: InitVar[Outline]
     keys: InitVar[ErgoKeys]
 
-    clearance: float = 0.02
+    print_profile: PrintProfile = field(default_factory=PrintProfile)
     wall_thickness: float = 1.8
-    insert_profile: str = "mjf_pa12"
 
     right_side_offset: float = 100
 

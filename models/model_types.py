@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from build123d import *
 
+from models.print_profile import PrintProfile
+
 class RectDimensions(Vector):
     pass
 
@@ -18,7 +20,7 @@ class PosAndDims:
     d: RectDimensions | RoundDimensions
 
 class WaveDimensions:
-    clearance: float
+    print_profile: PrintProfile
     wall_thickness: float
 
     above_z: float
@@ -27,7 +29,6 @@ class WaveDimensions:
     bottom_plate_z: float
     keyplate_z: float
 
-    insert_profile: str
     heat_insert_z: float
     fastener_positions: list[Vector]
 
@@ -51,3 +52,7 @@ class WaveDimensions:
     bumper_locations: list[Vector]
 
     space_invader: Location = None
+
+    @property
+    def clearance(self) -> float:
+        return self.print_profile.clearance

@@ -19,17 +19,7 @@ class HeatSetInsertMountDimensions:
 class HeatSetInsert:
     dims = HeatSetInsertDimensions()
 
-    def __init__(self, profile: str = "mjf_pa12"):
-        pilot_radii = {
-            "mjf_pa12": 1.6,
-            "fdm": 1.5,
-        }
-        try:
-            pilot_radius = pilot_radii[profile]
-        except KeyError as error:
-            supported = ", ".join(pilot_radii)
-            raise ValueError(f"Unknown insert profile {profile!r}; expected one of: {supported}") from error
-
+    def __init__(self, pilot_radius: float):
         self.mount = HeatSetInsertMountDimensions(
             pilot=RoundDimensions(pilot_radius, 2.2),
         )

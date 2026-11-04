@@ -27,7 +27,7 @@ class Layout:
         self.choc_key_holes = choc_key_holes.sketch
 
         screw = LowProfileScrew()
-        insert = HeatSetInsert(dimensions.insert_profile)
+        insert = HeatSetInsert(dimensions.print_profile.insert_pilot_radius)
         with BuildSketch() as screw_holes:
             with Locations(dimensions.fastener_positions):
                 Circle(screw.mount.clearance.radius)
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     dimensions = CaseDimensions(switch=switch, outline=outline, keys=keys)
     layout = Layout(switch=switch, keys=keys, dimensions=dimensions, outline=outline)
 
-    bottom = outline.create_inner_outline(offset_by=-dimensions.wall_thickness - dimensions.clearance)
+    bottom = outline.create_inner_outline(offset_by=-dimensions.wall_thickness - dimensions.print_profile.plate_clearance)
 
 
     set_port(3939)
