@@ -21,3 +21,13 @@ class PrintProfile:
     battery_clearance: float = 0.02
 
     insert_pilot_radius: float = 1.6
+
+    # radius of the circles that relieve the corners of the switch cutouts (0 = no relief)
+    switch_corner_relief: float = 0.0
+
+    # chamfers that counter elephant foot on the side of a part that faces the print bed
+    plate_bed_chamfer: float = 0.25
+    # chamfer on the edge of a plate that enters the keywell cavity first
+    plate_lead_chamfer: float = 0.1
+    # chamfer where a hole opens towards the print bed (switch cutouts, magnet recesses)
+    mouth_chamfer: float = 0.2

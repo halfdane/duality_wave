@@ -16,6 +16,7 @@ from models.pin import Pin
 from models.heat_set_insert import HeatSetInsert
 from models.screw import LowProfileScrew
 from models.model_types import WaveDimensions
+from models.features import switch_cutter, magnet_recess_cutter
 
 from ocp_vscode import *
 
@@ -139,7 +140,10 @@ class WaveCase:
             extrude(amount=-self.dims.keyplate_z)
             debug_content["base"] = base if self.debug else None
 
-            chamfer(objects=faces().filter_by(Axis.Z).edges(), length=0.1)
+            # the face at z=0 is printed on the bed and enters the keywell cavity first
+            plate_faces = faces().filter_by(Axis.Z).sort_by(Axis.Z)
+            chamfer(objects=plate_faces[0].edges(), length=self.dims.print_profile.plate_lead_chamfer)
+            chamfer(objects=plate_faces[-1].edges(), length=self.dims.print_profile.plate_bed_chamfer)
 
             debug_content["base edges"] = base.edges() if self.debug else None
 
@@ -151,16 +155,12 @@ class WaveCase:
             debug_content["fastener holes"] = fastener_holes if self.debug else None
 
             print("  key holes...")
-            with BuildSketch() as key_holes:
-                for key in self.keys.keys:
-                    with Locations(key.p):
-                        Rectangle(self.switch.below.d.X + 2*self.dims.print_profile.switch_clearance, self.switch.below.d.Y + 2*self.dims.print_profile.switch_clearance, rotation=key.r)
+            key_holes = switch_cutter(
+                self.switch, self.dims.print_profile,
+                [Location(key.p, (0, 0, key.r)) for key in self.keys.keys],
+                plate_z=self.dims.below_z)
             debug_content["key_holes"] = key_holes if self.debug else None
-            extrude(amount=-self.switch.clamp_clearance_z, mode=Mode.SUBTRACT)
-
-            with BuildSketch(Plane.XY.offset(-self.switch.clamp_clearance_z)) as keyholes_with_space:
-                offset(key_holes.sketch, 0.5)
-            extrude(amount=-self.dims.below_z, mode=Mode.SUBTRACT)
+            add(key_holes, mode=Mode.SUBTRACT)
 
             print("  xiao hole...")
             with BuildSketch(Plane((self.dims.xiao_position.X, self.dims.xiao_position.Y, 0))) as xiao_hole:
@@ -344,11 +344,10 @@ class WaveCase:
 
             if self.dims.magnet_positions:
                 print("  magnet recesses...")
-                with BuildSketch(Plane.XY.offset(self.dims.above_z)) as magnet_sketch:
-                    with Locations(self.dims.magnet_positions):
-                        Circle(self.dims.magnet_d.radius + self.dims.print_profile.magnet_clearance)
-                extrude(amount= - 2*self.dims.magnet_d.Z, mode=Mode.SUBTRACT)
-                debug_content["magnet_sketch"] = magnet_sketch if self.debug else None
+                magnet_recesses = magnet_recess_cutter(
+                    self.dims.magnet_d, self.dims.print_profile, self.dims.magnet_positions, top_z=self.dims.above_z)
+                add(magnet_recesses, mode=Mode.SUBTRACT)
+                debug_content["magnet_recesses"] = magnet_recesses if self.debug else None
 
             if self.dims.weight_positions:
                 print("  weight recesses...")
@@ -378,7 +377,10 @@ class WaveCase:
             with BuildSketch(Plane.XY.offset(-self.dims.below_z)) as base:
                 add(outline)
             extrude(amount=self.dims.bottom_plate_z)
-            chamfer(objects=faces().filter_by(Axis.Z).edges(), length=0.1)
+            # the outer face at -below_z is printed on the bed; the other face enters the keywell cavity first
+            plate_faces = faces().filter_by(Axis.Z).sort_by(Axis.Z)
+            chamfer(objects=plate_faces[0].edges(), length=self.dims.print_profile.plate_bed_chamfer)
+            chamfer(objects=plate_faces[-1].edges(), length=self.dims.print_profile.plate_lead_chamfer)
 
             print("  fastener holes...")
             bottom_plane = Plane.XY.offset(-self.dims.below_z)
