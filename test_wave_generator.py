@@ -65,6 +65,24 @@ class FeatureTests(unittest.TestCase):
         self.assertAlmostEqual(width_at(cutter, 7.0), 2 * (magnet.radius + profile.magnet_clearance), places=3)
 
 
+class DebugFlagTests(unittest.TestCase):
+    def test_debug_off_builds_the_same_parts_without_accessories(self):
+        switch = Choc()
+        keys = ErgoKeys(get_points("ergogen/wave.yml"))
+        outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
+        dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
+        with patch("wave_generator.push_object") as push_object:
+            quiet = WaveCase(switch, keys, dims, outline, debug=False, both_sides=True)
+            push_object.assert_not_called()
+            verbose = WaveCase(switch, keys, dims, outline, debug=True, both_sides=True)
+        self.assertFalse(hasattr(quiet, "switches"))
+        for name in ("keywell", "keyplate", "bottom"):
+            for side in ("left", "right"):
+                with self.subTest(part=f"{name}_{side}"):
+                    self.assertAlmostEqual(
+                        getattr(quiet, f"{name}_{side}").volume, getattr(verbose, f"{name}_{side}").volume, places=3)
+
+
 class SwitchPostCutoutTests(unittest.TestCase):
     def test_complete_case_terminal_clearance(self):
         switch = Choc()

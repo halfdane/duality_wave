@@ -33,6 +33,7 @@ class WaveCase:
         self.bumper = RubberBumper()
         self.insert = HeatSetInsert(self.dims.print_profile.insert_pilot_radius)
         self.screw = LowProfileScrew()
+        self.pin = Pin()
 
         self.debug_content: dict = {}
 
@@ -51,18 +52,19 @@ class WaveCase:
         xiao_plane = Plane(self.dims.xiao_position, x_dir=xiao_plane.x_dir, z_dir=xiao_plane.z_dir)
         self.xiao = Xiao(xiao_plane, clearance=self.dims.clearance)
 
-        accessories_left = {}
-        accessories_left["chocs"] = self.switches
-        accessories_left["xiao"] = self.xiao.model
-        accessories_left["bumpers"] = self.bumpers
-        accessories_left["power_switch"] = self.powerswitch
-        accessories_left["pins"] = self.pins
-        accessories_left["battery"] = self.battery
-        accessories_left["magnets"] = self.magnets
-        accessories_left["weights"] = self.weights if hasattr(self, "weights") else None
-        accessories_left["inserts"] = self.inserts
-        accessories_left["screws"] = self.screws
-        push_object(accessories_left, name="accessories_left")
+        if self.debug:
+            accessories_left = {}
+            accessories_left["chocs"] = self.switches
+            accessories_left["xiao"] = self.xiao.model
+            accessories_left["bumpers"] = self.bumpers
+            accessories_left["power_switch"] = self.powerswitch
+            accessories_left["pins"] = self.pins
+            accessories_left["battery"] = self.battery
+            accessories_left["magnets"] = self.magnets
+            accessories_left["weights"] = self.weights if hasattr(self, "weights") else None
+            accessories_left["inserts"] = self.inserts
+            accessories_left["screws"] = self.screws
+            push_object(accessories_left, name="accessories_left")
 
         self.keywell = self.create_keywell()
         self.keywell_left = self.xiao.add_usb_cutouts(self.keywell)
@@ -94,26 +96,28 @@ class WaveCase:
                 z_dir=xiao_plane.z_dir,
             )
 
-            accessories_right = {}
             xiao_right = Xiao(xiao_right_plane, clearance=self.dims.clearance)
             right_switch_locations = [
                 Location((self.dims.right_side_offset - key.p.X, key.p.Y, key.p.Z), (0, 0, -key.r))
                 for key in self.keys.keys
             ]
-            with BuildPart() as switches_right:
-                with Locations(right_switch_locations):
-                    add(self.switch.model.part)
-            accessories_right["chocs_right"] = switches_right.part
-            accessories_right["xiao_right"] = xiao_right.model
-            accessories_right["bumpers_right"] = mirror(self.bumpers, about=right_mirror_plane)
-            accessories_right["power_switch_right"] = mirror(self.powerswitch, about=right_mirror_plane)
-            accessories_right["pins_right"] = mirror(self.pins, about=right_mirror_plane)
-            accessories_right["battery_right"] = mirror(self.battery, about=right_mirror_plane)
-            accessories_right["magnets_right"] = mirror(self.magnets, about=right_mirror_plane)
-            accessories_right["weights_right"] = mirror(self.weights, about=right_mirror_plane) if hasattr(self, "weights") else None
-            accessories_right["inserts_right"] = mirror(self.inserts, about=right_mirror_plane)
-            accessories_right["screws_right"] = mirror(self.screws, about=right_mirror_plane)
-            push_object(accessories_right, name="accessories_right") if self.debug else None
+
+            if self.debug:
+                accessories_right = {}
+                with BuildPart() as switches_right:
+                    with Locations(right_switch_locations):
+                        add(self.switch.model.part)
+                accessories_right["chocs_right"] = switches_right.part
+                accessories_right["xiao_right"] = xiao_right.model
+                accessories_right["bumpers_right"] = mirror(self.bumpers, about=right_mirror_plane)
+                accessories_right["power_switch_right"] = mirror(self.powerswitch, about=right_mirror_plane)
+                accessories_right["pins_right"] = mirror(self.pins, about=right_mirror_plane)
+                accessories_right["battery_right"] = mirror(self.battery, about=right_mirror_plane)
+                accessories_right["magnets_right"] = mirror(self.magnets, about=right_mirror_plane)
+                accessories_right["weights_right"] = mirror(self.weights, about=right_mirror_plane) if hasattr(self, "weights") else None
+                accessories_right["inserts_right"] = mirror(self.inserts, about=right_mirror_plane)
+                accessories_right["screws_right"] = mirror(self.screws, about=right_mirror_plane)
+                push_object(accessories_right, name="accessories_right")
 
             self.keywell_right = mirror(self.keywell, about=right_mirror_plane)
             self.keywell_right = xiao_right.add_usb_cutouts(self.keywell_right)
@@ -497,7 +501,6 @@ class WaveCase:
             .rotate(Axis.Z, self.dims.powerswitch_rotation.Z )\
             .translate(self.dims.powerswitch_position)
 
-        self.pin = Pin()
         with BuildPart(self.dims.pin_plane) as self.pins:
             add(self.pin.model)
         self.pins = self.pins.part
