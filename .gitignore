@@ -6,3 +6,5 @@
 /*.step
 *.3mf
 __pycache__
+# Render meshes
+/build/

@@ -57,3 +57,12 @@ tasks:
     desc: Run the unit tests (takes about a minute).
     cmds:
       - python -m unittest
+
+  render:
+    desc: Render the README images into docs/images.
+    summary: |
+      Exports the assembled case as meshes (render.py) and renders them with
+      Blender, which `nix shell` fetches on demand (render_blender.py).
+    cmds:
+      - python render.py build/render
+      - nix shell nixpkgs#blender --command blender -b -P render_blender.py -- build/render docs/images
