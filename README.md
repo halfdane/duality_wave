@@ -6,7 +6,7 @@ The layout comes from an ergogen config.
 This repository only contains the case.
 There is no PCB and no firmware here.
 The keyboard is wired by hand with 0.1 mm to 0.2 mm enamelled wire.
-The case was extracted from a larger repository that also held duality_particle and the ZMK firmware.
+The case is the descendant of the duality_particle.
 Some names, for example `cirque_recess_*` in `models/outline.py`, still show that origin.
 
 ## Setup
@@ -39,30 +39,29 @@ Six M2 screws pull them against the keywell.
 Each screw runs into an M2 heat-set insert in the keywell.
 Press each insert in until it is flush with the keywell face at z=0.
 The right half is the mirror image of the left half.
-The switch cutouts and the XIAO are not mirrored, because the real parts cannot be mirrored.
 
-## Bill of materials (per half)
+## Bill of materials
 
-- 17 Kailh Choc v1 switches
-- 17 keycaps (the model uses `models/hattara.step`)
-- 1 Seeed XIAO nRF52840
-- 1 LiPo battery, 31 x 17 x 6 mm
-- 1 slide power switch, 9 x 3.4 x 4 mm
-- 8 magnets, 5 x 2 mm (two stacked in each of the 4 recesses)
-- 6 M2 heat-set inserts, 3.5 mm outer diameter, 2 mm long
-- 6 low-profile M2 screws, 8 mm long
-- 1 weight, 22.9 x 12 x 4.4 mm
-- 5 rubber bumpers, 8 mm diameter
-- 1 pin, 1.2 mm diameter, 13 mm long
-- 1 diode per key and enamelled wire
+- 34 Kailh Choc v1 switches
+- 34 keycaps (the model uses `models/hattara.step`)
+- 2 Seeed XIAO nRF52840
+- 2 LiPo battery, 31 x 17 x 6 mm
+- 2 slide power switch, 9 x 3.4 x 4 mm
+- 16 magnets, 5 x 2 mm (two stacked in each of the 4 recesses)
+- 12 M2 heat-set inserts, 3.5 mm outer diameter, 2 mm long
+- 12 low-profile M2 screws, 8 mm long
+- 2 weights, 22.9 x 12 x 4.4 mm
+- 10 rubber bumpers, 8 mm diameter
+- 2 pin, 1.2 mm diameter, 13 mm long
+- 34 diode per key and 
+- enamelled wire
 
 ## Magnet polarity
 
 Only the relative polarity matters.
-All magnets in one half must face the same way.
-The magnets in the other half must face the opposite way.
-Use a magnetized tool with a known pole to place them.
-Flip the tool for the second half.
+Place the magnets in one half however you want.
+Use a magnetized tool to make sure the magnets in the other half face the opposite way.
+
 You cannot dry-fit the halves, because the magnets pull out of their recesses.
 
 ## Fit and print settings
@@ -103,10 +102,4 @@ Sanding the plate edges along the z axis removes the layer ridges that rub on in
 - `models/features.py` holds the cutters that the case and the coupons share.
 - `coupons.py` builds the calibration coupons.
 - `part_packing.py` packs the parts with sprues for a JLC3DP order.
-- `freecad/` holds old FreeCAD files.
 
-## Debug mode
-
-`WaveCase(debug=True)` builds the accessory models and sends everything to the viewer.
-`WaveCase(debug=False)` builds only the printable parts.
-Both modes give the same parts.
