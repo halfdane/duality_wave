@@ -1,10 +1,13 @@
 from dataclasses import dataclass, field, InitVar
 import math
 import copy
+import os
 
 from models.heat_set_insert import HeatSetInsert
 from models.print_profile import PrintProfile
 from wave_generator import WaveCase
+from builders.export import export_steps
+from builders.viewer import show_in_viewer
 from build123d import *
 from models.choc import Choc
 from models.cherry import Cherry
@@ -85,24 +88,11 @@ class CaseDimensions(WaveDimensions):
 
 
 if __name__ == "__main__":
-    set_port(3939)
     switch = Choc()
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ergogen', 'snap_fit.yml')
-
-    points = get_points(file_path=config_path)
-    keys = ErgoKeys(points=points)
+    keys = ErgoKeys(points=get_points(file_path=config_path))
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness, additional_top_space=22)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
     case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=False)
-
-    show_clear()
-    set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
-    set_colormap(ColorMap.seeded(colormap="rgb", alpha=1, seed_value="wave"))
-    show_objects() 
-
-    export_step(case.keywell_left, "keywell_left_snap_fit.step") if hasattr(case, "keywell_left") else None
-    export_step(case.keyplate_left, "keyplate_left_snap_fit.step") if hasattr(case, "keyplate_left") else None
-    export_step(case.bottom_left, "bottom_left_snap_fit.step") if hasattr(case, "bottom_left") else None
-    export_step(case.keywell_right, "keywell_right_snap_fit.step") if hasattr(case, "keywell_right") else None
-    export_step(case.keyplate_right, "keyplate_right_snap_fit.step") if hasattr(case, "keyplate_right") else None
-    export_step(case.bottom_right, "bottom_right_snap_fit.step") if hasattr(case, "bottom_right") else None
+    show_in_viewer()
+    export_steps(case, suffix="_snap_fit")

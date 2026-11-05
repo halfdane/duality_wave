@@ -101,7 +101,7 @@ class DebugFlagTests(unittest.TestCase):
             for name in PARTS:
                 with self.subTest(part=f"{name}_{side}"):
                     self.assertAlmostEqual(
-                        getattr(quiet, f"{name}_{side}").volume, getattr(verbose, f"{name}_{side}").volume, places=3)
+                        getattr(getattr(quiet, side), name).volume, getattr(getattr(verbose, side), name).volume, places=3)
 
     def test_debug_on_pushes_every_part_and_the_debug_group_last(self):
         case, push_object = build_case(debug=True)
@@ -136,24 +136,14 @@ class SidesTests(unittest.TestCase):
         case, _ = build_case(debug=False, both_sides=False)
         self.assertIsNone(case.right)
         for name in PARTS:
-            self.assertTrue(hasattr(case, f"{name}_left"))
-            self.assertFalse(hasattr(case, f"{name}_right"))
-        self.assertFalse(hasattr(case, "xiao_right"))
-
-    def test_flat_names_point_at_the_sides(self):
-        case, _ = build_case(debug=False)
-        for side in ("left", "right"):
-            for name in PARTS:
-                self.assertIs(getattr(case, f"{name}_{side}"), getattr(getattr(case, side), name))
-        self.assertIs(case.xiao, case.left.xiao)
-        self.assertIs(case.xiao_right, case.right.xiao)
+            self.assertGreater(getattr(case.left, name).volume, 0)
 
     def test_right_half_mirrors_the_left_half(self):
         case, _ = build_case(debug=False)
-        offset = case.dims.right_side_offset
+        offset = case.ctx.dims.right_side_offset
         for name in PARTS:
             with self.subTest(part=name):
-                left, right = getattr(case, f"{name}_left"), getattr(case, f"{name}_right")
+                left, right = getattr(case.left, name), getattr(case.right, name)
                 self.assertAlmostEqual(left.volume / right.volume, 1, places=3)
                 self.assertAlmostEqual(right.bounding_box().min.X, offset - left.bounding_box().max.X, places=3)
                 self.assertAlmostEqual(right.bounding_box().max.X, offset - left.bounding_box().min.X, places=3)
@@ -163,13 +153,13 @@ class SidesTests(unittest.TestCase):
 class SwitchPostCutoutTests(unittest.TestCase):
     def test_complete_case_terminal_clearance(self):
         case, _ = build_case(debug=False)
-        switch, keys, dims = case.switch, case.keys, case.dims
+        switch, keys, dims = case.ctx.switch, case.ctx.keys, case.ctx.dims
         for side in ("left", "right"):
             for name in PARTS:
-                part = getattr(case, f"{name}_{side}")
+                part = getattr(getattr(case, side), name)
                 self.assertTrue(part.is_valid)
                 self.assertEqual(len(part.solids()), 1)
-            bottom = getattr(case, f"bottom_{side}")
+            bottom = getattr(case, side).bottom
             for key in keys.keys:
                 position = key.p if side == "left" else Vector(dims.right_side_offset - key.p.X, key.p.Y, key.p.Z)
                 rotation = key.r if side == "left" else -key.r

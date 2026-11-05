@@ -22,18 +22,10 @@ class WaveCase:
     """
 
     def __init__(self, switch: Switch, keys: ErgoKeys, caseDimensions: WaveDimensions, outline, debug=False, both_sides=False, viewer=None):
-        self.switch = switch
-        self.keys = keys
-        self.dims = caseDimensions
-        self.outline = outline
-        self.bumper = RubberBumper()
-        self.insert = HeatSetInsert(self.dims.print_profile.insert_pilot_radius)
-        self.screw = LowProfileScrew()
-
         self.viewer = viewer if viewer is not None else (OcpViewer() if debug else NullViewer())
-        self.debug = self.viewer.enabled
-
-        ctx = CaseContext(switch, keys, self.dims, outline, self.bumper, self.insert, self.screw)
+        self.ctx = ctx = CaseContext(
+            switch, keys, caseDimensions, outline,
+            RubberBumper(), HeatSetInsert(caseDimensions.print_profile.insert_pilot_radius), LowProfileScrew())
 
         print("Creating case...")
         blanks = Blanks(
@@ -41,7 +33,7 @@ class WaveCase:
             keyplate=build_keyplate(ctx, self.viewer.debug.scope("keyplate")),
             bottom=build_bottom(ctx, self.viewer.debug.scope("bottom")),
         )
-        fixtures = build_fixtures(ctx) if self.debug else None
+        fixtures = build_fixtures(ctx) if self.viewer.enabled else None
 
         left = Side.left(ctx)
         self.left: BuiltSide = finish_side(ctx, left, blanks, fixtures, self.viewer)
@@ -51,20 +43,3 @@ class WaveCase:
 
         self.viewer.push_debug()
         print("Done creating case.")
-
-
-def _side_part(side: str, part: str):
-    def getter(self: WaveCase):
-        built = getattr(self, side)
-        if built is None:
-            raise AttributeError(f"the {side} side was not built")
-        return getattr(built, part)
-    return property(getter)
-
-
-# flat names that callers used before the sides existed
-for _side in ("left", "right"):
-    for _part in ("keywell", "keyplate", "bottom"):
-        setattr(WaveCase, f"{_part}_{_side}", _side_part(_side, _part))
-WaveCase.xiao = _side_part("left", "xiao")
-WaveCase.xiao_right = _side_part("right", "xiao")

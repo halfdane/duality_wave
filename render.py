@@ -31,39 +31,23 @@ def main():
     caps = switch_part & cap_cutter
     bodies = switch_part - cap_cutter
 
-    placements = {
-        "left": [Location(key.p, (0, 0, key.r)) for key in keys.keys],
-        "right": [
-            Location((dims.right_side_offset - key.p.X, key.p.Y, key.p.Z), (0, 0, -key.r))
-            for key in keys.keys
-        ],
-    }
-
     # two stacked magnets fill each recess, flush with the top of the keywell
-    def magnets(positions):
-        discs = [
-            Pos(position.X, position.Y, dims.above_z) * Cylinder(
-                dims.magnet_d.radius, 2 * dims.magnet_d.Z, align=(Align.CENTER, Align.CENTER, Align.MAX))
-            for position in positions
-        ]
-        return Compound(discs)
-
-    right_positions = [Vector(dims.right_side_offset - p.X, p.Y, p.Z) for p in dims.magnet_positions]
-    side_parts = {
-        "left": (case.xiao, magnets(dims.magnet_positions)),
-        "right": (case.xiao_right, magnets(right_positions)),
-    }
+    left_magnets = Compound([
+        Pos(position.X, position.Y, dims.above_z) * Cylinder(
+            dims.magnet_d.radius, 2 * dims.magnet_d.Z, align=(Align.CENTER, Align.CENTER, Align.MAX))
+        for position in dims.magnet_positions
+    ])
 
     os.makedirs(OUT_DIR, exist_ok=True)
-    for side, locations in placements.items():
+    for built in (case.left, case.right):
+        side = built.side
         for name in ("keywell", "keyplate", "bottom"):
-            export_stl(getattr(case, f"{name}_{side}"), os.path.join(OUT_DIR, f"{name}_{side}.stl"))
-        xiao, side_magnets = side_parts[side]
-        export_stl(xiao.model - xiao.usb_connector, os.path.join(OUT_DIR, f"xiao_{side}.stl"))
-        export_stl(xiao.usb_connector, os.path.join(OUT_DIR, f"usb_{side}.stl"))
-        export_stl(side_magnets, os.path.join(OUT_DIR, f"magnets_{side}.stl"))
-        export_stl(Compound([bodies.moved(loc) for loc in locations]), os.path.join(OUT_DIR, f"switches_{side}.stl"))
-        export_stl(Compound([caps.moved(loc) for loc in locations]), os.path.join(OUT_DIR, f"caps_{side}.stl"))
+            export_stl(getattr(built, name), os.path.join(OUT_DIR, f"{name}_{side.name}.stl"))
+        export_stl(built.xiao.model - built.xiao.usb_connector, os.path.join(OUT_DIR, f"xiao_{side.name}.stl"))
+        export_stl(built.xiao.usb_connector, os.path.join(OUT_DIR, f"usb_{side.name}.stl"))
+        export_stl(side.mirrored(left_magnets), os.path.join(OUT_DIR, f"magnets_{side.name}.stl"))
+        export_stl(Compound([bodies.moved(loc) for loc in side.switch_locations]), os.path.join(OUT_DIR, f"switches_{side.name}.stl"))
+        export_stl(Compound([caps.moved(loc) for loc in side.switch_locations]), os.path.join(OUT_DIR, f"caps_{side.name}.stl"))
     print(f"Exported meshes to {OUT_DIR}")
 
 

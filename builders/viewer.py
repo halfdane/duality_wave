@@ -54,3 +54,14 @@ class OcpViewer:
         from ocp_vscode import Render, push_object
 
         push_object(self.debug.content, name="debug", mode=Render.NONE)
+
+
+def show_in_viewer(port: int = 3939) -> None:
+    """Display everything that was pushed to the OCP CAD Viewer."""
+    from ocp_vscode import Camera, ColorMap, set_colormap, set_defaults, set_port, show_clear, show_objects
+
+    set_port(port)
+    show_clear()
+    set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
+    set_colormap(ColorMap.seeded(colormap="rgb", alpha=1, seed_value="wave"))
+    show_objects()
