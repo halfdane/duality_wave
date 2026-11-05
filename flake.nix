@@ -67,7 +67,7 @@
               echo "Tests:                               task test    (full, includes check)"
               echo "Viewer (browser, works in this VM):  task viewer   -> http://127.0.0.1:3939"
               echo "Then build the case:                 task build"
-              echo "Variants:                            task snapfit"
+              echo "Variants:                            task compact"
             else
               echo "uv sync FAILED — see error above."
             fi

@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     from models.choc import Choc
 
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ergogen', 'snap_fit.yml')
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ergogen', 'compact.yml')
     points = get_points(file_path=config_path)
 
     def create_sizing(switch: Switch):

@@ -38,10 +38,10 @@ tasks:
     cmds:
       - python duality_wave.py
 
-  snapfit:
-    desc: Build the compact case variant (snap_fit.py) and export STEP files to build/step.
+  compact:
+    desc: Build the compact case variant (compact_case.py) and export STEP files to build/step.
     cmds:
-      - python snap_fit.py
+      - python compact_case.py
 
   coupons:
     desc: Export the fit calibration coupons (coupons.py) as one print plate.

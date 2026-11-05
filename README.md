@@ -120,7 +120,7 @@ The dev shell installs the Python dependencies with `uv`.
 | --- | --- |
 | `task viewer` | Starts the OCP CAD viewer on port 3939. |
 | `task build` | Builds the case with `duality_wave.py` and exports STEP files. |
-| `task snapfit` | Builds the compact variant with `snap_fit.py`. |
+| `task compact` | Builds the compact variant with `compact_case.py`. |
 | `task coupons` | Exports `build/coupons.stl` and previews the coupons in the viewer. |
 | `task render` | Renders the images in `docs/images` with Blender. |
 | `task test` | Runs the unit tests. This takes about a minute. |
@@ -141,7 +141,7 @@ The finished halves are `case.left` and `case.right`.
 - `builders/side.py` places the parts on the left or right half.
 - `builders/accessories.py` builds the models that are only shown in the viewer.
 - `builders/viewer.py` decides what is pushed to the viewer.
-- `snap_fit.py` is a compact variant for test prints. The snap-fit feature itself was removed.
+- `compact_case.py` builds a compact variant for test prints.
 - `ergogen_layout.py` is a small Python port of the ergogen layout code.
 - `models/` holds the part models and the outline.
 - `models/features.py` holds the cutters that the case and the coupons share.
