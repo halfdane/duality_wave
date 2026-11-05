@@ -9,6 +9,16 @@ from models.switch import Switch
 from models.xiao import Xiao
 
 
+# wiring channel under the terminals of each switch: size and offset from the switch center
+TERMINAL_CHANNEL = (12, 4)
+TERMINAL_CHANNEL_OFFSET_Y = -4.5
+# the XIAO processor pocket is this much larger than the processor, the board cutout this much smaller than the board
+XIAO_PROCESSOR_SLACK = 0.5
+XIAO_BOARD_INSET = 0.5
+# slack around a switch post
+POST_CLEARANCE = 0.1
+
+
 def build_bottom(ctx: CaseContext, dbg=NullScope()) -> Part:
     print("Creating bottom...")
     dims = ctx.dims
@@ -50,12 +60,12 @@ def _cut_xiao_support(ctx: CaseContext, dbg) -> None:
     dims = ctx.dims
     with BuildSketch(Plane.XY.offset(dims.xiao_position.Z)) as xiao_support:
         with Locations((dims.xiao_position.X, dims.xiao_position.Y - Xiao.processor.forward_y)):
-            Rectangle(Xiao.processor.d.X + 0.5, Xiao.processor.d.Y + 0.5)
+            Rectangle(Xiao.processor.d.X + XIAO_PROCESSOR_SLACK, Xiao.processor.d.Y + XIAO_PROCESSOR_SLACK)
     extrude(to_extrude=xiao_support.sketch, amount=-(Xiao.dims.d.Z + Xiao.processor.d.Z + dims.clearance), mode=Mode.SUBTRACT)
     dbg.note("xiao support", xiao_support)
     with BuildSketch(Plane.XY.offset(dims.xiao_position.Z)) as xiao_cutout:
         with Locations((dims.xiao_position.X, dims.xiao_position.Y - Xiao.processor.forward_y)):
-            Rectangle(Xiao.dims.d.X - 0.5, Xiao.dims.d.Y - Xiao.processor.forward_y * 2 + 4)
+            Rectangle(Xiao.dims.d.X - XIAO_BOARD_INSET, Xiao.dims.d.Y - Xiao.processor.forward_y * 2 + 4)
     extrude(to_extrude=xiao_cutout.sketch, amount=-(Xiao.dims.d.Z + Xiao.processor.d.Z / 2), mode=Mode.SUBTRACT)
     dbg.note("xiao xiao_cutout", xiao_cutout)
 
@@ -105,11 +115,11 @@ def add_switch_post_cutouts(bottom: Shape, switch: Switch, bottom_plate_z: float
                 for post in posts:
                     # The underside workplane flips local Y, not the physical footprint's X.
                     with Locations((post.p.X, -post.p.Y)):
-                        Circle(post.d.radius + 0.1)
+                        Circle(post.d.radius + POST_CLEARANCE)
         extrude(amount=-max(post.d.Z for post in posts), mode=Mode.SUBTRACT)
         with BuildSketch(Plane.XY.offset(-switch.below.d.Z + bottom_plate_z)):
-            with Locations([p.position + Vector(0, -4.5) for p in placements]):
-                Rectangle(12, 4)
+            with Locations([p.position + Vector(0, TERMINAL_CHANNEL_OFFSET_Y) for p in placements]):
+                Rectangle(*TERMINAL_CHANNEL)
         extrude(amount=-max(post.d.Z / 2 for post in posts), mode=Mode.SUBTRACT)
 
     return result.part
