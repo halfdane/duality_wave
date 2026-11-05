@@ -1,521 +1,70 @@
-from dataclasses import dataclass, field, InitVar
-import math
-import copy
-from build123d import *
-from build123d import Shape
-from models.choc import Choc
-from models.cherry import Cherry
-from models.switch import Switch
-from models.xiao import Xiao
-from models.power_switch import PowerSwitch
-from models.symbol import Symbol
-from models.space_invader import SpaceInvader
-from models.keys import ErgoKeys, Point, get_points
-from models.rubber_bumper import RubberBumper, BumperDimensions
+from builders.accessories import build_fixtures
+from builders.bottom import build_bottom
+from builders.common import CaseContext
+from builders.keyplate import build_keyplate
+from builders.keywell import build_keywell
+from builders.side import Blanks, BuiltSide, Side, finish_side
+from builders.viewer import NullViewer, OcpViewer
 from models.heat_set_insert import HeatSetInsert
-from models.screw import LowProfileScrew
+from models.keys import ErgoKeys
 from models.model_types import WaveDimensions
-from models.features import switch_cutter, magnet_recess_cutter, xiao_pocket_cutter
-
-from ocp_vscode import *
-
-from models.outline import Outline
+from models.rubber_bumper import RubberBumper
+from models.screw import LowProfileScrew
+from models.switch import Switch
 
 
 class WaveCase:
-    def __init__(self, switch: Switch, keys: ErgoKeys, caseDimensions: WaveDimensions, outline, debug=False, both_sides=False):
+    """Builds the keywell, keyplate and bottom for one or both halves of the keyboard.
+
+    The parts are available as case.left and case.right (BuiltSide). case.right is None unless both_sides is set.
+    With debug the accessories are built as well and everything is pushed to the viewer, the intermediate
+    shapes last in a group that starts hidden. Pass a viewer to show the parts somewhere else.
+    """
+
+    def __init__(self, switch: Switch, keys: ErgoKeys, caseDimensions: WaveDimensions, outline, debug=False, both_sides=False, viewer=None):
         self.switch = switch
         self.keys = keys
-
         self.dims = caseDimensions
         self.outline = outline
         self.bumper = RubberBumper()
         self.insert = HeatSetInsert(self.dims.print_profile.insert_pilot_radius)
         self.screw = LowProfileScrew()
 
-        self.debug_content: dict = {}
+        self.viewer = viewer if viewer is not None else (OcpViewer() if debug else NullViewer())
+        self.debug = self.viewer.enabled
+
+        ctx = CaseContext(switch, keys, self.dims, outline, self.bumper, self.insert, self.screw)
 
         print("Creating case...")
+        blanks = Blanks(
+            keywell=build_keywell(ctx, self.viewer.debug.scope("keywell")),
+            keyplate=build_keyplate(ctx, self.viewer.debug.scope("keyplate")),
+            bottom=build_bottom(ctx, self.viewer.debug.scope("bottom")),
+        )
+        fixtures = build_fixtures(ctx) if self.debug else None
 
-        self.debug = debug
-
-        push_object(self.debug_content, name="debug") if self.debug else None
-
-        self.create_accessories()
-        
-        # Plane.move() applies the Location in the plane's own (already-rotated) frame, so
-        # rotating then moving flips the sign of any axis touched by the rotation. Rotate at
-        # the origin first, then rebuild the plane with the absolute target origin instead.
-        xiao_plane = Plane.XY.rotated((180,0,0))
-        xiao_plane = Plane(self.dims.xiao_position, x_dir=xiao_plane.x_dir, z_dir=xiao_plane.z_dir)
-        self.xiao = Xiao(xiao_plane, clearance=self.dims.clearance)
-
-        if self.debug:
-            accessories_left = {}
-            accessories_left["chocs"] = self.switches
-            accessories_left["xiao"] = self.xiao.model
-            accessories_left["bumpers"] = self.bumpers
-            accessories_left["power_switch"] = self.powerswitch
-            accessories_left["battery"] = self.battery
-            accessories_left["magnets"] = self.magnets
-            accessories_left["inserts"] = self.inserts
-            accessories_left["screws"] = self.screws
-            push_object(accessories_left, name="accessories_left")
-
-        self.keywell = self.create_keywell()
-        self.keywell_left = self.xiao.add_usb_cutouts(self.keywell)
-        push_object(self.keywell_left, name="keywell_left") if self.debug else None
-
-        self.keyplate = self.create_keyplate()
-        self.keyplate_left = self.xiao.add_large_usb_cutouts(self.keyplate)
-        push_object(self.keyplate_left, name="keyplate_left") if self.debug else None
-
-        self.bottom = self.create_bottom()
-        left_switch_locations = [Location(key.p, (0, 0, key.r)) for key in self.keys.keys]
-        self.bottom_left = self.add_switch_post_cutouts(self.bottom, left_switch_locations)
-        self.bottom_left = self.xiao.add_large_usb_cutouts(self.bottom_left)
-        self.bottom_left = self.xiao.add_reset_lever(
-            self.bottom_left, xiao_plane.offset(self.dims.keyplate_z + self.dims.bottom_plate_z + self.dims.xiao_position.Z)) 
-        push_object(self.bottom_left, name="bottom_left") if self.debug else None
-
+        left = Side.left(ctx)
+        self.left: BuiltSide = finish_side(ctx, left, blanks, fixtures, self.viewer)
+        self.right: BuiltSide | None = None
         if both_sides:
-            right_mirror_plane = Plane(
-                (self.dims.right_side_offset / 2, 0, 0),
-                x_dir=Plane.YZ.x_dir,
-                z_dir=Plane.YZ.z_dir,
-            )
-            xiao_right_plane = Plane(
-                (self.dims.right_side_offset - xiao_plane.origin.X,
-                xiao_plane.origin.Y,
-                xiao_plane.origin.Z),
-                x_dir=xiao_plane.x_dir,
-                z_dir=xiao_plane.z_dir,
-            )
+            self.right = finish_side(ctx, Side.right(ctx, left), blanks, fixtures, self.viewer)
 
-            xiao_right = self.xiao_right = Xiao(xiao_right_plane, clearance=self.dims.clearance)
-            right_switch_locations = [
-                Location((self.dims.right_side_offset - key.p.X, key.p.Y, key.p.Z), (0, 0, -key.r))
-                for key in self.keys.keys
-            ]
-
-            if self.debug:
-                accessories_right = {}
-                with BuildPart() as switches_right:
-                    with Locations(right_switch_locations):
-                        add(self.switch.model.part)
-                accessories_right["chocs_right"] = switches_right.part
-                accessories_right["xiao_right"] = xiao_right.model
-                accessories_right["bumpers_right"] = mirror(self.bumpers, about=right_mirror_plane)
-                accessories_right["power_switch_right"] = mirror(self.powerswitch, about=right_mirror_plane)
-                accessories_right["battery_right"] = mirror(self.battery, about=right_mirror_plane)
-                accessories_right["magnets_right"] = mirror(self.magnets, about=right_mirror_plane)
-                accessories_right["inserts_right"] = mirror(self.inserts, about=right_mirror_plane)
-                accessories_right["screws_right"] = mirror(self.screws, about=right_mirror_plane)
-                push_object(accessories_right, name="accessories_right")
-
-            self.keywell_right = mirror(self.keywell, about=right_mirror_plane)
-            self.keywell_right = xiao_right.add_usb_cutouts(self.keywell_right)
-            push_object(self.keywell_right, name="keywell_right") if self.debug else None
-
-            self.keyplate_right = mirror(self.keyplate, about=right_mirror_plane)
-            self.keyplate_right = xiao_right.add_large_usb_cutouts(self.keyplate_right)
-            push_object(self.keyplate_right, name="keyplate_right") if self.debug else None
-
-            self.bottom_right = mirror(self.bottom, about=right_mirror_plane)
-            self.bottom_right = self.add_switch_post_cutouts(self.bottom_right, right_switch_locations)
-            self.bottom_right = xiao_right.add_large_usb_cutouts(self.bottom_right)
-            self.bottom_right = xiao_right.add_reset_lever(
-                self.bottom_right, xiao_right_plane.offset(self.dims.keyplate_z + self.dims.bottom_plate_z + self.dims.xiao_position.Z))
-            push_object(self.bottom_right, name="bottom_right") if self.debug else None
+        self.viewer.push_debug()
         print("Done creating case.")
 
-    def create_keyplate(self):
-        print("Creating keyplate...")
-        debug_content = {}
-        self.debug_content["keyplate"] = debug_content if self.debug else None
-        with BuildPart() as keyplate:
-            base=add(self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness - self.dims.print_profile.plate_clearance))
-            extrude(amount=-self.dims.keyplate_z)
-            debug_content["base"] = base if self.debug else None
 
-            # the face at z=0 is printed on the bed
-            plate_faces = faces().filter_by(Axis.Z).sort_by(Axis.Z)
-            chamfer(objects=plate_faces[0].edges(), length=self.dims.print_profile.plate_edge_chamfer)
-            chamfer(objects=plate_faces[-1].edges(), length=self.dims.print_profile.plate_bed_chamfer)
-
-            debug_content["base edges"] = base.edges() if self.debug else None
-
-            print("  fastener holes...")
-            with BuildSketch() as fastener_holes:
-                with Locations(self.dims.fastener_positions):
-                    Circle(self.screw.mount.clearance.radius)
-            extrude(to_extrude=fastener_holes.sketch, amount=-self.dims.keyplate_z, mode=Mode.SUBTRACT)
-            debug_content["fastener holes"] = fastener_holes if self.debug else None
-
-            print("  key holes...")
-            key_holes = switch_cutter(
-                self.switch, self.dims.print_profile,
-                [Location(key.p, (0, 0, key.r)) for key in self.keys.keys],
-                plate_z=self.dims.below_z)
-            debug_content["key_holes"] = key_holes if self.debug else None
-            add(key_holes, mode=Mode.SUBTRACT)
-
-            print("  xiao hole...")
-            xiao_pocket = xiao_pocket_cutter(self.dims.print_profile, self.dims.xiao_position, plate_z=self.dims.below_z)
-            debug_content["xiao_pocket"] = xiao_pocket if self.debug else None
-            add(xiao_pocket, mode=Mode.SUBTRACT)
-
-            print("  connector cut...")
-            connector_width: float = 2
-            with BuildSketch(Plane.XY.offset(-self.dims.keyplate_z)) as connector_sketch:
-                for cluster in self.keys.clusters:
-                    for keycol in cluster:
-                        with BuildLine() as col_line:
-                            pts = [ key.p + (self.switch.posts.p2.d.X, -self.switch.posts.p2.d.Y) for key in keycol]
-                            if len(pts) < 2:
-                                continue
-                            Polyline(*pts)
-                            offset(amount=connector_width, side=Side.BOTH)
-                        make_face()
-
-                    max_rows = max(len(col) for col in cluster)
-                    for row_idx in range(max_rows):
-                        with BuildLine() as row_line:
-                            # For this row, collect the appropriate position from each column
-                            pts = []
-                            for col in cluster:
-                                if len(col) > row_idx:
-                                    pts.append(col[row_idx])
-                                elif len(col) > 0:  # fall back to the "lower" row if not enough points
-                                    pts.append(col[-1])
-                                # else: skip empty column (no point to connect)
-                            pts = [key.p + (self.switch.posts.p2.d.X, -self.switch.posts.p2.d.Y) for key in pts]
-                            if len(pts) < 2:
-                                continue
-                            Polyline(*pts)
-                            offset(amount=connector_width, side=Side.BOTH)
-                        make_face()
-
-                def find_closest_pair(keys_a: list[Point|Vector], keys_b: list[Point|Vector]) -> tuple[Vector, Vector]:
-                    min_distance = math.inf
-                    closest_a = None
-                    closest_b = None
-                    for a in keys_a:
-                        for b in keys_b:
-                            a_pos = a.p if isinstance(a, Point) else a
-                            b_pos = b.p if isinstance(b, Point) else b
-                            dist = (a_pos - b_pos).length
-                            if dist < min_distance:
-                                min_distance = dist
-                                closest_a = a_pos
-                                closest_b = b_pos
-                    return closest_a, closest_b
-                
-                # find closest points between clusters and connect them
-                for i in range(len(self.keys.clusters)-1):
-                    cluster_a = [key for col in self.keys.clusters[i] for key in col]
-                    cluster_b = [key for col in self.keys.clusters[i+1] for key in col]
-                    closest_pair = find_closest_pair(cluster_a, cluster_b)
-                    l = Line(closest_pair)
-                    offset(objects=l, amount=connector_width, side=Side.BOTH)
-                    make_face()
-                
-                top_pinkie = self.keys.finger_clusters[0][0][len(self.keys.finger_clusters[0][0])-1].p
-                l=Line(top_pinkie, (self.dims.xiao_position.X - self.xiao.dims.d.X/4, self.dims.xiao_position.Y, self.dims.xiao_position.Z))
-                offset(l, amount=connector_width, side=Side.BOTH)
-                make_face()
-
-            extrude(amount=self.dims.keyplate_z - self.switch.bottom_housing.d.Z, mode=Mode.SUBTRACT)
-            debug_content["connector_sketch"] = connector_sketch if self.debug else None
-
-            print("  powerswitch...")
-            with BuildSketch(Plane(self.dims.powerswitch_position).rotated(self.dims.powerswitch_rotation)) as powerswitch_cut:
-                Rectangle(PowerSwitch.dims.d.X + 2*self.dims.clearance, PowerSwitch.dims.d.Y + 2*self.dims.clearance)
-                pin_clearance_y = (PowerSwitch.dims.d.Y + PowerSwitch.dims.pin_length + 10)
-                with Locations((0, pin_clearance_y/2)):
-                    Rectangle(PowerSwitch.dims.d.X - 3, pin_clearance_y)
-            extrude(amount=-PowerSwitch.dims.d.Z, mode=Mode.SUBTRACT)
-            debug_content["powerswitch_cut"] = powerswitch_cut if self.debug else None
+def _side_part(side: str, part: str):
+    def getter(self: WaveCase):
+        built = getattr(self, side)
+        if built is None:
+            raise AttributeError(f"the {side} side was not built")
+        return getattr(built, part)
+    return property(getter)
 
 
-        return keyplate.part
-    
-    def create_keywell(self):
-        print("Creating keywell...")
-        debug_content = {}
-        self.debug_content["keywell"] = debug_content if self.debug else None
-        with BuildPart() as keywell:
-            with BuildSketch(Plane.XY.offset(self.dims.above_z)) as body_sketch:
-                add(self.outline.create_outline())
-            body = extrude(amount=-self.dims.below_z - self.dims.above_z)
-
-            def intersect_faces(faces: ShapeList[Face]) -> ShapeList[Face]:
-                return lambda aFace: len([aFace for f in faces if f.intersect(aFace) is not None]) > 0
-        
-            print("  skulpting thumb cut...")
-            debug_thumb_content = {}
-            debug_content["thumb_cut"] = debug_thumb_content if self.debug else None
-
-            thumb_x_from_top = self.switch.cap.d.Z + self.switch.stem.d.Z
-            thumb_floor_z = self.dims.above_z - thumb_x_from_top
-            # The top edge of each slope sits thumb_run_* beyond the original floor edge, away from the keys.
-            # thumb_inset_* pulls the floor edge back towards the keys, so the slope spreads in both directions.
-            thumb_run_inner = 5
-            thumb_run_outer = 15
-            thumb_inset_inner = 7
-            thumb_inset_outer = 3
-            thumb_slope_layers = 16
-
-            def thumb_cut_rectangles(inner_grow: float, outer_grow: float):
-                for thumb_cluster in self.keys.thumb_clusters:
-                    for column_index, column in enumerate(thumb_cluster):
-                        for key_index, key in enumerate(column):
-                            x = self.switch.above.d.X * 1.5
-                            y = self.switch.above.d.Y * 0.75
-                            loc = Location(key.p + (0, -y), key.r)
-                            if key_index == 0 and column_index == 0:
-                                # this is the innermost key - start the cut further to the right
-                                loc.position += Vector(self.switch.above.d.X/3, 0, 0).rotate(Axis.Z, key.r)
-
-                            if key_index == 0:
-                                # this is the first key in the column - make the cut taller
-                                loc.position += Vector(0, -5, 0).rotate(Axis.Z, key.r)
-                                y += 10
-
-                            # only two edges of the cut slope: the inner end (-x) and the outer end (+y).
-                            # the other two edges lie outside the case.
-                            left = inner_grow if column_index == 0 else 0
-                            back = outer_grow if key_index == len(column) - 1 else 0
-                            loc.position += Vector(-left/2, back/2, 0).rotate(Axis.Z, key.r)
-                            with Locations(loc):
-                                Rectangle(x + left, y + back)
-
-            # Stack the cut in layers. The slope grows evenly with the layer number while the height
-            # follows a cosine ease, so the slope leaves the floor and meets the top tangentially.
-            for layer in range(thumb_slope_layers + 1):
-                progress = layer / thumb_slope_layers
-                eased = 0.5 - 0.5 * math.cos(math.pi * progress)
-                with BuildSketch(Plane.XY.offset(thumb_floor_z + thumb_x_from_top * eased)) as thumb_cut_sketch:
-                    thumb_cut_rectangles(
-                        -thumb_inset_inner + (thumb_run_inner + thumb_inset_inner) * progress,
-                        -thumb_inset_outer + (thumb_run_outer + thumb_inset_outer) * progress)
-                if layer == 0:
-                    debug_thumb_content["sketch"] = thumb_cut_sketch if self.debug else None
-            loft(mode=Mode.SUBTRACT)
-
-            print("  filleting thumb cut...")
-
-            # every face thats not top or bottom
-            outside = [f for f in body.faces() if f not in body.faces().filter_by(Axis.Z)]
-
-            def outside_edges() -> list[Edge]:
-                faces = ShapeList(f for f in keywell.faces().filter_by(intersect_faces(outside)) if f not in keywell.faces().filter_by(Axis.Z))
-                debug_content["outside_faces"] = faces if self.debug else None
-                return faces.edges()
-
-            # where the slope blends into the top or the floor it is tangent already, so there is no crease to round
-            def is_slope_silhouette(edge: Edge) -> bool:
-                return edge.geom_type == GeomType.BSPLINE and thumb_floor_z + 0.4 < edge.center().Z < self.dims.above_z - 0.4
-
-            # the fillet the curved slope edges and the rest of the thumb cut
-            slope_edge_positions = [e.center() for e in outside_edges() if is_slope_silhouette(e)]
-            for position in slope_edge_positions:
-                # earlier fillets can have rounded this edge already, or replaced it
-                edge = next((e for e in outside_edges() if is_slope_silhouette(e) and (e.center() - position).length < 0.05), None)
-                if edge is None:
-                    continue
-                fillet(edge, radius=1.0)
-            fillet([e for e in outside_edges() if e.geom_type != GeomType.BSPLINE], radius=1)
-
-            print("  keywell cut...")
-            keywell_wall = self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness)
-            add(keywell_wall)
-            extrude(amount=-self.dims.below_z, mode=Mode.SUBTRACT)
-
-            with BuildSketch(Plane.XY.offset(self.dims.above_z)) as key_cut_sketch:
-                add(self.outline.create_keywell_outline())
-            extrude(to_extrude=key_cut_sketch.sketch, amount=-self.dims.below_z - self.dims.above_z, mode=Mode.SUBTRACT)
-
-            print("  heat-set insert pilots...")
-            with BuildSketch(Plane.XY.offset(self.dims.heat_insert_z)) as insert_pilots:
-                with Locations(self.dims.fastener_positions):
-                    Circle(self.insert.mount.pilot.radius)
-            extrude(amount=-20, mode=Mode.SUBTRACT)
-            debug_content["insert pilots"] = insert_pilots if self.debug else None
-
-            print("  fastener holes...")
-            bottom_plane = Plane.XY.offset(-self.dims.below_z)
-            with BuildSketch(bottom_plane) as fastener_holes:
-                with Locations(self.dims.fastener_positions):
-                    Circle(self.screw.mount.clearance.radius)
-            extrude(amount=self.screw.dims.shaft.Z + self.screw.dims.head.Z + 0.1, mode=Mode.SUBTRACT)
-            debug_content["fastener holes"] = fastener_holes if self.debug else None
-
-            print("  battery recess...")
-            battery_pd = self.dims.battery_pd
-            with BuildSketch(Plane.XY.offset(battery_pd.p.Z + battery_pd.d.Z/2 + self.dims.print_profile.battery_clearance)) as battery_sketch:
-                with Locations((battery_pd.p.X, battery_pd.p.Y)):
-                    Rectangle(battery_pd.d.X + 2*self.dims.print_profile.battery_clearance, battery_pd.d.Y + 2*self.dims.print_profile.battery_clearance)
-            extrude(amount=-battery_pd.d.Z - self.dims.wall_thickness, mode=Mode.SUBTRACT)
-            debug_content["battery_sketch"] = battery_sketch if self.debug else None
-
-            if self.dims.magnet_positions:
-                print("  magnet recesses...")
-                magnet_recesses = magnet_recess_cutter(
-                    self.dims.magnet_d, self.dims.print_profile, self.dims.magnet_positions, top_z=self.dims.above_z)
-                add(magnet_recesses, mode=Mode.SUBTRACT)
-                debug_content["magnet_recesses"] = magnet_recesses if self.debug else None
-
-            print("  symbol...")
-            with BuildSketch(Plane.XY.offset(self.dims.above_z)) as symbol_sketch:
-                symbol_height = 20
-                with Locations(self.outline.top_left + Vector(0.65*symbol_height, -0.6*symbol_height)):
-                    add(Symbol(total_height=symbol_height).sketch)
-            extrude(amount=-0.5, mode=Mode.SUBTRACT)
-            debug_content["symbol_sketch"] = symbol_sketch if self.debug else None
-
-        return keywell.part
-    
-    def create_bottom(self):
-        print("Creating bottom...")
-        debug_content = {}
-        self.debug_content["bottom"] = debug_content if self.debug else None
-        with BuildPart() as bottom:
-            outline = self.outline.create_inner_outline(offset_by=-self.dims.wall_thickness - self.dims.print_profile.plate_clearance)
-            
-            with BuildSketch(Plane.XY.offset(-self.dims.below_z)) as base:
-                add(outline)
-            extrude(amount=self.dims.bottom_plate_z)
-            # the outer face at -below_z is printed on the bed
-            plate_faces = faces().filter_by(Axis.Z).sort_by(Axis.Z)
-            chamfer(objects=plate_faces[0].edges(), length=self.dims.print_profile.plate_bed_chamfer)
-            chamfer(objects=plate_faces[-1].edges(), length=self.dims.print_profile.plate_edge_chamfer)
-
-            print("  fastener holes...")
-            bottom_plane = Plane.XY.offset(-self.dims.below_z)
-            with BuildSketch(bottom_plane) as fastener_holes:
-                with Locations(self.dims.fastener_positions):
-                    Circle(self.screw.mount.clearance.radius)
-            extrude(to_extrude=fastener_holes.sketch, amount=self.dims.bottom_plate_z, mode=Mode.SUBTRACT)
-            debug_content["fastener holes"] = fastener_holes if self.debug else None
-
-            with BuildSketch(bottom_plane) as head_recesses:
-                with Locations(self.dims.fastener_positions):
-                    Circle(self.screw.mount.head_recess.radius)
-            extrude(to_extrude=head_recesses.sketch, amount=self.screw.mount.head_recess.Z, mode=Mode.SUBTRACT)
-            debug_content["head recesses"] = head_recesses if self.debug else None
-
-            print("  xiao support...")
-            with BuildSketch(Plane.XY.offset(self.dims.xiao_position.Z)) as xiao_support:
-                with Locations((self.dims.xiao_position.X, self.dims.xiao_position.Y - Xiao.processor.forward_y)):
-                    Rectangle(Xiao.processor.d.X + 0.5, Xiao.processor.d.Y + 0.5)
-            extrude(amount=-(Xiao.dims.d.Z + Xiao.processor.d.Z + self.dims.clearance) , mode=Mode.SUBTRACT)
-            debug_content["xiao support"] = xiao_support if self.debug else None
-            with BuildSketch(Plane.XY.offset(self.dims.xiao_position.Z)) as xiao_cutout:
-                with Locations((self.dims.xiao_position.X, self.dims.xiao_position.Y - Xiao.processor.forward_y)):
-                    Rectangle(Xiao.dims.d.X - 0.5, Xiao.dims.d.Y - Xiao.processor.forward_y*2 +4)
-            extrude(amount=-(Xiao.dims.d.Z + Xiao.processor.d.Z/2) , mode=Mode.SUBTRACT)
-            debug_content["xiao xiao_cutout"] = xiao_cutout if self.debug else None
-
-            print("  bumper cutouts...")
-            with BuildSketch(Plane.XY.offset(-self.dims.below_z)):
-                with Locations(self.dims.bumper_locations):
-                    Circle(self.bumper.dims.radius)
-            extrude(amount=self.bumper.dims.base_z, mode=Mode.SUBTRACT)
-
-            with BuildSketch(Plane(self.dims.powerswitch_position).rotated(self.dims.powerswitch_rotation)) as powerswitch_cut:
-                with Locations((0, PowerSwitch.dims.pin_length/2)):
-                    Rectangle(PowerSwitch.dims.d.X + 1, PowerSwitch.dims.d.Y + 1 + PowerSwitch.dims.pin_length)
-            extrude(amount=-10, mode=Mode.SUBTRACT)
-
-            with BuildSketch(Plane(self.dims.powerswitch_position).rotated(self.dims.powerswitch_rotation)) as powerswitch_lever_cut_sketch:
-                with Locations(-PowerSwitch.lever.p):
-                    RectangleRounded(PowerSwitch.lever.clearance + 0.5, PowerSwitch.lever.d.Y +0.5, radius=0.5)
-            powerswitch_lever_cut = extrude(amount=self.dims.powerswitch_position.Z + self.dims.below_z, mode=Mode.SUBTRACT)
-            debug_content["powerswitch_lever_cut"] = powerswitch_lever_cut if self.debug else None
-            chamfer(powerswitch_lever_cut.edges().group_by(Axis.Z)[0], length=1.5, length2=0.5)
-
-            print("  space invader...")
-            if self.dims.space_invader is not None:
-                with BuildSketch(Plane.XY.offset(-self.dims.below_z)) as invader_sketch:
-                    invader_height = 10
-                    with Locations(self.dims.space_invader):
-                        add(SpaceInvader(total_height=invader_height).sketch)
-                extrude(amount=0.5, mode=Mode.SUBTRACT)
-                debug_content["invader_sketch"] = invader_sketch if self.debug else None
-
-        return bottom.part
-
-    def add_switch_post_cutouts(self, bottom: Shape, placements: list[Location]) -> Part:
-        print("  switch post cutouts...")
-        posts = [self.switch.posts.center, 
-                 self.switch.posts.a1, 
-                 self.switch.posts.a2, 
-                 self.switch.posts.p1, 
-                 self.switch.posts.p2]
-        with BuildPart() as result:
-            add(bottom)
-            with BuildSketch(Plane.XY.offset(-self.switch.below.d.Z + self.dims.bottom_plate_z)):
-                with Locations(placements):
-                    for post in posts:
-                        # The underside workplane flips local Y, not the physical footprint's X.
-                        with Locations((post.p.X, -post.p.Y)):
-                            Circle(post.d.radius + 0.1)
-            extrude(amount=-max(post.d.Z for post in posts), mode=Mode.SUBTRACT)
-            with BuildSketch(Plane.XY.offset(-self.switch.below.d.Z + self.dims.bottom_plate_z)):
-                with Locations([p.position+Vector(0, -4.5) for p in placements]):
-                    Rectangle(12, 4)
-            extrude(amount=-max(post.d.Z/2 for post in posts), mode=Mode.SUBTRACT)
-
-        return result.part
-
-    def create_accessories(self):
-        if not self.debug:
-            return
-        
-        with BuildPart() as self.switches:
-            for key in self.keys.keys:
-                with Locations(key.p):
-                    add(self.switch.model.part.rotate(Axis.Z, key.r))
-        self.switches = self.switches.part
-        
-        self.bumper.model = self.bumper.model.rotate(Axis.X, 180).translate((0,0,-self.dims.below_z + self.bumper.dims.base_z))
-        with BuildPart() as self.bumpers:
-            with Locations(self.dims.bumper_locations):
-                add(self.bumper.model)
-        self.bumpers = self.bumpers.part
-
-        self.powerswitch = PowerSwitch()
-        self.powerswitch = self.powerswitch.model\
-            .rotate(Axis.Y, self.dims.powerswitch_rotation.Y )\
-            .rotate(Axis.Z, self.dims.powerswitch_rotation.Z )\
-            .translate(self.dims.powerswitch_position)
-
-        with BuildPart() as inserts:
-            with Locations([
-                Vector(position.X, position.Y, self.insert.dims.d.Z/2)  # pressed in flush with the face at z=0
-                for position in self.dims.fastener_positions
-            ]):
-                add(self.insert.model)
-        self.inserts = inserts.part
-
-        with BuildPart() as screws:
-            with Locations([
-                Vector(position.X, position.Y, -self.dims.below_z + self.screw.dims.shaft.Z/2 + self.screw.dims.head.Z)
-                for position in self.dims.fastener_positions
-            ]):
-                add(self.screw.model.rotate(Axis.X, 180))
-        self.screws = screws.part
-
-
-        battery = Box(self.dims.battery_pd.d.X, self.dims.battery_pd.d.Y, self.dims.battery_pd.d.Z)
-        battery = battery.translate(self.dims.battery_pd.p)
-        self.battery = battery
-
-        if self.dims.magnet_positions:
-            with BuildPart() as magnets: 
-                with BuildSketch(Plane.XY.offset(self.dims.magnet_positions[0].Z)) as magnet_sketch:
-                    with Locations(self.dims.magnet_positions):
-                        Circle(self.dims.magnet_d.radius)
-                extrude(amount=-self.dims.magnet_d.Z)
-            self.magnets = magnets.part
+# flat names that callers used before the sides existed
+for _side in ("left", "right"):
+    for _part in ("keywell", "keyplate", "bottom"):
+        setattr(WaveCase, f"{_part}_{_side}", _side_part(_side, _part))
+WaveCase.xiao = _side_part("left", "xiao")
+WaveCase.xiao_right = _side_part("right", "xiao")

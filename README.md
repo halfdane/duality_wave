@@ -128,10 +128,17 @@ The dev shell installs the Python dependencies with `uv`.
 The exported `*.step` and `*.stl` files are not tracked by git.
 The key layout comes from `ergogen/wave.yml`.
 `WaveCase(debug=True)` builds the accessory models and sends everything to the viewer.
+The intermediate shapes arrive last, in a group named `debug` that starts hidden.
 `WaveCase(debug=False)` builds only the printable parts.
+The finished halves are `case.left` and `case.right`.
 
 - `duality_wave.py` holds the case dimensions and the main build.
-- `wave_generator.py` builds the three parts and the accessories.
+- `wave_generator.py` has `WaveCase`, which builds the three parts for each half.
+- `builders/` holds one builder per part (`keywell.py`, `keyplate.py`, `bottom.py`).
+- `builders/thumb_cut.py` builds the sculpted thumb slope of the keywell.
+- `builders/side.py` places the parts on the left or right half.
+- `builders/accessories.py` builds the models that are only shown in the viewer.
+- `builders/viewer.py` decides what is pushed to the viewer.
 - `snap_fit.py` is a compact variant for test prints. The snap-fit feature itself was removed.
 - `ergogen.py` is a small Python port of the ergogen layout code.
 - `models/` holds the part models and the outline.

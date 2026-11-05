@@ -1,10 +1,13 @@
 import unittest
+from functools import cache
 from unittest.mock import patch
 
 from dataclasses import replace
-from types import SimpleNamespace
 
 from build123d import Axis, Box, Location, Plane, Solid, Vector
+from ocp_vscode import Render
+
+from builders.bottom import add_switch_post_cutouts
 
 from models.choc import Choc
 from models.features import magnet_recess_cutter, switch_cutter
@@ -65,34 +68,104 @@ class FeatureTests(unittest.TestCase):
         self.assertAlmostEqual(width_at(cutter, 7.0), 2 * (magnet.radius + profile.magnet_clearance), places=3)
 
 
+PARTS = ("keywell", "keyplate", "bottom")
+
+
+@cache
+def build_case(debug: bool, both_sides: bool = True):
+    """Build a case once per test run. Returns the case and the mock that received its viewer pushes."""
+    switch = Choc()
+    keys = ErgoKeys(get_points("ergogen/wave.yml"))
+    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
+    dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
+    with patch("ocp_vscode.push_object") as push_object:
+        case = WaveCase(switch, keys, dims, outline, debug=debug, both_sides=both_sides)
+    return case, push_object
+
+
+def pushed_names(push_object):
+    return [call.kwargs["name"] for call in push_object.call_args_list]
+
+
 class DebugFlagTests(unittest.TestCase):
-    def test_debug_off_builds_the_same_parts_without_accessories(self):
-        switch = Choc()
-        keys = ErgoKeys(get_points("ergogen/wave.yml"))
-        outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
-        dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
-        with patch("wave_generator.push_object") as push_object:
-            quiet = WaveCase(switch, keys, dims, outline, debug=False, both_sides=True)
-            push_object.assert_not_called()
-            verbose = WaveCase(switch, keys, dims, outline, debug=True, both_sides=True)
-        self.assertFalse(hasattr(quiet, "switches"))
-        for name in ("keywell", "keyplate", "bottom"):
-            for side in ("left", "right"):
+    def test_debug_off_pushes_nothing_and_builds_no_accessories(self):
+        case, push_object = build_case(debug=False)
+        push_object.assert_not_called()
+        self.assertIsNone(case.left.accessories)
+        self.assertIsNone(case.right.accessories)
+
+    def test_debug_off_builds_the_same_parts_as_debug_on(self):
+        quiet, _ = build_case(debug=False)
+        verbose, _ = build_case(debug=True)
+        for side in ("left", "right"):
+            for name in PARTS:
                 with self.subTest(part=f"{name}_{side}"):
                     self.assertAlmostEqual(
                         getattr(quiet, f"{name}_{side}").volume, getattr(verbose, f"{name}_{side}").volume, places=3)
 
+    def test_debug_on_pushes_every_part_and_the_debug_group_last(self):
+        case, push_object = build_case(debug=True)
+        names = pushed_names(push_object)
+        self.assertEqual(names[-1], "debug")
+        self.assertEqual(names.count("debug"), 1)
+        for side in ("left", "right"):
+            for name in ("accessories", *PARTS):
+                self.assertIn(f"{name}_{side}", names[:-1])
+
+    def test_debug_group_starts_hidden_and_the_parts_do_not(self):
+        _, push_object = build_case(debug=True)
+        modes = {call.kwargs["name"]: call.kwargs.get("mode") for call in push_object.call_args_list}
+        self.assertEqual(modes.pop("debug"), Render.NONE)
+        self.assertTrue(all(mode is None for mode in modes.values()))
+
+    def test_debug_group_holds_what_the_builders_noted(self):
+        _, push_object = build_case(debug=True)
+        group = next(c.args[0] for c in push_object.call_args_list if c.kwargs["name"] == "debug")
+        for name in PARTS:
+            self.assertTrue(group[name], f"nothing noted for {name}")
+
+    def test_accessories_are_built_for_both_halves(self):
+        case, _ = build_case(debug=True)
+        for built in (case.left, case.right):
+            for part in built.accessories.as_dict().values():
+                self.assertGreater(part.volume, 0)
+
+
+class SidesTests(unittest.TestCase):
+    def test_one_sided_case_has_no_right_half(self):
+        case, _ = build_case(debug=False, both_sides=False)
+        self.assertIsNone(case.right)
+        for name in PARTS:
+            self.assertTrue(hasattr(case, f"{name}_left"))
+            self.assertFalse(hasattr(case, f"{name}_right"))
+        self.assertFalse(hasattr(case, "xiao_right"))
+
+    def test_flat_names_point_at_the_sides(self):
+        case, _ = build_case(debug=False)
+        for side in ("left", "right"):
+            for name in PARTS:
+                self.assertIs(getattr(case, f"{name}_{side}"), getattr(getattr(case, side), name))
+        self.assertIs(case.xiao, case.left.xiao)
+        self.assertIs(case.xiao_right, case.right.xiao)
+
+    def test_right_half_mirrors_the_left_half(self):
+        case, _ = build_case(debug=False)
+        offset = case.dims.right_side_offset
+        for name in PARTS:
+            with self.subTest(part=name):
+                left, right = getattr(case, f"{name}_left"), getattr(case, f"{name}_right")
+                self.assertAlmostEqual(left.volume / right.volume, 1, places=3)
+                self.assertAlmostEqual(right.bounding_box().min.X, offset - left.bounding_box().max.X, places=3)
+                self.assertAlmostEqual(right.bounding_box().max.X, offset - left.bounding_box().min.X, places=3)
+                self.assertAlmostEqual(right.bounding_box().min.Y, left.bounding_box().min.Y, places=3)
+
 
 class SwitchPostCutoutTests(unittest.TestCase):
     def test_complete_case_terminal_clearance(self):
-        switch = Choc()
-        keys = ErgoKeys(get_points("ergogen/wave.yml"))
-        outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
-        dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
-        with patch("wave_generator.push_object"):
-            case = WaveCase(switch, keys, dims, outline, debug=True, both_sides=True)
+        case, _ = build_case(debug=False)
+        switch, keys, dims = case.switch, case.keys, case.dims
         for side in ("left", "right"):
-            for name in ("keywell", "keyplate", "bottom"):
+            for name in PARTS:
                 part = getattr(case, f"{name}_{side}")
                 self.assertTrue(part.is_valid)
                 self.assertEqual(len(part.solids()), 1)
@@ -111,9 +184,6 @@ class SwitchPostCutoutTests(unittest.TestCase):
                         self.assertLess(sum(s.volume for s in overlap.solids()) if overlap else 0, 1e-7)
 
     def test_physical_footprint_on_both_halves(self):
-        case = WaveCase.__new__(WaveCase)
-        case.switch = Choc
-        case.dims = SimpleNamespace(bottom_plate_z=3.0)
         for angle in (0, 23, -37):
             for right in (False, True):
                 with self.subTest(angle=angle, right=right):
@@ -121,7 +191,7 @@ class SwitchPostCutoutTests(unittest.TestCase):
                     rotation = -angle if right else angle
                     placement = Location(position, (0, 0, rotation))
                     blank = Box(30, 30, 3).translate(position + Vector(0, 0, -4.4))
-                    bottom = case.add_switch_post_cutouts(blank, [placement])
+                    bottom = add_switch_post_cutouts(blank, Choc, 3.0, [placement])
                     self.assertTrue(bottom.is_valid)
                     self.assertEqual(len(bottom.solids()), 1)
                     for post in (Choc.posts.center, Choc.posts.p1, Choc.posts.p2):
