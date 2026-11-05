@@ -7,7 +7,7 @@ import math
 from build123d import *
 from models.switch import Switch
 from models.keys import ErgoKeys
-from ergogen import Point, get_points
+from ergogen_layout import Point, get_points
 
 class Outline:
     def __init__(self, switch: Switch, keys: ErgoKeys, wall_thickness=1.8, additional_top_space=10):
@@ -220,7 +220,6 @@ if __name__ == "__main__":
     set_colormap(ColorMap.accent())
 
     from models.choc import Choc
-    from models.cherry import Cherry
 
     switch = Choc()
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ergogen', 'wave.yml')
@@ -239,18 +238,6 @@ if __name__ == "__main__":
     choc_inner_sketch_arrows = add_arrows(choc_inner_sketch.edges())
     choc_keywell = outline.keywell_sketch
     choc_keywell_arrows = add_arrows(choc_keywell.edges())
-
-    # # switch = Cherry()
-    # # keys = Keys(switch=switch)
-    # # outline = Outline(switch=switch, keys=keys, wall_thickness=1.8)
-    # # with BuildSketch() as cherry_key_holes:
-    # #     for keycol in keys.keycols:
-    # #         with BuildSketch():
-    # #             with Locations(keycol.locs):
-    # #                 Rectangle(switch.below.d.X, switch.below.d.Y, rotation=keycol.rotation)
-    # # cherry_sketch = outline.sketch
-    # # cherry_inner_sketch = outline.inner_sketch
-    # # cherry_keywell = outline.keywell_sketch
 
     show_all()
 

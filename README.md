@@ -141,7 +141,7 @@ The finished halves are `case.left` and `case.right`.
 - `builders/accessories.py` builds the models that are only shown in the viewer.
 - `builders/viewer.py` decides what is pushed to the viewer.
 - `snap_fit.py` is a compact variant for test prints. The snap-fit feature itself was removed.
-- `ergogen.py` is a small Python port of the ergogen layout code.
+- `ergogen_layout.py` is a small Python port of the ergogen layout code.
 - `models/` holds the part models and the outline.
 - `models/features.py` holds the cutters that the case and the coupons share.
 - `coupons.py` builds the calibration coupons.

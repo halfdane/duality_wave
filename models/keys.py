@@ -8,7 +8,7 @@ from functools import reduce
 import math
 from build123d import *
 from models.switch import Switch
-from ergogen import Point, get_points
+from ergogen_layout import Point, get_points
 from itertools import groupby
 from collections import OrderedDict, defaultdict
 
@@ -66,7 +66,6 @@ if __name__ == "__main__":
     set_colormap(ColorMap.seeded(colormap="rgb", alpha=1, seed_value="wave"))
 
     from models.choc import Choc
-    from models.cherry import Cherry
 
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ergogen', 'snap_fit.yml')
     points = get_points(file_path=config_path)
@@ -82,7 +81,6 @@ if __name__ == "__main__":
 
 
     choc_sizing = create_sizing(switch=Choc())
-    # cherry_sizing = create_sizing(switch=Cherry())
 
 
     show_all()

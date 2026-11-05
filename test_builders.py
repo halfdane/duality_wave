@@ -211,7 +211,7 @@ class HeadlessImportTests(unittest.TestCase):
             "        if name.split('.')[0] == 'ocp_vscode':\n"
             "            raise ImportError('blocked ' + name)\n"
             "sys.meta_path.insert(0, Block())\n"
-            "import wave_generator, render, ergogen, models.case_dimensions, builders.export\n"
+            "import wave_generator, render, ergogen_layout, models.case_dimensions, builders.export\n"
             "assert 'ocp_vscode' not in sys.modules\n"
         )
         result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
