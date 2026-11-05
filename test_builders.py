@@ -4,7 +4,7 @@ import unittest
 from dataclasses import replace
 from types import SimpleNamespace
 
-from build123d import Box, Plane, Vector
+from build123d import BuildSketch, Box, Circle, Plane, Sketch, Vector
 
 from builders.accessories import build_fixtures
 from builders.side import Side
@@ -85,6 +85,22 @@ class DebugScopeTests(unittest.TestCase):
         self.assertEqual(child.note("holes", 1), 1)
         debug.note("top", 2)
         self.assertEqual(debug.content, {"keyplate": {"holes": 1}, "top": 2})
+
+    def test_builders_are_noted_as_plain_shapes(self):
+        debug = DebugScope()
+        with BuildSketch() as sketch:
+            Circle(2)
+        returned = debug.note("holes", sketch)
+        self.assertIs(returned, sketch)
+        self.assertNotIsInstance(debug.content["holes"], BuildSketch)
+        self.assertIsInstance(debug.content["holes"], Sketch)
+        self.assertAlmostEqual(debug.content["holes"].area, sketch.sketch.area)
+
+    def test_other_values_are_noted_as_they_are(self):
+        debug = DebugScope()
+        box = Box(1, 1, 1)
+        debug.note("box", box)
+        self.assertIs(debug.content["box"], box)
 
     def test_null_scope_keeps_nothing(self):
         scope = NullScope()

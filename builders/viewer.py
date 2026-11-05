@@ -1,3 +1,17 @@
+from build123d import BuildLine, BuildPart, BuildSketch
+
+
+def plain_shape(value):
+    """The shape inside a builder. The viewer would show a builder as a group with a second, local copy."""
+    if isinstance(value, BuildSketch):
+        return value.sketch
+    if isinstance(value, BuildPart):
+        return value.part
+    if isinstance(value, BuildLine):
+        return value.line
+    return value
+
+
 class DebugScope:
     """Collects intermediate shapes in a nested dict that the viewer shows as one group."""
 
@@ -5,7 +19,7 @@ class DebugScope:
         self.content: dict = {}
 
     def note(self, name: str, value):
-        self.content[name] = value
+        self.content[name] = plain_shape(value)
         return value
 
     def scope(self, name: str) -> "DebugScope":
