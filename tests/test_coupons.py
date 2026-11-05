@@ -1,7 +1,8 @@
-import os
 import unittest
 
 from build123d import Vector
+
+from tests import WAVE_LAYOUT
 
 from coupons import create_coupon_parts, create_coupons, plate_fit_coupon, pocket_coupon, round_hole_coupon, switch_plate_coupon
 from models.case_dimensions import CaseDimensions
@@ -15,7 +16,7 @@ class CouponTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.switch = Choc()
-        keys = ErgoKeys(get_points(os.path.join(os.path.dirname(__file__), "ergogen", "wave.yml")))
+        keys = ErgoKeys(get_points(WAVE_LAYOUT))
         outline = Outline(switch=cls.switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
         cls.dims = CaseDimensions(switch=cls.switch, outline=outline, keys=keys)
         cls.profile = cls.dims.print_profile

@@ -16,13 +16,14 @@ from models.print_profile import PrintProfile
 from models.case_dimensions import CaseDimensions
 from models.keys import ErgoKeys, get_points
 from models.outline import Outline
+from tests import WAVE_LAYOUT
 from wave_generator import WaveCase
 
 
 class OutlineTests(unittest.TestCase):
     def test_inner_outline_is_deterministic(self):
         switch = Choc()
-        keys = ErgoKeys(get_points("ergogen/wave.yml"))
+        keys = ErgoKeys(get_points(WAVE_LAYOUT))
         outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
         for offset_by in (-1.8, -1.82):
             areas = {round(outline.create_inner_outline(offset_by=offset_by).area, 6) for _ in range(5)}
@@ -75,7 +76,7 @@ PARTS = ("keywell", "keyplate", "bottom")
 def build_case(debug: bool, both_sides: bool = True):
     """Build a case once per test run. Returns the case and the mock that received its viewer pushes."""
     switch = Choc()
-    keys = ErgoKeys(get_points("ergogen/wave.yml"))
+    keys = ErgoKeys(get_points(WAVE_LAYOUT))
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
     with patch("ocp_vscode.push_object") as push_object:

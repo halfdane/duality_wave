@@ -147,6 +147,7 @@ The finished halves are `case.left` and `case.right`.
 - `models/features.py` holds the cutters that the case and the coupons share.
 - `coupons.py` builds the calibration coupons.
 - `render.py` and `render_blender.py` create the images.
+- `tests/` holds the unit tests.
 
 This project is the descendant of the duality_particle.
 Some names, for example `cirque_recess_*` in `models/outline.py`, still show that origin.

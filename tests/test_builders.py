@@ -19,6 +19,7 @@ from models.keys import Point
 from models.model_types import PosAndDims, RectDimensions, RoundDimensions
 from models.rubber_bumper import RubberBumper
 from models.screw import LowProfileScrew
+from tests import ROOT
 
 
 def section_area(part, z):
@@ -238,7 +239,7 @@ class HeadlessImportTests(unittest.TestCase):
             "import wave_generator, render, ergogen_layout, models.case_dimensions, builders.export\n"
             "assert 'ocp_vscode' not in sys.modules\n"
         )
-        result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, cwd=ROOT)
         self.assertEqual(result.returncode, 0, result.stderr[-2000:])
 
 
