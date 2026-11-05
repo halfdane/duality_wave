@@ -9,7 +9,7 @@ settings as the final case, then copy the winning values into the PrintProfile.
   C  round holes      magnet recess size and heat-set insert pilot size
   D  pockets          XIAO pocket clearance and the battery pocket
 
-Run `task coupons` to export coupons.stl and to preview the coupons in the OCP viewer.
+Run `task coupons` to export build/coupons.stl and to preview the coupons in the OCP viewer.
 """
 from dataclasses import replace
 
@@ -308,6 +308,8 @@ if __name__ == "__main__":
     parts = create_coupon_parts(switch, dims)
     coupons = Compound(list(parts.values()))
     size = coupons.bounding_box().size
-    print(f"coupons.stl: {len(coupons.solids())} parts, {size.X:.0f} x {size.Y:.0f} x {size.Z:.1f} mm")
-    export_stl(coupons, "coupons.stl")
+    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build", "coupons.stl")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    print(f"{out_path}: {len(coupons.solids())} parts, {size.X:.0f} x {size.Y:.0f} x {size.Z:.1f} mm")
+    export_stl(coupons, out_path)
     preview(parts)

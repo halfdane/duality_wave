@@ -31,7 +31,7 @@ tasks:
         exec python -m ocp_vscode --port 3939
 
   build:
-    desc: Build the main wave case (duality_wave.py) and export STLs.
+    desc: Build the main wave case (duality_wave.py) and export STEP files to build/step.
     summary: |
       Runs the primary case generator. With `task viewer` running in another
       shell, geometry is also pushed to the browser viewer.
@@ -39,14 +39,14 @@ tasks:
       - python duality_wave.py
 
   snapfit:
-    desc: Build the compact case variant (snap_fit.py) and export STLs.
+    desc: Build the compact case variant (snap_fit.py) and export STEP files to build/step.
     cmds:
       - python snap_fit.py
 
   coupons:
     desc: Export the fit calibration coupons (coupons.py) as one print plate.
     summary: |
-      Writes coupons.stl with a switch plate, a plate-in-cavity fit test, round
+      Writes build/coupons.stl with a switch plate, a plate-in-cavity fit test, round
       holes for magnets and heat-set inserts, and pockets. Print it
       with the settings of the final case, then update the PrintProfile.
       With `task viewer` running, the coupons also show up in the browser.

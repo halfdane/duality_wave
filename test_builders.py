@@ -1,12 +1,15 @@
 import subprocess
 import sys
+import tempfile
 import unittest
+from pathlib import Path
 from dataclasses import replace
 from types import SimpleNamespace
 
 from build123d import BuildSketch, Box, Circle, Plane, Sketch, Vector
 
 from builders.accessories import build_fixtures
+from builders.export import export_steps
 from builders.side import Side
 from builders.thumb_cut import ThumbCutSpec, thumb_cutter, thumb_depth, thumb_floor_z
 from builders.viewer import DebugScope, NullScope
@@ -200,6 +203,27 @@ class SideTests(unittest.TestCase):
         left = Side.left(ctx)
         self.assertEqual(left.suffix, "")
         self.assertEqual(Side.right(ctx, left).suffix, "_right")
+
+
+class ExportTests(unittest.TestCase):
+    def built_side(self, name):
+        parts = {part: Box(1, 1, 1) for part in ("keywell", "keyplate", "bottom")}
+        return SimpleNamespace(side=SimpleNamespace(name=name), **parts)
+
+    def test_exports_every_part_of_every_built_half(self):
+        case = SimpleNamespace(left=self.built_side("left"), right=self.built_side("right"))
+        with tempfile.TemporaryDirectory() as tmp:
+            written = export_steps(case, suffix="_x", out_dir=Path(tmp) / "nested")
+            self.assertEqual(len(written), 6)
+            for path in written:
+                self.assertGreater(path.stat().st_size, 0)
+            self.assertIn("keywell_right_x.step", {path.name for path in written})
+
+    def test_skips_a_half_that_was_not_built(self):
+        case = SimpleNamespace(left=self.built_side("left"), right=None)
+        with tempfile.TemporaryDirectory() as tmp:
+            written = export_steps(case, out_dir=tmp)
+            self.assertEqual({path.name for path in written}, {"keywell_left.step", "keyplate_left.step", "bottom_left.step"})
 
 
 class HeadlessImportTests(unittest.TestCase):

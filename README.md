@@ -91,7 +91,7 @@ The defaults match a Bambu Lab printer with PLA.
 Change the profile for every new printer, material or slicer.
 
 1. Run `task coupons`.
-2. Print `coupons.stl` with the same settings as the final case.
+2. Print `build/coupons.stl` with the same settings as the final case.
 3. Find the tightest fit that still goes together by hand.
 4. Copy the winning values into a `PrintProfile`.
 
@@ -121,11 +121,12 @@ The dev shell installs the Python dependencies with `uv`.
 | `task viewer` | Starts the OCP CAD viewer on port 3939. |
 | `task build` | Builds the case with `duality_wave.py` and exports STEP files. |
 | `task snapfit` | Builds the compact variant with `snap_fit.py`. |
-| `task coupons` | Exports `coupons.stl` and previews the coupons in the viewer. |
+| `task coupons` | Exports `build/coupons.stl` and previews the coupons in the viewer. |
 | `task render` | Renders the images in `docs/images` with Blender. |
 | `task test` | Runs the unit tests. This takes about a minute. |
 
-The exported `*.step` and `*.stl` files are not tracked by git.
+The STEP files go to `build/step` and `coupons.stl` to `build/`.
+Git ignores the `build` directory.
 The key layout comes from `ergogen/wave.yml`.
 `WaveCase(debug=True)` builds the accessory models and sends everything to the viewer.
 The intermediate shapes arrive last, in a group named `debug` that starts hidden.
