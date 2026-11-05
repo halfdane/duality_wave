@@ -295,7 +295,7 @@ def preview(parts: dict[str, Shape]) -> None:
 if __name__ == "__main__":
     import os
 
-    from duality_wave import CaseDimensions
+    from models.case_dimensions import CaseDimensions
     from models.keys import ErgoKeys, get_points
     from models.outline import Outline
 

@@ -132,7 +132,8 @@ The intermediate shapes arrive last, in a group named `debug` that starts hidden
 `WaveCase(debug=False)` builds only the printable parts.
 The finished halves are `case.left` and `case.right`.
 
-- `duality_wave.py` holds the case dimensions and the main build.
+- `duality_wave.py` runs the main build.
+- `models/case_dimensions.py` holds the case dimensions of the main case and the compact variant.
 - `wave_generator.py` has `WaveCase`, which builds the three parts for each half.
 - `builders/` holds one builder per part (`keywell.py`, `keyplate.py`, `bottom.py`).
 - `builders/thumb_cut.py` builds the sculpted thumb slope of the keywell.

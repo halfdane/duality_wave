@@ -13,7 +13,7 @@ from models.choc import Choc
 from models.features import magnet_recess_cutter, switch_cutter
 from models.model_types import RoundDimensions
 from models.print_profile import PrintProfile
-from duality_wave import CaseDimensions
+from models.case_dimensions import CaseDimensions
 from models.keys import ErgoKeys, get_points
 from models.outline import Outline
 from wave_generator import WaveCase

@@ -4,7 +4,7 @@ import unittest
 from build123d import Vector
 
 from coupons import create_coupon_parts, create_coupons, plate_fit_coupon, pocket_coupon, round_hole_coupon, switch_plate_coupon
-from duality_wave import CaseDimensions
+from models.case_dimensions import CaseDimensions
 from models.choc import Choc
 from models.xiao import Xiao
 from models.keys import ErgoKeys, get_points

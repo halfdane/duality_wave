@@ -7,7 +7,7 @@ import sys
 
 from build123d import *
 
-from duality_wave import CaseDimensions
+from models.case_dimensions import CaseDimensions
 from models.choc import Choc
 from models.keys import ErgoKeys, get_points
 from models.outline import Outline
