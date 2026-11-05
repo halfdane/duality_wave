@@ -1,5 +1,4 @@
 from build123d import *
-from ocp_vscode import *
 from dataclasses import dataclass
 
 @dataclass

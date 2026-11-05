@@ -1,3 +1,5 @@
+import subprocess
+import sys
 import unittest
 from dataclasses import replace
 from types import SimpleNamespace
@@ -182,6 +184,22 @@ class SideTests(unittest.TestCase):
         left = Side.left(ctx)
         self.assertEqual(left.suffix, "")
         self.assertEqual(Side.right(ctx, left).suffix, "_right")
+
+
+class HeadlessImportTests(unittest.TestCase):
+    def test_building_blocks_import_without_the_viewer_package(self):
+        script = (
+            "import sys\n"
+            "class Block:\n"
+            "    def find_spec(self, name, path=None, target=None):\n"
+            "        if name.split('.')[0] == 'ocp_vscode':\n"
+            "            raise ImportError('blocked ' + name)\n"
+            "sys.meta_path.insert(0, Block())\n"
+            "import wave_generator, render, ergogen, models.case_dimensions, builders.export\n"
+            "assert 'ocp_vscode' not in sys.modules\n"
+        )
+        result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr[-2000:])
 
 
 if __name__ == "__main__":

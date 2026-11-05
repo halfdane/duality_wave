@@ -1,7 +1,5 @@
 from itertools import groupby
 import json
-from ocp_vscode import *
-
 
 import yaml
 import sympy
@@ -453,11 +451,13 @@ def main(config_path: str):
             with Locations(point.p):
                 Rectangle(point.meta.get('width', 18), point.meta.get('height', 18), rotation=point.r)
 
+    from ocp_vscode import push_object
     push_object(sketch.sketch, name="Points")
 
 
 if __name__ == "__main__":
     import sys, os
+    from ocp_vscode import *
 
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ergogen', 'wave.yml')
     main(config_path)
