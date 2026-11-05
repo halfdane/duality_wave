@@ -53,9 +53,15 @@ tasks:
     cmds:
       - python coupons.py
 
-  test:
-    desc: Run the unit tests (takes about a minute).
+  check:
+    desc: Fast checks. Byte-compiles all sources to catch syntax errors.
     cmds:
+      - python -m compileall -q -x '/(\.venv|build|\.direnv)/' .
+
+  test:
+    desc: Run check, then the unit tests (takes about a minute).
+    cmds:
+      - task: check
       - python -m unittest
 
   render:

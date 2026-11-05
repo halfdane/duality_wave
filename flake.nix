@@ -9,7 +9,10 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
 
         # Pin the interpreter. The OCP wheels only ship aarch64-linux builds
         # for cp310-cp313, so we must NOT let uv wander onto Python 3.14+.
@@ -60,6 +63,8 @@
               echo "Python:      $(python --version)"
 
               echo ""
+              echo "Checks:                              task check   (fast)"
+              echo "Tests:                               task test    (full, includes check)"
               echo "Viewer (browser, works in this VM):  task viewer   -> http://127.0.0.1:3939"
               echo "Then build the case:                 task build"
               echo "Variants:                            task snapfit"
@@ -68,5 +73,7 @@
             fi
           '';
         };
+
+        formatter = pkgs.nixfmt-tree;
       });
 }
