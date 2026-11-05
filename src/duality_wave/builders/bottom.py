@@ -1,12 +1,12 @@
 from build123d import *
 from build123d import Shape
 
-from builders.common import CaseContext, circle_sketch, powerswitch_plane
-from builders.viewer import NullScope
-from models.power_switch import PowerSwitch
-from models.space_invader import SpaceInvader
-from models.switch import Switch
-from models.xiao import Xiao
+from duality_wave.builders.common import CaseContext, circle_sketch, powerswitch_plane
+from duality_wave.builders.viewer import NullScope
+from duality_wave.models.power_switch import PowerSwitch
+from duality_wave.models.space_invader import SpaceInvader
+from duality_wave.models.switch import Switch
+from duality_wave.models.xiao import Xiao
 
 
 # wiring channel under the terminals of each switch: size and offset from the switch center

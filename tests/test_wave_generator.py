@@ -7,17 +7,17 @@ from dataclasses import replace
 from build123d import Axis, Box, Location, Plane, Solid, Vector
 from ocp_vscode import Render
 
-from builders.bottom import add_switch_post_cutouts
+from duality_wave.builders.bottom import add_switch_post_cutouts
 
-from models.choc import Choc
-from models.features import magnet_recess_cutter, switch_cutter
-from models.model_types import RoundDimensions
-from models.print_profile import PrintProfile
-from models.case_dimensions import CaseDimensions
-from models.keys import ErgoKeys, get_points
-from models.outline import Outline
+from duality_wave.models.choc import Choc
+from duality_wave.models.features import magnet_recess_cutter, switch_cutter
+from duality_wave.models.model_types import RoundDimensions
+from duality_wave.models.print_profile import PrintProfile
+from duality_wave.models.case_dimensions import CaseDimensions
+from duality_wave.models.keys import ErgoKeys, get_points
+from duality_wave.models.outline import Outline
 from tests import WAVE_LAYOUT
-from wave_generator import WaveCase
+from duality_wave.case import WaveCase
 
 
 class OutlineTests(unittest.TestCase):

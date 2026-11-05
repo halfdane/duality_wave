@@ -1,14 +1,9 @@
-if __name__ == "__main__":
-    import sys, os
-    # add parent directory to path
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from dataclasses import dataclass, InitVar, field
 from functools import reduce
 import math
 from build123d import *
-from models.switch import Switch
-from ergogen_layout import Point, get_points
+from duality_wave.models.switch import Switch
+from duality_wave.layout import Point, get_points
 from itertools import groupby
 from collections import OrderedDict, defaultdict
 
@@ -65,9 +60,10 @@ if __name__ == "__main__":
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     set_colormap(ColorMap.seeded(colormap="rgb", alpha=1, seed_value="wave"))
 
-    from models.choc import Choc
+    from duality_wave.models.choc import Choc
+    from duality_wave.paths import LAYOUT_DIR
 
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ergogen', 'compact.yml')
+    config_path = LAYOUT_DIR / 'compact.yml'
     points = get_points(file_path=config_path)
 
     def create_sizing(switch: Switch):

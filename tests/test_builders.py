@@ -8,17 +8,17 @@ from types import SimpleNamespace
 
 from build123d import BuildSketch, Box, Circle, Plane, Sketch, Vector
 
-from builders.accessories import build_fixtures
-from builders.export import export_steps
-from builders.side import Side
-from builders.thumb_cut import ThumbCutSpec, thumb_cutter, thumb_depth, thumb_floor_z
-from builders.viewer import DebugScope, NullScope
-from models.choc import Choc
-from models.heat_set_insert import HeatSetInsert
-from models.keys import Point
-from models.model_types import PosAndDims, RectDimensions, RoundDimensions
-from models.rubber_bumper import RubberBumper
-from models.screw import LowProfileScrew
+from duality_wave.builders.accessories import build_fixtures
+from duality_wave.builders.export import export_steps
+from duality_wave.builders.side import Side
+from duality_wave.builders.thumb_cut import ThumbCutSpec, thumb_cutter, thumb_depth, thumb_floor_z
+from duality_wave.builders.viewer import DebugScope, NullScope
+from duality_wave.models.choc import Choc
+from duality_wave.models.heat_set_insert import HeatSetInsert
+from duality_wave.models.keys import Point
+from duality_wave.models.model_types import PosAndDims, RectDimensions, RoundDimensions
+from duality_wave.models.rubber_bumper import RubberBumper
+from duality_wave.models.screw import LowProfileScrew
 from tests import ROOT
 
 
@@ -236,7 +236,7 @@ class HeadlessImportTests(unittest.TestCase):
             "        if name.split('.')[0] == 'ocp_vscode':\n"
             "            raise ImportError('blocked ' + name)\n"
             "sys.meta_path.insert(0, Block())\n"
-            "import wave_generator, render, ergogen_layout, models.case_dimensions, builders.export\n"
+            "import duality_wave.case, duality_wave.cli.render, duality_wave.layout, duality_wave.models.case_dimensions, duality_wave.builders.export\n"
             "assert 'ocp_vscode' not in sys.modules\n"
         )
         result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, cwd=ROOT)

@@ -1,17 +1,16 @@
-import os
-
-from builders.export import export_steps
-from builders.viewer import show_in_viewer
-from models.case_dimensions import CompactCaseDimensions
-from models.choc import Choc
-from models.keys import ErgoKeys, get_points
-from models.outline import Outline
-from wave_generator import WaveCase
+from duality_wave.builders.export import export_steps
+from duality_wave.builders.viewer import show_in_viewer
+from duality_wave.case import WaveCase
+from duality_wave.models.case_dimensions import CompactCaseDimensions
+from duality_wave.models.choc import Choc
+from duality_wave.models.keys import ErgoKeys, get_points
+from duality_wave.models.outline import Outline
+from duality_wave.paths import LAYOUT_DIR
 
 
 if __name__ == "__main__":
     switch = Choc()
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ergogen', 'compact.yml')
+    config_path = LAYOUT_DIR / "compact.yml"
     keys = ErgoKeys(points=get_points(file_path=config_path))
     outline = Outline(switch=switch, keys=keys, wall_thickness=CompactCaseDimensions.wall_thickness, additional_top_space=22)
     dims = CompactCaseDimensions(switch=switch, outline=outline, keys=keys)

@@ -16,12 +16,12 @@ from dataclasses import replace
 from build123d import *
 from build123d import Shape
 
-from models.choc import Choc
-from models.features import magnet_recess_cutter, switch_cutter, xiao_pocket_cutter
-from models.model_types import RectDimensions, RoundDimensions
-from models.print_profile import PrintProfile
-from models.switch import Switch
-from models.xiao import Xiao
+from duality_wave.models.choc import Choc
+from duality_wave.models.features import magnet_recess_cutter, switch_cutter, xiao_pocket_cutter
+from duality_wave.models.model_types import RectDimensions, RoundDimensions
+from duality_wave.models.print_profile import PrintProfile
+from duality_wave.models.switch import Switch
+from duality_wave.models.xiao import Xiao
 
 LABEL_DEPTH = 0.4
 LABEL_SIZE = 2.2
@@ -293,14 +293,13 @@ def preview(parts: dict[str, Shape]) -> None:
 
 
 if __name__ == "__main__":
-    import os
-
-    from models.case_dimensions import CaseDimensions
-    from models.keys import ErgoKeys, get_points
-    from models.outline import Outline
+    from duality_wave.models.case_dimensions import CaseDimensions
+    from duality_wave.models.keys import ErgoKeys, get_points
+    from duality_wave.models.outline import Outline
+    from duality_wave.paths import BUILD_DIR, LAYOUT_DIR
 
     switch = Choc()
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ergogen", "wave.yml")
+    config_path = LAYOUT_DIR / "wave.yml"
     keys = ErgoKeys(points=get_points(file_path=config_path))
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
@@ -308,8 +307,8 @@ if __name__ == "__main__":
     parts = create_coupon_parts(switch, dims)
     coupons = Compound(list(parts.values()))
     size = coupons.bounding_box().size
-    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build", "coupons.stl")
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    out_path = BUILD_DIR / "coupons.stl"
+    out_path.parent.mkdir(exist_ok=True)
     print(f"{out_path}: {len(coupons.solids())} parts, {size.X:.0f} x {size.Y:.0f} x {size.Z:.1f} mm")
-    export_stl(coupons, out_path)
+    export_stl(coupons, str(out_path))
     preview(parts)

@@ -456,10 +456,11 @@ def main(config_path: str):
 
 
 if __name__ == "__main__":
-    import sys, os
     from ocp_vscode import *
 
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ergogen', 'wave.yml')
+    from duality_wave.paths import LAYOUT_DIR
+
+    config_path = LAYOUT_DIR / 'wave.yml'
     main(config_path)
     
     set_port(3939)

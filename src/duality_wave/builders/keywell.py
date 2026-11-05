@@ -1,10 +1,10 @@
 from build123d import *
 
-from builders.common import CaseContext, circle_sketch
-from builders.thumb_cut import ThumbCutSpec, fillet_thumb_edges, thumb_cutter, thumb_floor_z
-from builders.viewer import NullScope
-from models.features import magnet_recess_cutter
-from models.symbol import Symbol
+from duality_wave.builders.common import CaseContext, circle_sketch
+from duality_wave.builders.thumb_cut import ThumbCutSpec, fillet_thumb_edges, thumb_cutter, thumb_floor_z
+from duality_wave.builders.viewer import NullScope
+from duality_wave.models.features import magnet_recess_cutter
+from duality_wave.models.symbol import Symbol
 
 
 def build_keywell(ctx: CaseContext, dbg=NullScope(), thumb_spec: ThumbCutSpec = ThumbCutSpec()) -> Part:

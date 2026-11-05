@@ -3,9 +3,9 @@ from dataclasses import dataclass
 
 from build123d import *
 
-from builders.viewer import NullScope
-from models.keys import Point
-from models.switch import Switch
+from duality_wave.builders.viewer import NullScope
+from duality_wave.models.keys import Point
+from duality_wave.models.switch import Switch
 
 
 @dataclass(frozen=True)

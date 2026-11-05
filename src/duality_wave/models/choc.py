@@ -1,12 +1,7 @@
-if __name__ == "__main__":
-    import sys, os
-    # add parent directory to path
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from dataclasses import dataclass
 from build123d import *
-from models.model_types import RectDimensions, RoundDimensions, PosAndDims
-from models.switch import Switch
+from duality_wave.models.model_types import RectDimensions, RoundDimensions, PosAndDims
+from duality_wave.models.switch import Switch
 
 @dataclass
 class BaseDimensions:

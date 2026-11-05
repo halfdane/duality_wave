@@ -1,9 +1,9 @@
 from build123d import *
 
-from models.model_types import RoundDimensions
-from models.print_profile import PrintProfile
-from models.switch import Switch
-from models.xiao import Xiao
+from duality_wave.models.model_types import RoundDimensions
+from duality_wave.models.print_profile import PrintProfile
+from duality_wave.models.switch import Switch
+from duality_wave.models.xiao import Xiao
 
 
 def switch_cutter(switch: Switch, profile: PrintProfile, placements: list[Location], plate_z: float) -> Part:

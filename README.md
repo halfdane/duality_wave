@@ -85,7 +85,7 @@ You cannot dry-fit the halves, because the magnets pull out of their recesses.
 
 ## Fit calibration
 
-All fit constants live in `PrintProfile` in `models/print_profile.py`.
+All fit constants live in `PrintProfile` in `src/duality_wave/models/print_profile.py`.
 `CaseDimensions` carries one profile in `print_profile`.
 The defaults match a Bambu Lab printer with PLA.
 Change the profile for every new printer, material or slicer.
@@ -119,8 +119,8 @@ The dev shell installs the Python dependencies with `uv`.
 | Command | What it does |
 | --- | --- |
 | `task viewer` | Starts the OCP CAD viewer on port 3939. |
-| `task build` | Builds the case with `duality_wave.py` and exports STEP files. |
-| `task compact` | Builds the compact variant with `compact_case.py`. |
+| `task build` | Builds the case with `duality_wave.cli.build` and exports STEP files. |
+| `task compact` | Builds the compact variant with `duality_wave.cli.compact`. |
 | `task coupons` | Exports `build/coupons.stl` and previews the coupons in the viewer. |
 | `task render` | Renders the images in `docs/images` with Blender. |
 | `task test` | Runs the unit tests. This takes about a minute. |
@@ -133,20 +133,24 @@ The intermediate shapes arrive last, in a group named `debug` that starts hidden
 `WaveCase(debug=False)` builds only the printable parts.
 The finished halves are `case.left` and `case.right`.
 
-- `duality_wave.py` runs the main build.
-- `models/case_dimensions.py` holds the case dimensions of the main case and the compact variant.
-- `wave_generator.py` has `WaveCase`, which builds the three parts for each half.
+The Python code is the package `duality_wave` in `src/duality_wave/`.
+
+- `cli/build.py` runs the main build.
+- `cli/compact.py` builds a compact variant for test prints.
+- `cli/render.py` exports the meshes for the images.
+- `scripts/render_blender.py` renders the images inside Blender.
+- `case.py` has `WaveCase`, which builds the three parts for each half.
 - `builders/` holds one builder per part (`keywell.py`, `keyplate.py`, `bottom.py`).
 - `builders/thumb_cut.py` builds the sculpted thumb slope of the keywell.
 - `builders/side.py` places the parts on the left or right half.
 - `builders/accessories.py` builds the models that are only shown in the viewer.
 - `builders/viewer.py` decides what is pushed to the viewer.
-- `compact_case.py` builds a compact variant for test prints.
-- `ergogen_layout.py` is a small Python port of the ergogen layout code.
+- `layout.py` is a small Python port of the ergogen layout code.
 - `models/` holds the part models and the outline.
+- `models/case_dimensions.py` holds the case dimensions of the main case and the compact variant.
 - `models/features.py` holds the cutters that the case and the coupons share.
 - `coupons.py` builds the calibration coupons.
-- `render.py` and `render_blender.py` create the images.
+- `paths.py` has the paths to the layouts and the `build` directory.
 - `tests/` holds the unit tests.
 
 This project is the descendant of the duality_particle.

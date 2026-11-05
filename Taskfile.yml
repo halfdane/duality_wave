@@ -31,27 +31,27 @@ tasks:
         exec python -m ocp_vscode --port 3939
 
   build:
-    desc: Build the main wave case (duality_wave.py) and export STEP files to build/step.
+    desc: Build the main wave case (duality_wave.cli.build) and export STEP files to build/step.
     summary: |
       Runs the primary case generator. With `task viewer` running in another
       shell, geometry is also pushed to the browser viewer.
     cmds:
-      - python duality_wave.py
+      - python -m duality_wave.cli.build
 
   compact:
-    desc: Build the compact case variant (compact_case.py) and export STEP files to build/step.
+    desc: Build the compact case variant (duality_wave.cli.compact) and export STEP files to build/step.
     cmds:
-      - python compact_case.py
+      - python -m duality_wave.cli.compact
 
   coupons:
-    desc: Export the fit calibration coupons (coupons.py) as one print plate.
+    desc: Export the fit calibration coupons (duality_wave.coupons) as one print plate.
     summary: |
       Writes build/coupons.stl with a switch plate, a plate-in-cavity fit test, round
       holes for magnets and heat-set inserts, and pockets. Print it
       with the settings of the final case, then update the PrintProfile.
       With `task viewer` running, the coupons also show up in the browser.
     cmds:
-      - python coupons.py
+      - python -m duality_wave.coupons
 
   check:
     desc: Fast checks. Byte-compiles all sources to catch syntax errors.
@@ -67,8 +67,8 @@ tasks:
   render:
     desc: Render the README images into docs/images.
     summary: |
-      Exports the assembled case as meshes (render.py) and renders them with
-      Blender, which `nix shell` fetches on demand (render_blender.py).
+      Exports the assembled case as meshes (duality_wave.cli.render) and renders them with
+      Blender, which `nix shell` fetches on demand (scripts/render_blender.py).
     cmds:
-      - python render.py build/render
-      - nix shell nixpkgs#blender --command blender -b -P render_blender.py -- build/render docs/images
+      - python -m duality_wave.cli.render build/render
+      - nix shell nixpkgs#blender --command blender -b -P scripts/render_blender.py -- build/render docs/images

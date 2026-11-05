@@ -1,13 +1,8 @@
-if __name__ == "__main__":
-    import sys, os
-    # add parent directory to path
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import math
 from build123d import *
-from models.switch import Switch
-from models.keys import ErgoKeys
-from ergogen_layout import Point, get_points
+from duality_wave.models.switch import Switch
+from duality_wave.models.keys import ErgoKeys
+from duality_wave.layout import Point, get_points
 
 class Outline:
     def __init__(self, switch: Switch, keys: ErgoKeys, wall_thickness=1.8, additional_top_space=10):
@@ -219,10 +214,11 @@ if __name__ == "__main__":
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     set_colormap(ColorMap.accent())
 
-    from models.choc import Choc
+    from duality_wave.models.choc import Choc
+    from duality_wave.paths import LAYOUT_DIR
 
     switch = Choc()
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ergogen', 'wave.yml')
+    config_path = LAYOUT_DIR / 'wave.yml'
     points = get_points(file_path=config_path)
     keys = ErgoKeys(points=points)
     

@@ -1,16 +1,16 @@
-from builders.accessories import build_fixtures
-from builders.bottom import build_bottom
-from builders.common import CaseContext
-from builders.keyplate import build_keyplate
-from builders.keywell import build_keywell
-from builders.side import Blanks, BuiltSide, Side, finish_side
-from builders.viewer import NullViewer, OcpViewer
-from models.heat_set_insert import HeatSetInsert
-from models.keys import ErgoKeys
-from models.model_types import WaveDimensions
-from models.rubber_bumper import RubberBumper
-from models.screw import LowProfileScrew
-from models.switch import Switch
+from duality_wave.builders.accessories import build_fixtures
+from duality_wave.builders.bottom import build_bottom
+from duality_wave.builders.common import CaseContext
+from duality_wave.builders.keyplate import build_keyplate
+from duality_wave.builders.keywell import build_keywell
+from duality_wave.builders.side import Blanks, BuiltSide, Side, finish_side
+from duality_wave.builders.viewer import NullViewer, OcpViewer
+from duality_wave.models.heat_set_insert import HeatSetInsert
+from duality_wave.models.keys import ErgoKeys
+from duality_wave.models.model_types import WaveDimensions
+from duality_wave.models.rubber_bumper import RubberBumper
+from duality_wave.models.screw import LowProfileScrew
+from duality_wave.models.switch import Switch
 
 
 class WaveCase:

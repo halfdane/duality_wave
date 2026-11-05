@@ -4,12 +4,12 @@ from build123d import Vector
 
 from tests import WAVE_LAYOUT
 
-from coupons import create_coupon_parts, create_coupons, plate_fit_coupon, pocket_coupon, round_hole_coupon, switch_plate_coupon
-from models.case_dimensions import CaseDimensions
-from models.choc import Choc
-from models.xiao import Xiao
-from models.keys import ErgoKeys, get_points
-from models.outline import Outline
+from duality_wave.coupons import create_coupon_parts, create_coupons, plate_fit_coupon, pocket_coupon, round_hole_coupon, switch_plate_coupon
+from duality_wave.models.case_dimensions import CaseDimensions
+from duality_wave.models.choc import Choc
+from duality_wave.models.xiao import Xiao
+from duality_wave.models.keys import ErgoKeys, get_points
+from duality_wave.models.outline import Outline
 
 
 class CouponTests(unittest.TestCase):

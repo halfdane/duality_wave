@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from build123d import *
 
-from models.print_profile import PrintProfile
+from duality_wave.models.print_profile import PrintProfile
 
 class RectDimensions(Vector):
     pass

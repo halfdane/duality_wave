@@ -2,8 +2,8 @@ from dataclasses import dataclass, fields, replace
 
 from build123d import *
 
-from builders.common import CaseContext
-from models.power_switch import PowerSwitch
+from duality_wave.builders.common import CaseContext
+from duality_wave.models.power_switch import PowerSwitch
 
 
 @dataclass(frozen=True)

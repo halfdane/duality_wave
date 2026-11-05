@@ -2,13 +2,13 @@ from dataclasses import dataclass
 
 from build123d import *
 
-from models.heat_set_insert import HeatSetInsert
-from models.keys import ErgoKeys
-from models.model_types import WaveDimensions
-from models.outline import Outline
-from models.rubber_bumper import RubberBumper
-from models.screw import LowProfileScrew
-from models.switch import Switch
+from duality_wave.models.heat_set_insert import HeatSetInsert
+from duality_wave.models.keys import ErgoKeys
+from duality_wave.models.model_types import WaveDimensions
+from duality_wave.models.outline import Outline
+from duality_wave.models.rubber_bumper import RubberBumper
+from duality_wave.models.screw import LowProfileScrew
+from duality_wave.models.switch import Switch
 
 
 @dataclass(frozen=True)

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from build123d import *
 
-from models.model_types import RoundDimensions
+from duality_wave.models.model_types import RoundDimensions
 
 
 @dataclass

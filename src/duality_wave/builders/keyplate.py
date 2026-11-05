@@ -2,12 +2,12 @@ import math
 
 from build123d import *
 
-from builders.common import CaseContext, circle_sketch, powerswitch_plane
-from builders.viewer import NullScope
-from models.features import switch_cutter, xiao_pocket_cutter
-from models.keys import Point
-from models.power_switch import PowerSwitch
-from models.xiao import Xiao
+from duality_wave.builders.common import CaseContext, circle_sketch, powerswitch_plane
+from duality_wave.builders.viewer import NullScope
+from duality_wave.models.features import switch_cutter, xiao_pocket_cutter
+from duality_wave.models.keys import Point
+from duality_wave.models.power_switch import PowerSwitch
+from duality_wave.models.xiao import Xiao
 
 CONNECTOR_WIDTH = 2
 

@@ -2,7 +2,9 @@ from pathlib import Path
 
 from build123d import export_step
 
-STEP_DIR = Path(__file__).resolve().parent.parent / "build" / "step"
+from duality_wave.paths import BUILD_DIR
+
+STEP_DIR = BUILD_DIR / "step"
 
 
 def export_steps(case, suffix: str = "", out_dir: Path = STEP_DIR) -> list[Path]:

@@ -2,10 +2,10 @@ from dataclasses import dataclass
 
 from build123d import *
 
-from builders.accessories import Accessories, Fixtures, build_switches
-from builders.bottom import add_switch_post_cutouts
-from builders.common import CaseContext
-from models.xiao import Xiao
+from duality_wave.builders.accessories import Accessories, Fixtures, build_switches
+from duality_wave.builders.bottom import add_switch_post_cutouts
+from duality_wave.builders.common import CaseContext
+from duality_wave.models.xiao import Xiao
 
 
 @dataclass(frozen=True)

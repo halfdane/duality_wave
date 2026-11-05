@@ -2,15 +2,15 @@ from dataclasses import dataclass, field, InitVar
 
 from build123d import *
 
-from models.heat_set_insert import HeatSetInsert
-from models.keys import ErgoKeys
-from models.model_types import PosAndDims, RectDimensions, RoundDimensions, WaveDimensions
-from models.outline import Outline
-from models.power_switch import PowerSwitch
-from models.print_profile import PrintProfile
-from models.rubber_bumper import BumperDimensions
-from models.switch import Switch
-from models.xiao import Xiao
+from duality_wave.models.heat_set_insert import HeatSetInsert
+from duality_wave.models.keys import ErgoKeys
+from duality_wave.models.model_types import PosAndDims, RectDimensions, RoundDimensions, WaveDimensions
+from duality_wave.models.outline import Outline
+from duality_wave.models.power_switch import PowerSwitch
+from duality_wave.models.print_profile import PrintProfile
+from duality_wave.models.rubber_bumper import BumperDimensions
+from duality_wave.models.switch import Switch
+from duality_wave.models.xiao import Xiao
 
 
 @dataclass
