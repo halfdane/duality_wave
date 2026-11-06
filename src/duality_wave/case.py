@@ -11,6 +11,7 @@ from duality_wave.models.model_types import WaveDimensions
 from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
 from duality_wave.models.switch import Switch
+from duality_wave.timing import StageTimings
 
 
 class WaveCase:
@@ -19,6 +20,7 @@ class WaveCase:
     The parts are available as case.left and case.right (BuiltSide). case.right is None unless both_sides is set.
     With debug the accessories are built as well and everything is pushed to the viewer, the intermediate
     shapes last in a group that starts hidden. Pass a viewer to show the parts somewhere else.
+    case.timings holds the seconds spent in each build stage.
     """
 
     def __init__(self, switch: Switch, keys: ErgoKeys, caseDimensions: WaveDimensions, outline, debug=False, both_sides=False, viewer=None):
@@ -28,18 +30,24 @@ class WaveCase:
             RubberBumper(), HeatSetInsert(caseDimensions.print_profile.insert_pilot_radius), LowProfileScrew())
 
         print("Creating case...")
-        blanks = Blanks(
-            keywell=build_keywell(ctx, self.viewer.debug.scope("keywell")),
-            keyplate=build_keyplate(ctx, self.viewer.debug.scope("keyplate")),
-            bottom=build_bottom(ctx, self.viewer.debug.scope("bottom")),
-        )
-        fixtures = build_fixtures(ctx) if self.viewer.enabled else None
+        self.timings = StageTimings()
+        with self.timings.stage("keywell"):
+            keywell = build_keywell(ctx, self.viewer.debug.scope("keywell"))
+        with self.timings.stage("keyplate"):
+            keyplate = build_keyplate(ctx, self.viewer.debug.scope("keyplate"))
+        with self.timings.stage("bottom"):
+            bottom = build_bottom(ctx, self.viewer.debug.scope("bottom"))
+        blanks = Blanks(keywell=keywell, keyplate=keyplate, bottom=bottom)
+        with self.timings.stage("fixtures"):
+            fixtures = build_fixtures(ctx) if self.viewer.enabled else None
 
         left = Side.left(ctx)
-        self.left: BuiltSide = finish_side(ctx, left, blanks, fixtures, self.viewer)
+        with self.timings.stage("finish_left"):
+            self.left: BuiltSide = finish_side(ctx, left, blanks, fixtures, self.viewer)
         self.right: BuiltSide | None = None
         if both_sides:
-            self.right = finish_side(ctx, Side.right(ctx, left), blanks, fixtures, self.viewer)
+            with self.timings.stage("finish_right"):
+                self.right = finish_side(ctx, Side.right(ctx, left), blanks, fixtures, self.viewer)
 
         self.viewer.push_debug()
         print("Done creating case.")
