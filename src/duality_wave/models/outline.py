@@ -2,7 +2,7 @@ import math
 from build123d import *
 from duality_wave.models.switch import Switch
 from duality_wave.models.keys import ErgoKeys
-from duality_wave.layout import Point, get_points
+from duality_wave.layout import get_points
 
 class Outline:
     def __init__(self, switch: Switch, keys: ErgoKeys, wall_thickness=1.8, additional_top_space=10):

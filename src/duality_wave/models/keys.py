@@ -1,11 +1,8 @@
-from dataclasses import dataclass, InitVar, field
 from functools import reduce
-import math
 from build123d import *
 from duality_wave.models.switch import Switch
 from duality_wave.layout import Point, get_points
-from itertools import groupby
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 
 class ErgoKeys:
     def __init__(self, points: dict[str, Point]):

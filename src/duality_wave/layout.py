@@ -1,4 +1,3 @@
-from itertools import groupby
 import json
 
 import yaml

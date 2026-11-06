@@ -121,7 +121,7 @@ class Choc(Switch):
 
 # main method
 if __name__ == "__main__":
-    from ocp_vscode import show_object, set_defaults, Camera
+    from ocp_vscode import set_defaults, Camera
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     switch = Choc(show_model=True)
     # show_object(switch.model, name="Kailh Choc Switch")

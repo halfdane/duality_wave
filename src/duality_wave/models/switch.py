@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from build123d import *
-from duality_wave.models.model_types import RectDimensions, RoundDimensions, PosAndDims
+from duality_wave.models.model_types import RectDimensions
 
 @dataclass
 class HasDimensions:
