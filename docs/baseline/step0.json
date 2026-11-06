@@ -1,0 +1,162 @@
+{
+  "build123d": "0.11.1",
+  "variants": {
+    "full": {
+      "total_seconds": 12.44,
+      "stage_seconds": {
+        "build_keywell": 3.39,
+        "build_keyplate": 2.44,
+        "build_bottom": 0.44,
+        "finish_side": 6.15
+      },
+      "parts": {
+        "left.keywell": {
+          "valid": true,
+          "solids": 1,
+          "volume": 29875.895,
+          "bbox_min": [
+            -16.92,
+            -19.386,
+            -5.9
+          ],
+          "bbox_max": [
+            96.166,
+            77.583,
+            8.3
+          ]
+        },
+        "left.keyplate": {
+          "valid": true,
+          "solids": 1,
+          "volume": 12627.818,
+          "bbox_min": [
+            -15.1,
+            -17.331,
+            -2.9
+          ],
+          "bbox_max": [
+            94.222,
+            75.763,
+            0.0
+          ]
+        },
+        "left.bottom": {
+          "valid": true,
+          "solids": 1,
+          "volume": 22656.995,
+          "bbox_min": [
+            -15.1,
+            -17.331,
+            -5.9
+          ],
+          "bbox_max": [
+            94.222,
+            75.763,
+            -2.9
+          ]
+        },
+        "right.keywell": {
+          "valid": true,
+          "solids": 1,
+          "volume": 29875.895,
+          "bbox_min": [
+            103.834,
+            -19.386,
+            -5.9
+          ],
+          "bbox_max": [
+            216.92,
+            77.583,
+            8.3
+          ]
+        },
+        "right.keyplate": {
+          "valid": true,
+          "solids": 1,
+          "volume": 12627.818,
+          "bbox_min": [
+            105.778,
+            -17.331,
+            -2.9
+          ],
+          "bbox_max": [
+            215.1,
+            75.763,
+            0.0
+          ]
+        },
+        "right.bottom": {
+          "valid": true,
+          "solids": 1,
+          "volume": 22656.804,
+          "bbox_min": [
+            105.778,
+            -17.331,
+            -5.9
+          ],
+          "bbox_max": [
+            215.1,
+            75.763,
+            -2.9
+          ]
+        }
+      }
+    },
+    "compact": {
+      "total_seconds": 6.05,
+      "stage_seconds": {
+        "build_keywell": 3.25,
+        "build_keyplate": 0.73,
+        "build_bottom": 0.36,
+        "finish_side": 1.69
+      },
+      "parts": {
+        "left.keywell": {
+          "valid": true,
+          "solids": 1,
+          "volume": 11369.44,
+          "bbox_min": [
+            -11.044,
+            -33.801,
+            -5.9
+          ],
+          "bbox_max": [
+            43.09,
+            36.919,
+            8.3
+          ]
+        },
+        "left.keyplate": {
+          "valid": true,
+          "solids": 1,
+          "volume": 3869.641,
+          "bbox_min": [
+            -9.224,
+            -31.745,
+            -2.9
+          ],
+          "bbox_max": [
+            41.119,
+            35.099,
+            0.0
+          ]
+        },
+        "left.bottom": {
+          "valid": true,
+          "solids": 1,
+          "volume": 6284.713,
+          "bbox_min": [
+            -9.224,
+            -31.745,
+            -5.9
+          ],
+          "bbox_max": [
+            41.119,
+            35.099,
+            -2.9
+          ]
+        }
+      }
+    }
+  }
+}
