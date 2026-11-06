@@ -21,8 +21,8 @@ class ThumbCutSpec:
     """
 
     taper: float = 15
-    inset_inner: float = 7
-    inset_outer: float = 3
+    inset_inner: float = 11
+    inset_outer: float = 1
     corner_radius: float = 2
     layers: int = 16
     rim_chamfer: float = 0.8
