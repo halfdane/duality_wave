@@ -11,7 +11,7 @@ from tests.builds import PARTS, build_case
 SPEC = ROOT / "docs" / "SPEC.md"
 ID = re.compile(r"R-\d{2}")
 PERF_FACTOR = float(os.environ.get("WAVE_PERF_FACTOR", "1"))
-STAGE_LIMITS = {"keywell": 1.5, "keyplate": 3.5, "bottom": 1, "finish_left": 4, "finish_right": 4}
+STAGE_LIMITS = {"keywell": 1.5, "keyplate": 2, "bottom": 1, "finish_left": 2, "finish_right": 2}
 
 
 def spec_ids() -> set[str]:
@@ -75,7 +75,7 @@ class TestFullCase:
             assert keyplate.min.Y > keywell.min.Y and keyplate.max.Y < keywell.max.Y
 
     def test_the_build_stays_inside_its_time_budget(self, full_case):  # R-10, R-12
-        assert full_case.timings.total <= 14 * PERF_FACTOR
+        assert full_case.timings.total <= 8 * PERF_FACTOR
         for stage, limit in STAGE_LIMITS.items():
             assert full_case.timings.get(stage, 0) <= limit * PERF_FACTOR, stage
 
@@ -95,4 +95,4 @@ class TestCompactCase:
         assert compact_case.left.bottom.bounding_box().min.Z == pytest.approx(-dims.below_z, abs=1e-3)
 
     def test_the_build_stays_inside_its_time_budget(self, compact_case):  # R-11
-        assert compact_case.timings.total <= 6 * PERF_FACTOR
+        assert compact_case.timings.total <= 4 * PERF_FACTOR

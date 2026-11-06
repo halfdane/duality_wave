@@ -123,7 +123,7 @@ The dev shell installs the Python dependencies with `uv`.
 | `task compact` | Builds the compact variant with `duality_wave.cli.compact`. |
 | `task coupons` | Exports `build/coupons.stl` and previews the coupons in the viewer. |
 | `task render` | Renders the images in `docs/images` with Blender. |
-| `task test` | Runs the unit tests. This takes about a minute. |
+| `task test` | Runs the checks and the unit tests. This takes about 30 s. |
 
 The STEP files go to `build/step` and `coupons.stl` to `build/`.
 Git ignores the `build` directory.

@@ -40,9 +40,9 @@ R-07: A build without debug builds no accessories and pushes nothing to the view
 The limits below are for the development machine. Set `WAVE_PERF_FACTOR` to scale all of them.
 The limits are about 2.5 times the measured time. Tighten them after a speed-up step.
 
-R-10: A build of the full variant (both halves) takes at most 14 s.
-R-11: A build of the compact variant takes at most 6 s.
-R-12: A stage of the build stays under its limit: keywell 1.5 s, keyplate 3.5 s, bottom 1 s, each finish stage 4 s.
+R-10: A build of the full variant (both halves) takes at most 8 s.
+R-11: A build of the compact variant takes at most 4 s.
+R-12: A stage of the build stays under its limit: keywell 1.5 s, keyplate 2 s, bottom 1 s, each finish stage 2 s.
 R-13: A test that is not marked `slow` builds no case. The fast tier stays fast.
 
 ## Process

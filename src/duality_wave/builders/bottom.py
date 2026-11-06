@@ -109,18 +109,17 @@ def add_switch_post_cutouts(bottom: Shape, switch: Switch, bottom_plate_z: float
     """Cut room for the switch posts and the terminal channel under every placed switch."""
     print("  switch post cutouts...")
     posts = [switch.posts.center, switch.posts.a1, switch.posts.a2, switch.posts.p1, switch.posts.p2]
-    with BuildPart() as result:
-        insert(bottom)
+    with BuildPart() as cutter:
         with BuildSketch(Plane.XY.offset(-switch.below.d.Z + bottom_plate_z)):
             with Locations(placements):
                 for post in posts:
                     # The underside workplane flips local Y, not the physical footprint's X.
                     with Locations((post.p.X, -post.p.Y)):
                         Circle(post.d.radius + POST_CLEARANCE)
-        extrude(amount=-max(post.d.Z for post in posts), mode=Mode.SUBTRACT)
+        extrude(amount=-max(post.d.Z for post in posts))
         with BuildSketch(Plane.XY.offset(-switch.below.d.Z + bottom_plate_z)):
             with Locations([p.position + Vector(0, TERMINAL_CHANNEL_OFFSET_Y) for p in placements]):
                 Rectangle(*TERMINAL_CHANNEL)
-        extrude(amount=-max(post.d.Z / 2 for post in posts), mode=Mode.SUBTRACT)
+        extrude(amount=-max(post.d.Z / 2 for post in posts))
 
-    return result.part
+    return bottom.cut(cutter.part)

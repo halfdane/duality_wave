@@ -198,3 +198,11 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - Keywell volume: -85 mm3 (full), -47 mm3 (compact). Bounding boxes, validity and solid counts are unchanged.
   - Limit: the loft needs sections with the same edge count. A synthetic layout with a notch that fills up can fail. Both project layouts loft for taper 5..20 and layers 4..32.
   - Budgets tightened (R-10 to R-12). New baseline: docs/baseline/step5.json.
+- Step 6 done. Profile and speed-up. Geometry is identical to step5.json (volume, bbox, validity, solids).
+  - cProfile does not see the OCP calls (pybind11), so the stages were timed with wrappers.
+  - Finding 1: a BuildPart with `insert(part)` and several `mode=SUBTRACT` ops is slow (about 2.4x). Build the cutters in their own BuildPart, then do one `part.cut(cutter)`. Done for the XIAO USB tunnels, the reset lever and the switch post cutouts. finish_side: 1.6 s -> 0.75 s per half.
+  - Finding 2: fusing 17 switch holes (85 shapes) costs 0.3 s. Build one hole and place 17 copies in a Compound. Keyplate: 1.35 s -> 0.8 s.
+  - Pitfall: `extrude(sketch, ...)` called inside an active BuildPart adds to that part. Wrap cutter code in its own BuildPart.
+  - Full build: 7.7 s (step 3) -> 5.5 s (step 5) -> 3.2 s. Compact: 4.3 s -> 2.1 s -> 1.5 s.
+  - Left for later: add_large_usb_cutouts 0.1 s x4, post cutouts 0.19 s x2, keywell cavity 0.26 s, connectors 0.23 s.
+  - Budgets tightened again (R-10 to R-12). New baseline: docs/baseline/step6.json.

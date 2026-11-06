@@ -15,26 +15,25 @@ def switch_cutter(switch: Switch, profile: PrintProfile, placements: list[Locati
     size_y = switch.below.d.Y + 2 * profile.switch_clearance
     relief = profile.switch_corner_relief
 
+    # Build one hole and place copies. One hole fuses in a few ms. Fusing all the holes takes 0.3 s.
     with BuildPart() as cutter:
-        with BuildSketch() as holes:
-            for placement in placements:
-                with Locations(placement):
-                    Rectangle(size_x, size_y)
-                    if relief > 0:
-                        with Locations((size_x / 2, size_y / 2), (-size_x / 2, size_y / 2),
-                                       (size_x / 2, -size_y / 2), (-size_x / 2, -size_y / 2)):
-                            Circle(relief)
+        with BuildSketch() as hole:
+            Rectangle(size_x, size_y)
+            if relief > 0:
+                with Locations((size_x / 2, size_y / 2), (-size_x / 2, size_y / 2),
+                               (size_x / 2, -size_y / 2), (-size_x / 2, -size_y / 2)):
+                    Circle(relief)
         extrude(amount=-switch.clamp_clearance_z)
 
         with BuildSketch(Plane.XY.offset(-switch.clamp_clearance_z)):
-            offset(holes.sketch, 0.5)
+            offset(hole.sketch, 0.5)
         extrude(amount=-plate_z)
 
         if profile.mouth_chamfer > 0:
             with BuildSketch():
-                offset(holes.sketch, profile.mouth_chamfer)
+                offset(hole.sketch, profile.mouth_chamfer)
             extrude(amount=-profile.mouth_chamfer, taper=45)
-    return cutter.part
+    return Part(Compound([placement * cutter.part for placement in placements]))
 
 
 def xiao_pocket_cutter(profile: PrintProfile, position: Vector, plate_z: float) -> Part:

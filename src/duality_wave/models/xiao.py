@@ -145,47 +145,41 @@ class Xiao:
         boardfront:Face = model.faces().sort_by(front_dir_axis).filter_by(Axis.Y)[1]
         return boardfront
     
-    def add_large_usb_cutouts(self, part: Part):
-        with BuildPart() as p:
-            insert(part)
+    def _usb_cutter(self, sketch: Sketch) -> Part:
+        """The tunnel for the USB plug. It runs from the board front into the case and out to the wall."""
+        with BuildPart() as cutter:
             with BuildSketch(self.usb_cut_sketch_plane) as cut_sketch:
-                insert(self._create_free_usb_space_sketch())
-            extrude(to_extrude=cut_sketch.sketch, amount=7, mode=Mode.SUBTRACT)
-            extrude(to_extrude=cut_sketch.sketch, amount=-(self.usb.d.Y - self.usb.forward_y + self.clearance), mode=Mode.SUBTRACT)
-
-        return p.part
+                insert(sketch)
+            extrude(to_extrude=cut_sketch.sketch, amount=7)
+            extrude(to_extrude=cut_sketch.sketch, amount=-(self.usb.d.Y - self.usb.forward_y + self.clearance))
+        return cutter.part
 
     def add_usb_cutouts(self, part: Part):
-        with BuildPart() as p:
-            insert(part)
-            with BuildSketch(self.usb_cut_sketch_plane) as cut_sketch:
-                insert(self._create_usb_cut_sketch())
-            extrude(to_extrude=cut_sketch.sketch, amount=7, mode=Mode.SUBTRACT)
-            extrude(to_extrude=cut_sketch.sketch, amount=-(self.usb.d.Y - self.usb.forward_y + self.clearance), mode=Mode.SUBTRACT)
+        return part.cut(self._usb_cutter(self._create_usb_cut_sketch()))
 
-        return p.part
-    
+    def add_large_usb_cutouts(self, part: Part):
+        return part.cut(self._usb_cutter(self._create_free_usb_space_sketch()))
+
     def add_reset_lever(self, part: Part, plane: Plane):
-        with BuildPart() as p:
-            insert(part)
-            dist = plane.origin.Z - self.plane.origin.Z + self.dims.d.Z + self.components.reset_button_d.d.Z
-            lever = self._create_reset_button_lever_sketch()
-            with BuildSketch(plane) as lever_removal_sketch:
+        dist = plane.origin.Z - self.plane.origin.Z + self.dims.d.Z + self.components.reset_button_d.d.Z
+        lever = self._create_reset_button_lever_sketch()
+        with BuildPart() as removal:
+            with BuildSketch(plane):
                 insert(lever)
-            extrude(dir=-plane.z_dir, amount=10, mode=Mode.SUBTRACT)
+            extrude(dir=-plane.z_dir, amount=10)
 
-            with BuildSketch(plane) as lever_add_sketch:
+        with BuildPart() as addition:
+            with BuildSketch(plane):
                 insert(offset(lever, amount=-self.reset_lever_dims.gap))
                 with Locations((0, self.reset_lever_dims.gap)):
                     insert(offset(lever, amount=-self.reset_lever_dims.gap))
-            extrude(dir=-plane.z_dir, amount=1.18, mode=Mode.ADD)
+            extrude(dir=-plane.z_dir, amount=1.18)
 
-            with BuildSketch(plane) as reset_button_bump:
+            with BuildSketch(plane):
                 insert(self.reset_button_bump)
-            extrude(amount=dist, mode=Mode.ADD)
+            extrude(amount=dist)
 
-
-        return p.part
+        return part.cut(removal.part).fuse(addition.part)
 
 
 # main method
