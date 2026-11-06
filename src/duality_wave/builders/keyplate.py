@@ -76,28 +76,28 @@ def _connector_sketch(ctx: CaseContext) -> BuildSketch:
     with BuildSketch(Plane.XY.offset(-dims.keyplate_z)) as connector_sketch:
         for cluster in keys.clusters:
             for keycol in cluster:
+                pts = [key.p + post_offset for key in keycol]
+                if len(pts) < 2:
+                    continue
                 with BuildLine() as col_line:
-                    pts = [key.p + post_offset for key in keycol]
-                    if len(pts) < 2:
-                        continue
                     Polyline(*pts)
                     offset(amount=CONNECTOR_WIDTH, side=Side.BOTH)
                 make_face()
 
             max_rows = max(len(col) for col in cluster)
             for row_idx in range(max_rows):
+                # For this row, collect the appropriate position from each column
+                pts = []
+                for col in cluster:
+                    if len(col) > row_idx:
+                        pts.append(col[row_idx])
+                    elif len(col) > 0:  # fall back to the "lower" row if not enough points
+                        pts.append(col[-1])
+                    # else: skip empty column (no point to connect)
+                pts = [key.p + post_offset for key in pts]
+                if len(pts) < 2:
+                    continue
                 with BuildLine() as row_line:
-                    # For this row, collect the appropriate position from each column
-                    pts = []
-                    for col in cluster:
-                        if len(col) > row_idx:
-                            pts.append(col[row_idx])
-                        elif len(col) > 0:  # fall back to the "lower" row if not enough points
-                            pts.append(col[-1])
-                        # else: skip empty column (no point to connect)
-                    pts = [key.p + post_offset for key in pts]
-                    if len(pts) < 2:
-                        continue
                     Polyline(*pts)
                     offset(amount=CONNECTOR_WIDTH, side=Side.BOTH)
                 make_face()
@@ -106,13 +106,15 @@ def _connector_sketch(ctx: CaseContext) -> BuildSketch:
         for i in range(len(keys.clusters) - 1):
             cluster_a = [key for col in keys.clusters[i] for key in col]
             cluster_b = [key for col in keys.clusters[i + 1] for key in col]
-            line = Line(_closest_pair(cluster_a, cluster_b))
-            offset(objects=line, amount=CONNECTOR_WIDTH, side=Side.BOTH)
+            with BuildLine():
+                Line(_closest_pair(cluster_a, cluster_b))
+                offset(amount=CONNECTOR_WIDTH, side=Side.BOTH)
             make_face()
 
         top_pinkie = keys.finger_clusters[0][0][len(keys.finger_clusters[0][0]) - 1].p
-        line = Line(top_pinkie, (dims.xiao_position.X - Xiao.dims.d.X / 4, dims.xiao_position.Y, dims.xiao_position.Z))
-        offset(line, amount=CONNECTOR_WIDTH, side=Side.BOTH)
+        with BuildLine():
+            Line(top_pinkie, (dims.xiao_position.X - Xiao.dims.d.X / 4, dims.xiao_position.Y, top_pinkie.Z))
+            offset(amount=CONNECTOR_WIDTH, side=Side.BOTH)
         make_face()
     return connector_sketch
 

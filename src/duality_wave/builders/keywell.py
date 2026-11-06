@@ -83,9 +83,11 @@ def _cut_magnets(ctx: CaseContext, dbg) -> None:
 
 def _engrave_symbol(ctx: CaseContext, dbg) -> None:
     print("  symbol...")
+    symbol_height = 20
+    # Build the symbol outside Locations. build123d 0.13 would apply the location a second time.
+    symbol = Symbol(total_height=symbol_height).sketch
     with BuildSketch(Plane.XY.offset(ctx.dims.above_z)) as symbol_sketch:
-        symbol_height = 20
         with Locations(ctx.outline.top_left + Vector(0.65 * symbol_height, -0.6 * symbol_height)):
-            add(Symbol(total_height=symbol_height).sketch)
+            add(symbol)
     extrude(to_extrude=symbol_sketch.sketch, amount=-0.5, mode=Mode.SUBTRACT)
     dbg.note("symbol_sketch", symbol_sketch)

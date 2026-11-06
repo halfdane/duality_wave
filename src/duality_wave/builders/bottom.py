@@ -96,10 +96,11 @@ def _engrave_invader(ctx: CaseContext, dbg) -> None:
     dims = ctx.dims
     if dims.space_invader is None:
         return
+    # Build the invader outside Locations. build123d 0.13 would apply the location a second time.
+    invader = SpaceInvader(total_height=10).sketch
     with BuildSketch(Plane.XY.offset(-dims.below_z)) as invader_sketch:
-        invader_height = 10
         with Locations(dims.space_invader):
-            add(SpaceInvader(total_height=invader_height).sketch)
+            add(invader)
     extrude(to_extrude=invader_sketch.sketch, amount=0.5, mode=Mode.SUBTRACT)
     dbg.note("invader_sketch", invader_sketch)
 
