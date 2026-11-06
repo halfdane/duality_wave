@@ -32,7 +32,7 @@ class ComponentDimensions:
 @dataclass
 class ResetButtonLeverDimensions:
     p: Vector = ComponentDimensions.reset_button_d.p
-    d: RectDimensions = RectDimensions(2.0, 5)
+    d: RectDimensions = RectDimensions(2.1, 5)
     gap: float = 0.5
 
 class Xiao:
