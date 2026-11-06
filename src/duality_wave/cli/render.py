@@ -26,7 +26,7 @@ def main():
     case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=False, both_sides=True)
 
     # the keycap stand-in starts where the stem ends, everything above that is cap
-    cap_start = switch.base.d.Z + switch.upper_housing.d.Z + switch.stem.d.Z - switch.cap_model_overlap
+    cap_start = switch.base.d.Z + switch.upper_housing.d.Z + switch.stem.d.Z - switch.cap.overlap
     switch_part = switch.model.part
     cap_cutter = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN)).translate((0, 0, cap_start))
     caps = switch_part & cap_cutter

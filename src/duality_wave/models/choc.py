@@ -62,14 +62,16 @@ class StemDimensions:
 
 @dataclass
 class CapDimensions:
-    d: RectDimensions = RectDimensions(17.45, 16.45, 2.5)
+    d: RectDimensions = RectDimensions(17.45, 16.45, 4.5)
+    # how far the cap reaches down over the stem
+    overlap: float = 2.28
 
 @dataclass
 class AboveDimensions:
     d: RectDimensions = RectDimensions(
         BaseDimensions.d.X,
         BaseDimensions.d.Y,
-        BaseDimensions.d.Z + UpperHousingDimensions.d.Z + StemDimensions.d.Z + CapDimensions.d.Z
+        BaseDimensions.d.Z + UpperHousingDimensions.d.Z + StemDimensions.d.Z + CapDimensions.d.Z - CapDimensions.overlap
     )
 
 
@@ -94,10 +96,6 @@ class Choc(Switch):
     below = BelowDimensions()
 
     clamp_clearance_z: float = BottomHousingDimensions.d.Z - ClampDimensions.d.Z
-
-    # keycap stand-in for the preview: total height and how far it reaches down over the stem
-    cap_model_z: float = 4.5
-    cap_model_overlap: float = 2.28
 
     def __init__(self, show_model=False, pin_len: float = 2.0, side_post_len: float = 0.0):
         """pin_len: length of the two contacts under the housing. side_post_len: length of the two small side posts."""
@@ -136,8 +134,8 @@ class Choc(Switch):
 
             # simple stand-in for a keycap, same footprint and height as a Hattara cap
             with BuildPart() as cap_part:
-                with Locations((0, 0, self.base.d.Z + self.upper_housing.d.Z + self.stem.d.Z - self.cap_model_overlap)):
-                    Box(self.cap.d.X, self.cap.d.Y, self.cap_model_z, align=(Align.CENTER, Align.CENTER, Align.MIN))
+                with Locations((0, 0, self.base.d.Z + self.upper_housing.d.Z + self.stem.d.Z - self.cap.overlap)):
+                    Box(self.cap.d.X, self.cap.d.Y, self.cap.d.Z, align=(Align.CENTER, Align.CENTER, Align.MIN))
                 fillet(cap_part.edges().filter_by(Axis.Z, reverse=True).group_by(Axis.Z)[-1], radius=1.0)
 
         if show_model:

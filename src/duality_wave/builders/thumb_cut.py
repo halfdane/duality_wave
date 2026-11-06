@@ -28,13 +28,14 @@ class ThumbCutSpec:
     rim_chamfer: float = 0.8
 
 
-def thumb_depth(switch: Switch) -> float:
+def thumb_floor_z(switch: Switch) -> float:
+    """The thumb floor is the top of the switch housing. The caps float above it."""
+    return switch.base.d.Z + switch.upper_housing.d.Z
+
+
+def thumb_depth(switch: Switch, top_z: float) -> float:
     """How far the thumb floor sits below the top of the keywell."""
-    return switch.cap.d.Z + switch.stem.d.Z
-
-
-def thumb_floor_z(switch: Switch, top_z: float) -> float:
-    return top_z - thumb_depth(switch)
+    return top_z - thumb_floor_z(switch)
 
 
 def thumb_zone(switch: Switch, thumb_clusters: list[list[list[Point]]], spec: ThumbCutSpec = ThumbCutSpec()) -> Face:
@@ -80,8 +81,8 @@ def thumb_cutter(
     The loft needs sections with the same number of edges. When a large taper fills a notch of the zone,
     the sections change their edge count and OCC may fail to loft. This does not happen with the layouts of the project.
     """
-    depth = thumb_depth(switch)
-    floor_z = thumb_floor_z(switch, top_z)
+    floor_z = thumb_floor_z(switch)
+    depth = thumb_depth(switch, top_z)
     zone = thumb_zone(switch, thumb_clusters, spec)
     dbg.note("zone", zone)
 

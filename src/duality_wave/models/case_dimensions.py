@@ -24,6 +24,8 @@ class CaseDimensions(WaveDimensions):
     print_profile: PrintProfile = field(default_factory=PrintProfile)
     wall_thickness: float = 1.8
     heat_insert_z: float = 3.5
+    # the wall of the keywell reaches this far above the keycaps
+    wall_over_cap: float = 0.18
 
     right_side_offset: float = 200
 
@@ -35,7 +37,7 @@ class CaseDimensions(WaveDimensions):
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
         # Z chain, top to bottom. All levels are measured from the keyplate top (z = 0).
-        self.above_z: float = switch.above.d.Z
+        self.above_z: float = switch.above.d.Z + self.wall_over_cap
         self.keyplate_z: float = switch.bottom_housing.d.Z + self.keyplate_under_housing
         self.below_z: float = switch.below.d.Z + self.floor_under_pins
         self.bottom_plate_z: float = self.below_z - self.keyplate_z

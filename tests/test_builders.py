@@ -57,12 +57,13 @@ class ThumbCutterTests(unittest.TestCase):
             with self.subTest(top_z=top_z):
                 box = self.cutter(top_z=top_z).bounding_box()
                 self.assertAlmostEqual(box.max.Z, top_z, delta=0.01)
-                self.assertAlmostEqual(box.min.Z, top_z - thumb_depth(self.switch), delta=0.01)
-                self.assertAlmostEqual(box.min.Z, thumb_floor_z(self.switch, top_z), delta=0.01)
+                self.assertAlmostEqual(box.min.Z, top_z - thumb_depth(self.switch, top_z), delta=0.01)
+                self.assertAlmostEqual(box.min.Z, thumb_floor_z(self.switch), delta=0.01)
+                self.assertAlmostEqual(box.min.Z, self.switch.base.d.Z + self.switch.upper_housing.d.Z, delta=0.01)
 
     def test_cutter_is_wider_at_the_top_than_at_the_floor(self):  # R-16
         cutter = self.cutter()
-        floor_z = thumb_floor_z(self.switch, self.top_z)
+        floor_z = thumb_floor_z(self.switch)
         self.assertGreater(section_area(cutter, self.top_z - 0.05), section_area(cutter, floor_z + 0.05))
 
     def test_the_slope_grows_by_the_taper_at_the_top(self):  # R-16
@@ -75,7 +76,7 @@ class ThumbCutterTests(unittest.TestCase):
 
     def test_cutter_without_growth_is_a_straight_pocket(self):  # R-16
         flat = self.cutter(spec=ThumbCutSpec(taper=0.001, inset_inner=0, inset_outer=0, corner_radius=0, layers=4))
-        floor_z = thumb_floor_z(self.switch, self.top_z)
+        floor_z = thumb_floor_z(self.switch)
         self.assertAlmostEqual(section_area(flat, floor_z + 0.05), section_area(flat, self.top_z - 0.05), delta=0.5)
 
     def test_a_longer_taper_cuts_more(self):  # R-16

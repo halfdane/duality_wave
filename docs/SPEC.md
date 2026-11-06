@@ -22,10 +22,11 @@ R-03: Every part of every built half is one valid solid.
 R-04: The keyplate top is at z = 0. The keywell spans from z = -below_z to z = above_z. The bottom plate spans from z = -below_z to z = -keyplate_z.
 R-05: The keyplate fits inside the keywell in the XY plane.
 R-06: No switch contact touches the bottom plate. The cutouts leave room for them.
-R-16: The thumb cut is a loft of one zone. The zone is one face with round corners. The loft grows the zone by `taper` while it rises from `thumb_depth` below the top to the top.
+R-16: The thumb cut is a loft of one zone. The zone is one face with round corners. The loft grows the zone by `taper` while it rises from the floor to the top. The floor is the top of the switch housing. It does not move with the top of the keywell.
 R-17: The outer edges of the keywell that are not vertical carry a chamfer of `rim_chamfer`. The keywell has no fillets. The chamfer keeps the envelope and the keywell stays one valid solid.
 R-18: The Z levels come from one chain in `CaseDimensions`. `keyplate_z` is the housing height plus `keyplate_under_housing`. `below_z` is the switch height below the plate plus `floor_under_pins`. `bottom_plate_z` is `below_z` minus `keyplate_z`.
 R-19: The switch model has the parameters `pin_len` (default 2.0) and `side_post_len` (default 0). A post is never longer than its datasheet value. A post of length 0 does not exist. The centre post keeps its length. The depth of the switch below the housing is the longest contact or side post. The centre post does not count.
+R-20: The top of the keywell is `wall_over_cap` (0.18) above the top of the keycaps. The cap top is the stack of base, upper housing, stem and cap, minus the overlap of cap and stem (8.02 in total).
 
 ## Layout
 

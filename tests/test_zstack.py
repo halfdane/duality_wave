@@ -1,4 +1,4 @@
-"""R-18, R-19."""
+"""R-18, R-19, R-20."""
 
 import pytest
 
@@ -11,7 +11,7 @@ from tests.builds import make_inputs
 @pytest.mark.parametrize("compact", [False, True])
 def test_the_z_levels_derive_from_one_chain(compact):  # R-18
     switch, _, dims, _ = make_inputs(compact)
-    assert dims.above_z == pytest.approx(8.3)
+    assert dims.above_z == pytest.approx(8.2)
     assert dims.keyplate_z == pytest.approx(switch.bottom_housing.d.Z + dims.keyplate_under_housing)
     assert dims.below_z == pytest.approx(switch.below.d.Z + dims.floor_under_pins)
     assert dims.bottom_plate_z == pytest.approx(dims.below_z - dims.keyplate_z)
@@ -57,3 +57,12 @@ def test_the_switch_model_has_the_trimmed_posts_where_the_cutouts_are():  # R-19
         tip = -switch.bottom_housing.d.Z - post.d.Z
         assert part.is_inside(Vector(post.p.X, -post.p.Y, tip + 0.05))
         assert not part.is_inside(Vector(post.p.X, -post.p.Y, tip - 0.05))
+
+
+def test_the_top_of_the_keywell_stands_a_little_over_the_caps():  # R-20
+    switch, _, dims, _ = make_inputs()
+    cap_top = switch.base.d.Z + switch.upper_housing.d.Z + switch.stem.d.Z + switch.cap.d.Z - switch.cap.overlap
+    assert cap_top == pytest.approx(8.02)
+    assert switch.above.d.Z == pytest.approx(cap_top)
+    assert dims.above_z == pytest.approx(cap_top + dims.wall_over_cap)
+    assert switch.model.part.bounding_box().max.Z == pytest.approx(cap_top)
