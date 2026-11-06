@@ -1,11 +1,13 @@
-"""R-18 to R-23."""
+"""R-18 to R-24."""
 
 import pytest
 from build123d import Align, Axis, Cylinder, Plane, Vector, extrude, offset
 
+from duality_wave.models.case_dimensions import CaseDimensions, CompactCaseDimensions
 from duality_wave.models.choc import Choc
 from duality_wave.models.heat_set_insert import HeatSetInsert
 from duality_wave.models.power_switch import PowerSwitch
+from duality_wave.models.print_profile import PrintProfile
 from duality_wave.models.rubber_bumper import BumperDimensions
 from duality_wave.models.screw import ScrewDimensions
 from duality_wave.models.xiao import Xiao
@@ -17,13 +19,14 @@ PARTS = ("keywell", "keyplate", "bottom")
 @pytest.mark.parametrize("compact", [False, True])
 def test_the_z_levels_derive_from_one_chain(compact):  # R-18
     switch, _, dims, _ = make_inputs(compact)
+    layer = dims.print_profile.layer_height
     assert dims.above_z == pytest.approx(8.2)
-    assert dims.keyplate_z == pytest.approx(switch.bottom_housing.d.Z + dims.keyplate_under_housing)
+    assert switch.bottom_housing.d.Z + dims.keyplate_under_housing - 1e-6 <= dims.keyplate_z < switch.bottom_housing.d.Z + dims.keyplate_under_housing + layer
     assert dims.below_z == pytest.approx(switch.below.d.Z + dims.floor_under_pins)
     assert dims.bottom_plate_z == pytest.approx(dims.below_z - dims.keyplate_z)
-    assert dims.keyplate_z == pytest.approx(2.9)
+    assert dims.keyplate_z == pytest.approx(3.0)
     assert dims.below_z == pytest.approx(4.6)
-    assert dims.bottom_plate_z == pytest.approx(1.7)
+    assert dims.bottom_plate_z == pytest.approx(1.6)
 
 
 def test_the_default_switch_has_short_contacts_and_no_side_posts():  # R-19
@@ -79,13 +82,11 @@ def test_everything_that_sticks_out_of_the_bed_face_stays_inside_the_bumpers(com
     switch, _, dims, _ = make_inputs(compact)
     dome = BumperDimensions.dome_z
     poke_through = max(0.0, switch.bottom_housing.d.Z + switch.posts.center.d.Z - dims.below_z)
-    usb_proud = max(0.0, Xiao.dims.d.Z + Xiao.usb.d.Z - dims.below_z + dims.xiao_ledge)
+    usb_proud = max(0.0, Xiao.dims.d.Z + Xiao.usb.d.Z - dims.below_z - dims.xiao_position.Z)
     assert poke_through == pytest.approx(0.25)
     assert usb_proud == pytest.approx(0.46)
-    assert dims.lever_protrusion == pytest.approx(0.8)
     assert poke_through < dome
     assert usb_proud < dome
-    assert dims.lever_protrusion < dome
 
 
 @pytest.mark.parametrize("compact", [False, True])
@@ -93,8 +94,9 @@ def test_the_power_switch_lever_tip_is_where_the_protrusion_says(compact):  # R-
     _, _, dims, _ = make_inputs(compact)
     local_top = PowerSwitch().model.bounding_box().max.Z
     assert local_top == pytest.approx(PowerSwitch.lever.reach)
-    tip = dims.powerswitch_position.Z - local_top
-    assert tip == pytest.approx(-dims.below_z - dims.lever_protrusion)
+    protrusion = -(dims.powerswitch_position.Z - local_top) - dims.below_z
+    assert dims.lever_protrusion <= protrusion < dims.lever_protrusion + dims.print_profile.layer_height
+    assert protrusion < BumperDimensions.dome_z
 
 
 @pytest.mark.parametrize("compact", [False, True])
@@ -178,3 +180,58 @@ def test_the_bottom_plate_keeps_its_walls_around_the_pockets_and_under_the_pins(
             if tip > z0:
                 assert bottom.is_inside(Vector(xy.X, xy.Y, tip - 0.05)), f"no floor under the post at {key.p}"
                 assert tip - z0 == pytest.approx(dims.floor_under_pins)
+
+
+def test_a_height_snaps_to_whole_layers():  # R-24
+    profile = PrintProfile()
+    assert profile.snap_up(2.0) == pytest.approx(2.0)
+    assert profile.snap_up(2.0 + 1e-12) == pytest.approx(2.0)
+    assert profile.snap_up(2.01) == pytest.approx(2.2)
+    assert profile.snap_down(2.19) == pytest.approx(2.0)
+    assert profile.snap_down(2.2 - 1e-12) == pytest.approx(2.2)
+    assert PrintProfile(layer_height=0.12).snap_up(1.0) == pytest.approx(1.08)
+
+
+def bed_layers(dims, z):
+    """The number of layers between the bed face and z. A whole number puts z on a layer boundary."""
+    return (z + dims.below_z) / dims.print_profile.layer_height
+
+
+@pytest.mark.parametrize("layer_height", [0.2, 0.16, 0.12, 0.28])
+@pytest.mark.parametrize("compact", [False, True])
+def test_every_level_sits_on_a_layer_boundary_counted_from_the_bed_face(compact, layer_height):  # R-24
+    switch, keys, _, outline = make_inputs(compact)
+    cls = CompactCaseDimensions if compact else CaseDimensions
+    dims = cls(switch=switch, outline=outline, keys=keys, print_profile=PrintProfile(layer_height=layer_height))
+    levels = {
+        "keyplate top": 0.0,
+        "plate top": -dims.keyplate_z,
+        "keywell top": dims.above_z,
+        "xiao back": dims.xiao_position.Z,
+        "power switch": dims.powerswitch_position.Z,
+        "battery roof": dims.battery_pd.p.Z + dims.battery_pd.d.Z / 2,
+    }
+    for name, z in levels.items():
+        layers = bed_layers(dims, z)
+        assert layers == pytest.approx(round(layers), abs=1e-4), f"{name} at {z} is {layers} layers above the bed"
+
+
+@pytest.mark.parametrize("layer_height", [0.2, 0.16, 0.12, 0.28])
+@pytest.mark.parametrize("compact", [False, True])
+def test_snapping_moves_a_level_only_in_the_safe_direction(compact, layer_height):  # R-24
+    switch, keys, _, outline = make_inputs(compact)
+    cls = CompactCaseDimensions if compact else CaseDimensions
+    dims = cls(switch=switch, outline=outline, keys=keys, print_profile=PrintProfile(layer_height=layer_height))
+    layer = layer_height
+    eps = 1e-6
+    # the keywell stays at least wall_over_cap over the caps, the plate keeps its pins and its housing room
+    assert switch.above.d.Z + dims.wall_over_cap - eps <= dims.above_z < switch.above.d.Z + dims.wall_over_cap + layer + eps
+    assert dims.below_z >= switch.below.d.Z + dims.floor_under_pins - eps
+    assert dims.keyplate_z >= switch.bottom_housing.d.Z + dims.keyplate_under_housing - eps
+    assert dims.below_z - dims.keyplate_z >= 0
+    # the XIAO is never lower than asked, the power switch body never higher, the battery roof never thinner than the wall
+    assert -dims.xiao_ledge - eps <= dims.xiao_position.Z < -dims.xiao_ledge + layer + eps
+    raw_switch = -(dims.below_z - PowerSwitch.lever.reach + dims.lever_protrusion)
+    assert raw_switch - layer - eps < dims.powerswitch_position.Z <= raw_switch + eps
+    roof = dims.battery_pd.p.Z + dims.battery_pd.d.Z / 2
+    assert dims.above_z - roof >= dims.wall_thickness - eps

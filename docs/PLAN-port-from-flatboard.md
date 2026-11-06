@@ -218,3 +218,9 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - Bumpers 0, 3, 4 (full) and 0, 3 (compact) moved: the old spots hit the XIAO processor pocket or the pin channels at the new depth.
   - Reset lever bump now rises above the plate up to the XIAO button: R-04 has this exception.
   - New requirements R-21 to R-23 (protrusions, collisions, plate webs). Geometry baseline moves on purpose. The new baseline comes in 7e.
+- Step 7e done. `PrintProfile.layer_height` (0.2), `snap_up` and `snap_down`. `CaseDimensions.snap_z` counts layers from the bed face (R-24).
+  - Snapped: below_z (4.6), top of the keywell (8.2, total 12.8 = 64 layers), plate top (the plate gets thinner: keyplate_z 3.0, plate 1.6), XIAO back (up), power switch (down, lever stands 0.95 out, body 0.2 under the battery), battery roof (down).
+  - Tests run for layer heights 0.2, 0.16, 0.12 and 0.28 and for both variants.
+  - Not snapped: the thumb floor (housing top, 3.3) and the magnet recess.
+  - Found on the way: with the plate bottom at -3.0, the LED recess of the XIAO cutter left a film of 0.075 mm (a second solid in the keyplate). The recess is now 0.1 mm taller.
+  - New baseline: docs/baseline/step7.json. Full build 3.1 s, compact 1.4 s. The budgets stay for step 8.

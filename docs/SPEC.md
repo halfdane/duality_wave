@@ -30,6 +30,7 @@ R-20: The top of the keywell is `wall_over_cap` (0.18) above the top of the keyc
 R-21: Nothing sticks out of the bed face by more than the bumpers do. This covers the centre post of the switch, the USB-C connector of the XIAO and the lever of the power switch. The screw is long enough to pass the insert and short enough to stay clear of the cap.
 R-22: No fixture collides with a part. The inserts are pressed into the keywell and are the only exception. The power switch stays 0.1 mm or more under the battery.
 R-23: The bottom plate keeps a wall of 0.5 mm around every bumper pocket. Every contact has a floor of `floor_under_pins` under its tip. The centre post has a hole.
+R-24: Every level of the case sits on a layer boundary, counted from the bed face (z = -below_z) in steps of `layer_height` (0.2). This covers `below_z`, `above_z`, the top of the bottom plate, the back of the XIAO, the power switch and the roof of the battery recess. A level moves only in the safe direction: the keywell top, the keyplate depth and the XIAO move up or out, the power switch and the battery roof move down. A level moves by less than one layer.
 
 ## Layout
 

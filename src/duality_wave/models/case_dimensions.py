@@ -42,33 +42,45 @@ class CaseDimensions(WaveDimensions):
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
         # Z chain, top to bottom. All levels are measured from the keyplate top (z = 0).
-        self.above_z: float = switch.above.d.Z + self.wall_over_cap
-        self.keyplate_z: float = switch.bottom_housing.d.Z + self.keyplate_under_housing
-        self.below_z: float = switch.below.d.Z + self.floor_under_pins
-        self.bottom_plate_z: float = self.below_z - self.keyplate_z
+        # The bed face is at z = -below_z. Every level snaps to a whole number of layers above the bed face.
+        profile = self.print_profile
+        self.below_z: float = profile.snap_up(switch.below.d.Z + self.floor_under_pins)
+        # the top of the keywell stands at least wall_over_cap over the caps
+        self.above_z: float = self.snap_z(switch.above.d.Z + self.wall_over_cap)
+        # the keyplate reaches at least keyplate_under_housing under the housing: the plate gets thinner, not the keyplate
+        plate = profile.snap_down(self.below_z - (switch.bottom_housing.d.Z + self.keyplate_under_housing))
+        self.keyplate_z: float = round(self.below_z - plate, 6)
+        self.bottom_plate_z: float = plate
 
         xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 5
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance
-        xiao_pos_z: float = -self.xiao_ledge
+        # up, so the USB-C connector never stands out further than the ledge asks
+        xiao_pos_z: float = self.snap_z(-self.xiao_ledge)
         self.xiao_position: Vector = Vector(xiao_pos_x, xiao_pos_y, xiao_pos_z)
 
         xiao_to_power_switch: float = PowerSwitch.dims.d.Y/2 + PowerSwitch.dims.pin_length/2
         self.powerswitch_rotation: Vector = Vector(0, 180, -90)
+        # down, so the body keeps clear of the battery
         self.powerswitch_position: Vector = Vector(
                 xiao_pos_x + Xiao.dims.d.X/2 + xiao_to_power_switch,
                 xiao_pos_y - 1,
-                -(self.below_z - PowerSwitch.lever.reach + self.lever_protrusion))
+                self.snap_z(-(self.below_z - PowerSwitch.lever.reach + self.lever_protrusion), up=False))
 
         battery_d: RectDimensions = RectDimensions(31, 17, 6)
         self.battery_pd = PosAndDims(
             d=battery_d,
             p=outline.top_left \
                 + ((self.wall_thickness + self.clearance), -(self.wall_thickness + self.clearance)) \
-                + (battery_d.X/2, - battery_d.Y/2, (self.above_z - battery_d.Z/2 - self.wall_thickness)))
+                + (battery_d.X/2, - battery_d.Y/2, (self.snap_z(self.above_z - self.wall_thickness, up=False) - battery_d.Z/2)))
 
         self.magnet_d: RoundDimensions = RoundDimensions(5, 2)
 
         self.place_fixtures(switch, outline, keys)
+
+    def snap_z(self, z: float, up: bool = True) -> float:
+        """Move z to a whole number of layers above the bed face (z = -below_z)."""
+        snap = self.print_profile.snap_up if up else self.print_profile.snap_down
+        return round(snap(z + self.below_z) - self.below_z, 6)
 
     @property
     def bumper_radius(self) -> float:

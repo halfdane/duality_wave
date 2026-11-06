@@ -136,8 +136,9 @@ class Xiao:
                     Rectangle(Xiao.usb.d.X + 2*self.clearance, Xiao.usb.d.Z/2+2*self.clearance)
                 with Locations((Xiao.components.led_d.p.X, Xiao.components.led_d.p.Z/2 + 1)):
                     Circle(1)
-                with Locations((Xiao.components.led_d.p.X+1, Xiao.components.led_d.p.Z/2 + 0.5)):
-                    Rectangle(4, 1)
+                # the recess for the LED opens through the underside of the keyplate: 0.1 mm past it, so no film is left
+                with Locations((Xiao.components.led_d.p.X+1, Xiao.components.led_d.p.Z/2 + 0.55)):
+                    Rectangle(4, 1.1)
         return usb_sketch.sketch
     
     def _create_usb_cut_sketch_plane(self, model):
