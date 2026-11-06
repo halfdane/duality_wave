@@ -11,3 +11,5 @@ __pycache__
 
 # Personal notes
 /REVIEW.md
+.pytest_cache
+.ruff_cache

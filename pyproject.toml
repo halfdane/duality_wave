@@ -17,9 +17,35 @@ dependencies = [
   "pyyaml",
 ]
 
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-xdist>=3",
+  "ruff>=0.6",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/duality_wave"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--durations=10"
+markers = ["slow: builds a whole case or the coupons. The fast tier skips these tests."]
+
+[tool.ruff]
+line-length = 140
+extend-exclude = [".direnv", "build"]
+
+[tool.ruff.lint]
+# Real errors only: syntax, undefined names, unused imports and variables.
+# Star imports of build123d and `with BuildPart() as name` are the house style.
+select = ["E4", "E7", "E9", "F"]
+ignore = ["F403", "F405", "F841", "E741"]
+
+[tool.ruff.lint.per-file-ignores]
+# layout.py is replaced by real ergogen output in step 4 of docs/PLAN-port-from-flatboard.md.
+"src/duality_wave/layout.py" = ["E722"]

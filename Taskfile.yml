@@ -54,15 +54,26 @@ tasks:
       - python -m duality_wave.coupons
 
   check:
-    desc: Fast checks. Byte-compiles all sources to catch syntax errors.
+    desc: Fast checks. Verifies uv.lock, lints, and runs the fast tests (no case is built).
     cmds:
-      - python -m compileall -q -x '/(\.venv|build|\.direnv)/' .
+      - uv lock --check
+      - ruff check .
+      - pytest -q -m "not slow"
+
+  update:
+    desc: Upgrade all Python packages in uv.lock, then install them.
+    summary: |
+      The dev shell installs the locked versions only (uv sync --frozen).
+      Run this task on purpose when you want newer packages. Then run `task test`.
+    cmds:
+      - uv lock --upgrade
+      - uv sync --frozen
 
   test:
-    desc: Run check, then the unit tests (takes about a minute).
+    desc: Run check, then all tests in parallel (about 35 s).
     cmds:
       - task: check
-      - python -m unittest
+      - pytest -q -n auto --dist loadscope
 
   render:
     desc: Render the README images into docs/images.

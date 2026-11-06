@@ -1,34 +1,35 @@
 {
-  description = "build123d Python CAD dev environment (standalone browser viewer)";
+  description = "duality_wave - parametric case for a split, hand-wired, low-profile keyboard (build123d)";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-          config.allowUnfree = true;
-        };
-
-        # Pin the interpreter. The OCP wheels only ship aarch64-linux builds
-        # for cp310-cp313, so we must NOT let uv wander onto Python 3.14+.
+        pkgs = nixpkgs.legacyPackages.${system};
+        # Pin the interpreter. The OCP wheels ship builds for cp310-cp313 only.
         python = pkgs.python313;
-
-        libPath = pkgs.lib.makeLibraryPath [
-          pkgs.stdenv.cc.cc.lib # libstdc++.so.6
-          pkgs.zlib
-          pkgs.libGL
-          pkgs.libGLU
-          pkgs.expat # libexpat.so.1
-          pkgs.libx11 # libX11.so.6
-          pkgs.libxrender # libXrender.so.1
-          pkgs.fontconfig.lib # libfontconfig.so.1 (OCP text/rendering)
-          pkgs.freetype # libfreetype.so.6
-          pkgs.glib.out # libglib/libgthread
+        # build123d is not packaged in nixpkgs. It comes from PyPI (pinned by uv.lock).
+        # The OCP wheels need these shared libraries at run time.
+        runtimeLibs = with pkgs; [
+          stdenv.cc.cc.lib
+          libGL
+          libGLU
+          libglvnd
+          libx11
+          libxext
+          libxrender
+          fontconfig
+          freetype
+          glib.out
+          zlib
+          expat
+          libpng
+          bzip2
+          brotli
         ];
       in
       {
@@ -37,18 +38,28 @@
             python
             pkgs.uv
             pkgs.go-task
+            pkgs.ergogen
           ];
-
           env = {
-            # Never let uv download its own interpreter; always use the pinned one.
+            # Never let uv download its own interpreter. Always use the pinned one.
             UV_PYTHON_DOWNLOADS = "never";
-            UV_PYTHON = "${python}/bin/python3.13";
-            LD_LIBRARY_PATH = libPath;
+            UV_PYTHON = "${python}/bin/python3";
+            # Fixed font so engraved labels look the same on every machine.
+            FONTCONFIG_FILE = pkgs.writeText "fonts.conf" ''
+              <?xml version="1.0"?>
+              <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+              <fontconfig>
+                <dir>${pkgs.dejavu_fonts}</dir>
+                <cachedir>/tmp/fontconfig-cache</cachedir>
+              </fontconfig>
+            '';
+          } // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
           };
-
           shellHook = ''
-            # A stale .venv built with a different Python (e.g. a previous uv 3.14)
-            # is the classic cause of "no wheel for this platform". Rebuild it.
+            # Always use this project's .venv, even inside a shell that was started for another project.
+            export UV_PROJECT_ENVIRONMENT="$PWD/.venv"
+            # A venv built with another Python minor version has no matching wheels. Rebuild it.
             if [ -x .venv/bin/python ]; then
               venv_py="$(.venv/bin/python -c 'import sys;print("%d.%d"%sys.version_info[:2])' 2>/dev/null || echo none)"
               if [ "$venv_py" != "3.13" ]; then
@@ -56,21 +67,17 @@
                 rm -rf .venv
               fi
             fi
-
-            if uv sync; then
-              source .venv/bin/activate
-              echo "build123d dev environment ready"
-              echo "Python:      $(python --version)"
-
-              echo ""
-              echo "Checks:                              task check   (fast)"
-              echo "Tests:                               task test    (full, includes check)"
-              echo "Viewer (browser, works in this VM):  task viewer   -> http://127.0.0.1:3939"
-              echo "Then build the case:                 task build"
-              echo "Variants:                            task compact"
-            else
-              echo "uv sync FAILED — see error above."
+            if ! uv sync --frozen --quiet; then
+              echo "uv sync FAILED - see the error above."
             fi
+            export PATH="$PWD/.venv/bin:$PATH"
+            echo "duality_wave dev shell"
+            echo "  task check    fast checks (lock file, lint, fast tests)"
+            echo "  task test     check, then all tests in parallel"
+            echo "  task viewer   start the OCP viewer, then open http://127.0.0.1:3939"
+            echo "  task build    build the case and export STEP files to build/step"
+            echo "  task compact  build the compact variant"
+            echo "  task update   upgrade the Python packages in uv.lock"
           '';
         };
 
