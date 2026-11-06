@@ -24,7 +24,8 @@ class WaveDimensions:
     wall_thickness: float
 
     above_z: float
-    add_below_choc_posts: float
+    keyplate_under_housing: float
+    floor_under_pins: float
     below_z: float
     bottom_plate_z: float
     keyplate_z: float

@@ -11,4 +11,5 @@ class Switch:
     above: HasDimensions
     below: HasDimensions
     stem: HasDimensions
+    bottom_housing: HasDimensions
     clamp_clearance_z: float

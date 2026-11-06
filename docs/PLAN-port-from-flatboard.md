@@ -206,3 +206,4 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - Full build: 7.7 s (step 3) -> 5.5 s (step 5) -> 3.2 s. Compact: 4.3 s -> 2.1 s -> 1.5 s.
   - Left for later: add_large_usb_cutouts 0.1 s x4, post cutouts 0.19 s x2, keywell cavity 0.26 s, connectors 0.23 s.
   - Budgets tightened again (R-10 to R-12). New baseline: docs/baseline/step6.json.
+- Step 7a done. `CaseDimensions` derives keyplate_z, below_z and bottom_plate_z in one chain. Values are the same (8.3, 2.9, 5.9, 3.0). `add_below_choc_posts` is now `floor_under_pins`. New parameter `keyplate_under_housing` (0.7). R-18 pins the chain. Geometry is identical to step6.json.

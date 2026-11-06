@@ -28,13 +28,17 @@ class CaseDimensions(WaveDimensions):
     right_side_offset: float = 200
 
     bumper_base_offset = 2.5
+    # the keyplate reaches this far below the switch housing
+    keyplate_under_housing: float = 0.7
+    # material under the pin tips
+    floor_under_pins: float = 0.7
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
-        self.add_below_choc_posts: float = 0.7
-        self.bottom_plate_z: float = 3.0
+        # Z chain, top to bottom. All levels are measured from the keyplate top (z = 0).
         self.above_z: float = switch.above.d.Z
-        self.below_z: float = switch.below.d.Z + self.add_below_choc_posts
-        self.keyplate_z: float = self.below_z - self.bottom_plate_z
+        self.keyplate_z: float = switch.bottom_housing.d.Z + self.keyplate_under_housing
+        self.below_z: float = switch.below.d.Z + self.floor_under_pins
+        self.bottom_plate_z: float = self.below_z - self.keyplate_z
 
         xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 5
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance

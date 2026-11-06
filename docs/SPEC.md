@@ -24,6 +24,7 @@ R-05: The keyplate fits inside the keywell in the XY plane.
 R-06: No switch contact touches the bottom plate. The cutouts leave room for them.
 R-16: The thumb cut is a loft of one zone. The zone is one face with round corners. The loft grows the zone by `taper` while it rises from `thumb_depth` below the top to the top.
 R-17: The outer edges of the keywell that are not vertical carry a chamfer of `rim_chamfer`. The keywell has no fillets. The chamfer keeps the envelope and the keywell stays one valid solid.
+R-18: The Z levels come from one chain in `CaseDimensions`. `keyplate_z` is the housing height plus `keyplate_under_housing`. `below_z` is the switch height below the plate plus `floor_under_pins`. `bottom_plate_z` is `below_z` minus `keyplate_z`.
 
 ## Layout
 
