@@ -7,7 +7,7 @@ requires-python = ">=3.11,<3.14"
 dependencies = [
   # Current build123d depends on cadquery-ocp-novtk + py-lib3mf, both of which
   # ship aarch64-linux wheels — so no dependency overrides are needed anymore.
-  "build123d",
+  "build123d>=0.13",
   "numpy",
   # Python package for the standalone (browser) viewer: `python -m ocp_vscode`.
   "ocp_vscode",

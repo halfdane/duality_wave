@@ -177,3 +177,11 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - ruff checks real errors only (E4, E7, E9, F). Star imports and `as name` context variables stay allowed.
   - tests/builds.py builds each case once per process. It also builds the compact variant.
 - Commits: the user asked for delineated commits along the way. The agent commits per step from now on.
+- Step 3 done. build123d 0.11.1 -> 0.13.0, OCP 7.9.3 -> 8.0.1, ocp-vscode 3.4.0 -> 4.2.0. pyproject requires build123d>=0.13.
+  - Full build: 12.4 s -> 7.7 s. Compact build: 6.0 s -> 4.3 s. Same code, only the new library.
+  - Break 1: 0.13 rejects `Line` in a BuildSketch. Wrapped in BuildLine (keyplate.py).
+  - Break 2 (silent): 0.13 applies an enclosing `Locations` to a builder that is created inside it. The symbol and the space invader were cut at twice the position and missed the part. Fix: build them outside `Locations`. Look for this pattern in new code.
+  - Change: the XIAO connector line had a z offset (xiao_position.Z). It is flat now. The keyplate volume changes by 0.2 mm3 (full) and 0.006 mm3 (compact).
+  - Keywell, bottom and thumb cut are identical to step 0 (volume, bbox, validity).
+  - `add()` renamed to `insert()` (deprecated in 0.13).
+  - New baseline for later steps: docs/baseline/step3.json.
