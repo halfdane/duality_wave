@@ -147,9 +147,9 @@ class Xiao:
     
     def add_large_usb_cutouts(self, part: Part):
         with BuildPart() as p:
-            add(part)
+            insert(part)
             with BuildSketch(self.usb_cut_sketch_plane) as cut_sketch:
-                add(self._create_free_usb_space_sketch())
+                insert(self._create_free_usb_space_sketch())
             extrude(to_extrude=cut_sketch.sketch, amount=7, mode=Mode.SUBTRACT)
             extrude(to_extrude=cut_sketch.sketch, amount=-(self.usb.d.Y - self.usb.forward_y + self.clearance), mode=Mode.SUBTRACT)
 
@@ -157,9 +157,9 @@ class Xiao:
 
     def add_usb_cutouts(self, part: Part):
         with BuildPart() as p:
-            add(part)
+            insert(part)
             with BuildSketch(self.usb_cut_sketch_plane) as cut_sketch:
-                add(self._create_usb_cut_sketch())
+                insert(self._create_usb_cut_sketch())
             extrude(to_extrude=cut_sketch.sketch, amount=7, mode=Mode.SUBTRACT)
             extrude(to_extrude=cut_sketch.sketch, amount=-(self.usb.d.Y - self.usb.forward_y + self.clearance), mode=Mode.SUBTRACT)
 
@@ -167,21 +167,21 @@ class Xiao:
     
     def add_reset_lever(self, part: Part, plane: Plane):
         with BuildPart() as p:
-            add(part)
+            insert(part)
             dist = plane.origin.Z - self.plane.origin.Z + self.dims.d.Z + self.components.reset_button_d.d.Z
             lever = self._create_reset_button_lever_sketch()
             with BuildSketch(plane) as lever_removal_sketch:
-                add(lever)
+                insert(lever)
             extrude(dir=-plane.z_dir, amount=10, mode=Mode.SUBTRACT)
 
             with BuildSketch(plane) as lever_add_sketch:
-                add(offset(lever, amount=-self.reset_lever_dims.gap))
+                insert(offset(lever, amount=-self.reset_lever_dims.gap))
                 with Locations((0, self.reset_lever_dims.gap)):
-                    add(offset(lever, amount=-self.reset_lever_dims.gap))
+                    insert(offset(lever, amount=-self.reset_lever_dims.gap))
             extrude(dir=-plane.z_dir, amount=1.18, mode=Mode.ADD)
 
             with BuildSketch(plane) as reset_button_bump:
-                add(self.reset_button_bump)
+                insert(self.reset_button_bump)
             extrude(amount=dist, mode=Mode.ADD)
 
 
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     with BuildPart(xiao_plane) as usb_cut_3d:
         with BuildSketch(xiao.usb_cut_sketch_plane) as cut_sketch:
             cut = xiao._create_usb_cut_sketch()
-            add(cut)
+            insert(cut)
         extrude(amount=7, mode=Mode.ADD)
     # usb_cut.part = xiao.plane * usb_cut.part
 

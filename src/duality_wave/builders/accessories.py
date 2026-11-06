@@ -54,7 +54,7 @@ def build_fixtures(ctx: CaseContext) -> Fixtures:
     bumper_model = ctx.bumper.model.rotate(Axis.X, 180).translate((0, 0, -dims.below_z + ctx.bumper.dims.base_z))
     with BuildPart() as bumpers:
         with Locations(dims.bumper_locations):
-            add(bumper_model)
+            insert(bumper_model)
 
     power_switch = PowerSwitch().model\
         .rotate(Axis.Y, dims.powerswitch_rotation.Y)\
@@ -66,14 +66,14 @@ def build_fixtures(ctx: CaseContext) -> Fixtures:
             Vector(position.X, position.Y, ctx.insert.dims.d.Z / 2)  # pressed in flush with the face at z=0
             for position in dims.fastener_positions
         ]):
-            add(ctx.insert.model)
+            insert(ctx.insert.model)
 
     with BuildPart() as screws:
         with Locations([
             Vector(position.X, position.Y, -dims.below_z + ctx.screw.dims.shaft.Z / 2 + ctx.screw.dims.head.Z)
             for position in dims.fastener_positions
         ]):
-            add(ctx.screw.model.rotate(Axis.X, 180))
+            insert(ctx.screw.model.rotate(Axis.X, 180))
 
     battery = Box(dims.battery_pd.d.X, dims.battery_pd.d.Y, dims.battery_pd.d.Z).translate(dims.battery_pd.p)
 
@@ -99,5 +99,5 @@ def build_fixtures(ctx: CaseContext) -> Fixtures:
 def build_switches(ctx: CaseContext, placements: list[Location]) -> Part:
     with BuildPart() as switches:
         with Locations(placements):
-            add(ctx.switch.model.part)
+            insert(ctx.switch.model.part)
     return switches.part

@@ -26,7 +26,7 @@ def build_bottom(ctx: CaseContext, dbg=NullScope()) -> Part:
         outline = ctx.outline.create_inner_outline(offset_by=-dims.wall_thickness - dims.print_profile.plate_clearance)
 
         with BuildSketch(Plane.XY.offset(-dims.below_z)) as base:
-            add(outline)
+            insert(outline)
         extrude(amount=dims.bottom_plate_z)
         # the outer face at -below_z is printed on the bed
         plate_faces = faces().filter_by(Axis.Z).sort_by(Axis.Z)
@@ -100,7 +100,7 @@ def _engrave_invader(ctx: CaseContext, dbg) -> None:
     invader = SpaceInvader(total_height=10).sketch
     with BuildSketch(Plane.XY.offset(-dims.below_z)) as invader_sketch:
         with Locations(dims.space_invader):
-            add(invader)
+            insert(invader)
     extrude(to_extrude=invader_sketch.sketch, amount=0.5, mode=Mode.SUBTRACT)
     dbg.note("invader_sketch", invader_sketch)
 
@@ -110,7 +110,7 @@ def add_switch_post_cutouts(bottom: Shape, switch: Switch, bottom_plate_z: float
     print("  switch post cutouts...")
     posts = [switch.posts.center, switch.posts.a1, switch.posts.a2, switch.posts.p1, switch.posts.p2]
     with BuildPart() as result:
-        add(bottom)
+        insert(bottom)
         with BuildSketch(Plane.XY.offset(-switch.below.d.Z + bottom_plate_z)):
             with Locations(placements):
                 for post in posts:

@@ -16,7 +16,7 @@ def build_keyplate(ctx: CaseContext, dbg=NullScope()) -> Part:
     print("Creating keyplate...")
     dims = ctx.dims
     with BuildPart() as keyplate:
-        base = add(ctx.outline.create_inner_outline(offset_by=-dims.wall_thickness - dims.print_profile.plate_clearance))
+        base = insert(ctx.outline.create_inner_outline(offset_by=-dims.wall_thickness - dims.print_profile.plate_clearance))
         extrude(amount=-dims.keyplate_z)
         dbg.note("base", base)
 
@@ -50,14 +50,14 @@ def _cut_switches(ctx: CaseContext, dbg) -> None:
         [Location(key.p, (0, 0, key.r)) for key in ctx.keys.keys],
         plate_z=ctx.dims.below_z)
     dbg.note("key_holes", key_holes)
-    add(key_holes, mode=Mode.SUBTRACT)
+    insert(key_holes, mode=Mode.SUBTRACT)
 
 
 def _cut_xiao(ctx: CaseContext, dbg) -> None:
     print("  xiao hole...")
     xiao_pocket = xiao_pocket_cutter(ctx.dims.print_profile, ctx.dims.xiao_position, plate_z=ctx.dims.below_z)
     dbg.note("xiao_pocket", xiao_pocket)
-    add(xiao_pocket, mode=Mode.SUBTRACT)
+    insert(xiao_pocket, mode=Mode.SUBTRACT)
 
 
 def _cut_connectors(ctx: CaseContext, dbg) -> None:

@@ -62,7 +62,7 @@ class Outline:
                     self.thumb_top = top_right_thumb_key.p + Vector(self.d_x, self.d_y).rotate(Axis.Z, top_right_thumb_key.r)
                     t = TangentArc([self.mid_right, self.thumb_top], tangent=l3 % 1, mode=Mode.PRIVATE)
                     if not self.is_crossing_keywell(t.edges()):
-                        add(t)
+                        insert(t)
                         break
 
                 l4 = Line(self.thumb_top, self.thumb_bottom_left)
@@ -96,7 +96,7 @@ class Outline:
                             c = Circle(self.cirque_recess_radius, mode=Mode.PRIVATE)
                         if self.cirque_recess_radius < chord_vec.length / 2 and not self.is_crossing_keywell(c.edges()):
                             # there's definitelly enough space for the circle here - just position it next to the thumb cluster
-                            add(c, mode=Mode.SUBTRACT)
+                            insert(c, mode=Mode.SUBTRACT)
                             self.cirque_recess_position = loc
                             found_position = True
             # fillet all vertices except self.mid_right: there's no corner, it's a tangent arc
@@ -145,7 +145,7 @@ class Outline:
 
     def create_inner_outline(self, offset_by=-1.8):
         with BuildSketch() as inner_outline:
-            add(self.sketch)
+            insert(self.sketch)
             if offset_by != 0:
                 offset(amount=offset_by)
                 self.fillet_sharp_corners(radius=1)
@@ -173,13 +173,13 @@ class Outline:
                         Rectangle(self.d_x*clearance_scale, self.d_y*clearance_scale, rotation=key.r)
 
         with BuildSketch() as keywell_outline:
-            add(fingers_outline)
-            add(thumbs_outline)
+            insert(fingers_outline)
+            insert(thumbs_outline)
 
             # remove small areas
             for wire in wires().filter_by(lambda w: w.area < 20):
                 with BuildLine() as line:
-                    add(wire)
+                    insert(wire)
                 make_face()
 
             # iterate over pairs of edges and fillet acute angles

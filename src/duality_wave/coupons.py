@@ -35,7 +35,7 @@ def to_bed(shape: Shape, face_z: float) -> Shape:
 
 def engrave(part: Shape, top_z: float, labels: list[tuple[str, float, float]], size: float = LABEL_SIZE) -> Part:
     with BuildPart() as engraved:
-        add(part)
+        insert(part)
         with BuildSketch(Plane.XY.offset(top_z)):
             for text, x, y in labels:
                 with Locations((x, y)):
@@ -71,7 +71,7 @@ def switch_plate_coupon(
     height = len(reliefs) * pitch + margin
 
     with BuildPart() as coupon:
-        add(chamfered_plate(width, height, plate_z, profile))
+        insert(chamfered_plate(width, height, plate_z, profile))
         for column, size in enumerate(sizes):
             for row, relief in enumerate(reliefs):
                 hole = replace(
@@ -83,7 +83,7 @@ def switch_plate_coupon(
                 y = margin + pitch * (row + 0.5)
                 # the cutter is modelled like the keyplate, so y is mirrored by the flip
                 cutter = switch_cutter(switch, hole, [Location((x, -y))], plate_z)
-                add(to_bed(cutter, 0), mode=Mode.SUBTRACT)
+                insert(to_bed(cutter, 0), mode=Mode.SUBTRACT)
 
     labels = [(f"{size:.2f}", margin + pitch * (column + 0.5), margin / 2) for column, size in enumerate(sizes)]
     labels += [(f"R{relief:g}", margin / 2, margin + pitch * (row + 0.5)) for row, relief in enumerate(reliefs)]
@@ -118,7 +118,7 @@ def plate_fit_coupon(
         height = inner_height - 2 * clearance
         plate = chamfered_plate(width, height, plate_z, profile)
         with BuildPart() as pushable:
-            add(plate)
+            insert(plate)
             with BuildSketch():
                 with Locations((width / 2, height / 2)):
                     Circle(3)
@@ -151,7 +151,7 @@ def round_hole_coupon(
         for index, clearance in enumerate(magnet_clearances):
             x = margin + index * pitch
             cutter = magnet_recess_cutter(magnet, replace(profile, magnet_clearance=clearance), [Vector(x, -magnet_y)], top_z=block_z)
-            add(to_bed(cutter, block_z), mode=Mode.SUBTRACT)
+            insert(to_bed(cutter, block_z), mode=Mode.SUBTRACT)
 
         for index, diameter in enumerate(pilot_diameters):
             x = margin + index * pitch
@@ -199,7 +199,7 @@ def pocket_coupon(
             y = margin + pitch_y * (row + 0.5)
             # the cutter is modelled like the keyplate, so y is mirrored by the flip
             cutter = xiao_pocket_cutter(replace(profile, xiao_clearance=clearance), Vector(x, -y, xiao_z), plate_z)
-            add(to_bed(cutter, 0), mode=Mode.SUBTRACT)
+            insert(to_bed(cutter, 0), mode=Mode.SUBTRACT)
             labels.append((f"{clearance:.2f}", x, y - pitch_y / 2 + 1.5))
 
         battery_center = (width - margin - battery_x / 2, height / 2)

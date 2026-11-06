@@ -12,11 +12,11 @@ def build_keywell(ctx: CaseContext, dbg=NullScope(), thumb_spec: ThumbCutSpec = 
     dims = ctx.dims
     with BuildPart() as keywell:
         with BuildSketch(Plane.XY.offset(dims.above_z)):
-            add(ctx.outline.create_outline())
+            insert(ctx.outline.create_outline())
         body = extrude(amount=-dims.below_z - dims.above_z)
 
         print("  skulpting thumb cut...")
-        add(thumb_cutter(ctx.switch, ctx.keys.thumb_clusters, dims.above_z, thumb_spec, dbg.scope("thumb_cut")),
+        insert(thumb_cutter(ctx.switch, ctx.keys.thumb_clusters, dims.above_z, thumb_spec, dbg.scope("thumb_cut")),
             mode=Mode.SUBTRACT)
 
         print("  filleting thumb cut...")
@@ -35,11 +35,11 @@ def build_keywell(ctx: CaseContext, dbg=NullScope(), thumb_spec: ThumbCutSpec = 
 def _cut_cavity(ctx: CaseContext) -> None:
     print("  keywell cut...")
     dims = ctx.dims
-    add(ctx.outline.create_inner_outline(offset_by=-dims.wall_thickness))
+    insert(ctx.outline.create_inner_outline(offset_by=-dims.wall_thickness))
     extrude(amount=-dims.below_z, mode=Mode.SUBTRACT)
 
     with BuildSketch(Plane.XY.offset(dims.above_z)) as key_cut_sketch:
-        add(ctx.outline.create_keywell_outline())
+        insert(ctx.outline.create_keywell_outline())
     extrude(to_extrude=key_cut_sketch.sketch, amount=-dims.below_z - dims.above_z, mode=Mode.SUBTRACT)
 
 
@@ -77,7 +77,7 @@ def _cut_magnets(ctx: CaseContext, dbg) -> None:
         return
     print("  magnet recesses...")
     magnet_recesses = magnet_recess_cutter(dims.magnet_d, dims.print_profile, dims.magnet_positions, top_z=dims.above_z)
-    add(magnet_recesses, mode=Mode.SUBTRACT)
+    insert(magnet_recesses, mode=Mode.SUBTRACT)
     dbg.note("magnet_recesses", magnet_recesses)
 
 
@@ -88,6 +88,6 @@ def _engrave_symbol(ctx: CaseContext, dbg) -> None:
     symbol = Symbol(total_height=symbol_height).sketch
     with BuildSketch(Plane.XY.offset(ctx.dims.above_z)) as symbol_sketch:
         with Locations(ctx.outline.top_left + Vector(0.65 * symbol_height, -0.6 * symbol_height)):
-            add(symbol)
+            insert(symbol)
     extrude(to_extrude=symbol_sketch.sketch, amount=-0.5, mode=Mode.SUBTRACT)
     dbg.note("symbol_sketch", symbol_sketch)

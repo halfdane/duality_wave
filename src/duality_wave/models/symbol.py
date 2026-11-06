@@ -17,7 +17,7 @@ class Symbol:
             triangle=Triangle(a=triangle_side, b=triangle_side, c=triangle_side, mode=Mode.PRIVATE)
             with Locations(triangle.vertices()):
                 Circle(circle_radius)
-            add(triangle.scale(0.97), mode=Mode.SUBTRACT)
+            insert(triangle.scale(0.97), mode=Mode.SUBTRACT)
 
         vertices = triangle.vertices()
         # Find the min/max Y coordinates including circle radius
