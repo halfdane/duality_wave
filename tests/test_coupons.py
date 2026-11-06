@@ -1,5 +1,7 @@
 import unittest
 
+import pytest
+
 from build123d import Vector
 
 from tests import WAVE_LAYOUT
@@ -12,6 +14,7 @@ from duality_wave.models.keys import ErgoKeys, get_points
 from duality_wave.models.outline import Outline
 
 
+@pytest.mark.slow
 class CouponTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

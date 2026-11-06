@@ -1,7 +1,6 @@
 import unittest
-from functools import cache
-from unittest.mock import patch
 
+import pytest
 from dataclasses import replace
 
 from build123d import Axis, Box, Location, Plane, Solid, Vector
@@ -17,7 +16,7 @@ from duality_wave.models.case_dimensions import CaseDimensions
 from duality_wave.models.keys import ErgoKeys, get_points
 from duality_wave.models.outline import Outline
 from tests import WAVE_LAYOUT
-from duality_wave.case import WaveCase
+from tests.builds import PARTS, build_case
 
 
 class OutlineTests(unittest.TestCase):
@@ -69,33 +68,19 @@ class FeatureTests(unittest.TestCase):
         self.assertAlmostEqual(width_at(cutter, 7.0), 2 * (magnet.radius + profile.magnet_clearance), places=3)
 
 
-PARTS = ("keywell", "keyplate", "bottom")
-
-
-@cache
-def build_case(debug: bool, both_sides: bool = True):
-    """Build a case once per test run. Returns the case and the mock that received its viewer pushes."""
-    switch = Choc()
-    keys = ErgoKeys(get_points(WAVE_LAYOUT))
-    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
-    dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
-    with patch("ocp_vscode.push_object") as push_object:
-        case = WaveCase(switch, keys, dims, outline, debug=debug, both_sides=both_sides)
-    return case, push_object
-
-
 def pushed_names(push_object):
     return [call.kwargs["name"] for call in push_object.call_args_list]
 
 
+@pytest.mark.slow
 class DebugFlagTests(unittest.TestCase):
-    def test_debug_off_pushes_nothing_and_builds_no_accessories(self):
+    def test_debug_off_pushes_nothing_and_builds_no_accessories(self):  # R-07
         case, push_object = build_case(debug=False)
         push_object.assert_not_called()
         self.assertIsNone(case.left.accessories)
         self.assertIsNone(case.right.accessories)
 
-    def test_debug_off_builds_the_same_parts_as_debug_on(self):
+    def test_debug_off_builds_the_same_parts_as_debug_on(self):  # R-07
         quiet, _ = build_case(debug=False)
         verbose, _ = build_case(debug=True)
         for side in ("left", "right"):
@@ -132,6 +117,7 @@ class DebugFlagTests(unittest.TestCase):
                 self.assertGreater(part.volume, 0)
 
 
+@pytest.mark.slow
 class SidesTests(unittest.TestCase):
     def test_one_sided_case_has_no_right_half(self):
         case, _ = build_case(debug=False, both_sides=False)
@@ -139,7 +125,7 @@ class SidesTests(unittest.TestCase):
         for name in PARTS:
             self.assertGreater(getattr(case.left, name).volume, 0)
 
-    def test_right_half_mirrors_the_left_half(self):
+    def test_right_half_mirrors_the_left_half(self):  # R-02
         case, _ = build_case(debug=False)
         offset = case.ctx.dims.right_side_offset
         for name in PARTS:
@@ -152,7 +138,8 @@ class SidesTests(unittest.TestCase):
 
 
 class SwitchPostCutoutTests(unittest.TestCase):
-    def test_complete_case_terminal_clearance(self):
+    @pytest.mark.slow
+    def test_complete_case_terminal_clearance(self):  # R-06
         case, _ = build_case(debug=False)
         switch, keys, dims = case.ctx.switch, case.ctx.keys, case.ctx.dims
         for side in ("left", "right"):
@@ -174,7 +161,7 @@ class SwitchPostCutoutTests(unittest.TestCase):
                         overlap = bottom & terminal
                         self.assertLess(sum(s.volume for s in overlap.solids()) if overlap else 0, 1e-7)
 
-    def test_physical_footprint_on_both_halves(self):
+    def test_physical_footprint_on_both_halves(self):  # R-06
         for angle in (0, 23, -37):
             for right in (False, True):
                 with self.subTest(angle=angle, right=right):
