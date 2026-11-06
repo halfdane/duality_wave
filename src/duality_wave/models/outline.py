@@ -1,23 +1,9 @@
 import math
 from build123d import *
-from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
+from duality_wave.geometry2d import merge_aligned_edges
 from duality_wave.models.switch import Switch
 from duality_wave.models.keys import ErgoKeys
 from duality_wave.layout import get_points
-
-def merge_aligned_edges(sketch: Sketch, tolerance: float = 1e-6) -> Sketch:
-    """Merge edges that lie on one line.
-
-    ergogen rounds the points to 8 digits, so two rectangles in a row are off by about 1e-8.
-    clean() keeps their edges apart and the acute-angle fillets below then act on a different corner.
-    """
-    unifier = ShapeUpgrade_UnifySameDomain(sketch.wrapped, True, True, True)
-    unifier.AllowInternalEdges(False)
-    unifier.SetLinearTolerance(tolerance)
-    unifier.SetAngularTolerance(tolerance)
-    unifier.Build()
-    return Sketch(Compound(unifier.Shape()))
-
 
 class Outline:
     def __init__(self, switch: Switch, keys: ErgoKeys, wall_thickness=1.8, additional_top_space=10):
