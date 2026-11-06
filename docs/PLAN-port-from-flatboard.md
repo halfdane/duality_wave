@@ -211,3 +211,10 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - Bug fixed on the way: the posts of the preview model sat inside the housing, because `faces().sort_by(Axis.Z)[0]` of a nested BuildPart picks a face in local coordinates. The posts are now placed in world coordinates (X, -Y), like the cutouts.
   - Known for 7d: the cutouts of the centre post now stop 0.05 mm above the bottom face. 7d changes this.
 - Step 7c done. The cap height has one source: `CapDimensions` (height 4.5, overlap 2.28), so the cap top is 8.02 (R-20). The top of the keywell is `wall_over_cap` (0.18) above it: above_z falls from 8.3 to 8.2. The thumb floor is the top of the switch housing (3.3), not a depth below the top. `thumb_depth(switch, top_z)` and `thumb_floor_z(switch)` changed. `Choc.cap_model_z` and `cap_model_overlap` are gone.
+- Step 7d done. Stack decision by the user: below_z 4.6 (floor under pins 0.4), bottom plate 1.7, about 12.8 mm in total.
+  - Post cutouts: each post has a hole from the plate top (-keyplate_z) to its tip. The centre post has a through hole and pokes 0.25 mm out of the bed face. The terminal channel is 0.8 deep.
+  - XIAO ledge 0.6 (`xiao_ledge`). The USB-C connector stands 0.46 out of the bed face. The power switch lever stands 0.8 out (`lever_protrusion`). The bumper dome is 1.0, so the bumpers stay the lowest point (R-21).
+  - Screw 8 mm -> 6 mm. The tip ends at z 2.4, above the insert top (2.0). BOM and README still say 8 mm: fix in step 8.
+  - Bumpers 0, 3, 4 (full) and 0, 3 (compact) moved: the old spots hit the XIAO processor pocket or the pin channels at the new depth.
+  - Reset lever bump now rises above the plate up to the XIAO button: R-04 has this exception.
+  - New requirements R-21 to R-23 (protrusions, collisions, plate webs). Geometry baseline moves on purpose. The new baseline comes in 7e.

@@ -12,6 +12,7 @@ from duality_wave.models.xiao import Xiao
 # wiring channel under the terminals of each switch: size and offset from the switch center
 TERMINAL_CHANNEL = (12, 4)
 TERMINAL_CHANNEL_OFFSET_Y = -4.5
+TERMINAL_CHANNEL_DEPTH = 0.8
 # the XIAO processor pocket is this much larger than the processor, the board cutout this much smaller than the board
 XIAO_PROCESSOR_SLACK = 0.5
 XIAO_BOARD_INSET = 0.5
@@ -105,21 +106,33 @@ def _engrave_invader(ctx: CaseContext, dbg) -> None:
     dbg.note("invader_sketch", invader_sketch)
 
 
-def add_switch_post_cutouts(bottom: Shape, switch: Switch, bottom_plate_z: float, placements: list[Location]) -> Part:
-    """Cut room for the switch posts and the terminal channel under every placed switch."""
-    print("  switch post cutouts...")
-    posts = switch.posts.posts
+def switch_post_cutter(switch: Switch, keyplate_z: float, placements: list[Location]) -> Part:
+    """Room for the posts of every placed switch in the bottom plate, plus the terminal channel.
+
+    Each post gets a hole from the top of the plate down to its tip. A post that reaches below the plate gets a through hole.
+    """
+    housing_z = switch.bottom_housing.d.Z
+    top = Plane.XY.offset(-keyplate_z)
     with BuildPart() as cutter:
-        with BuildSketch(Plane.XY.offset(-switch.below.d.Z + bottom_plate_z)):
-            with Locations(placements):
-                for post in posts:
-                    # The underside workplane flips local Y, not the physical footprint's X.
-                    with Locations((post.p.X, -post.p.Y)):
-                        Circle(post.d.radius + POST_CLEARANCE)
-        extrude(amount=-max(post.d.Z for post in posts))
-        with BuildSketch(Plane.XY.offset(-switch.below.d.Z + bottom_plate_z)):
+        for length in sorted({post.d.Z for post in switch.posts.posts}):
+            depth = housing_z + length - keyplate_z
+            if depth <= 0:
+                continue
+            with BuildSketch(top):
+                with Locations(placements):
+                    for post in switch.posts.posts:
+                        if post.d.Z == length:
+                            # The underside workplane flips local Y, not the physical footprint's X.
+                            with Locations((post.p.X, -post.p.Y)):
+                                Circle(post.d.radius + POST_CLEARANCE)
+            extrude(amount=-depth)
+        with BuildSketch(top):
             with Locations([p.position + Vector(0, TERMINAL_CHANNEL_OFFSET_Y) for p in placements]):
                 Rectangle(*TERMINAL_CHANNEL)
-        extrude(amount=-max(post.d.Z / 2 for post in posts))
+        extrude(amount=-TERMINAL_CHANNEL_DEPTH)
+    return cutter.part
 
-    return bottom.cut(cutter.part)
+
+def add_switch_post_cutouts(bottom: Shape, switch: Switch, keyplate_z: float, placements: list[Location]) -> Part:
+    print("  switch post cutouts...")
+    return bottom.cut(switch_post_cutter(switch, keyplate_z, placements))

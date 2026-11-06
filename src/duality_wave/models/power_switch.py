@@ -14,6 +14,11 @@ class LeverDimensions:
     clearance: float = 3.5
     p: Vector = Vector(0, 0.8, 0)
 
+    @property
+    def reach(self) -> float:
+        """How far the lever tip is from the face of the body that carries the lever."""
+        return self.d.Y / 2 + self.d.Z / 2
+
 class PowerSwitch:
     dims = PowerSwitchDimensions()
     lever = LeverDimensions()

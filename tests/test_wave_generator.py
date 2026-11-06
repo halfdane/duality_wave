@@ -169,7 +169,7 @@ class SwitchPostCutoutTests(unittest.TestCase):
                     rotation = -angle if right else angle
                     placement = Location(position, (0, 0, rotation))
                     blank = Box(30, 30, 3).translate(position + Vector(0, 0, -4.4))
-                    bottom = add_switch_post_cutouts(blank, Choc, 3.0, [placement])
+                    bottom = add_switch_post_cutouts(blank, Choc, 2.9, [placement])
                     self.assertTrue(bottom.is_valid)
                     self.assertEqual(len(bottom.solids()), 1)
                     for post in (Choc.posts.center, Choc.posts.p1, Choc.posts.p2):

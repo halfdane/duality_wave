@@ -19,7 +19,7 @@ R-03: Every part of every built half is one valid solid.
 
 ## Geometry
 
-R-04: The keyplate top is at z = 0. The keywell spans from z = -below_z to z = above_z. The bottom plate spans from z = -below_z to z = -keyplate_z.
+R-04: The keyplate top is at z = 0. The keywell spans from z = -below_z to z = above_z. The bottom plate spans from z = -below_z to z = -keyplate_z. The one exception is the bump under the reset button of the XIAO: it rises to the button.
 R-05: The keyplate fits inside the keywell in the XY plane.
 R-06: No switch contact touches the bottom plate. The cutouts leave room for them.
 R-16: The thumb cut is a loft of one zone. The zone is one face with round corners. The loft grows the zone by `taper` while it rises from the floor to the top. The floor is the top of the switch housing. It does not move with the top of the keywell.
@@ -27,6 +27,9 @@ R-17: The outer edges of the keywell that are not vertical carry a chamfer of `r
 R-18: The Z levels come from one chain in `CaseDimensions`. `keyplate_z` is the housing height plus `keyplate_under_housing`. `below_z` is the switch height below the plate plus `floor_under_pins`. `bottom_plate_z` is `below_z` minus `keyplate_z`.
 R-19: The switch model has the parameters `pin_len` (default 2.0) and `side_post_len` (default 0). A post is never longer than its datasheet value. A post of length 0 does not exist. The centre post keeps its length. The depth of the switch below the housing is the longest contact or side post. The centre post does not count.
 R-20: The top of the keywell is `wall_over_cap` (0.18) above the top of the keycaps. The cap top is the stack of base, upper housing, stem and cap, minus the overlap of cap and stem (8.02 in total).
+R-21: Nothing sticks out of the bed face by more than the bumpers do. This covers the centre post of the switch, the USB-C connector of the XIAO and the lever of the power switch. The screw is long enough to pass the insert and short enough to stay clear of the cap.
+R-22: No fixture collides with a part. The inserts are pressed into the keywell and are the only exception. The power switch stays 0.1 mm or more under the battery.
+R-23: The bottom plate keeps a wall of 0.5 mm around every bumper pocket. Every contact has a floor of `floor_under_pins` under its tip. The centre post has a hole.
 
 ## Layout
 

@@ -5,6 +5,7 @@ import re
 
 import pytest
 
+from duality_wave.models.xiao import Xiao
 from tests import ROOT
 from tests.builds import PARTS, build_case
 
@@ -66,7 +67,9 @@ class TestFullCase:
             assert keyplate.max.Z == pytest.approx(0, abs=1e-3)
             assert keyplate.min.Z == pytest.approx(-dims.keyplate_z, abs=1e-3)
             assert bottom.min.Z == pytest.approx(-dims.below_z, abs=1e-3)
-            assert bottom.max.Z == pytest.approx(-dims.keyplate_z, abs=1e-3)
+            # the bump under the reset button of the XIAO rises above the plate, up to the button
+            reset_bump_top = dims.xiao_position.Z - Xiao.dims.d.Z - Xiao.components.reset_button_d.d.Z
+            assert bottom.max.Z == pytest.approx(max(-dims.keyplate_z, reset_bump_top), abs=1e-3)
 
     def test_the_keyplate_fits_inside_the_keywell(self, full_case):  # R-05
         for side in (full_case.left, full_case.right):

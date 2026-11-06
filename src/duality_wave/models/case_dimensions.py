@@ -33,7 +33,12 @@ class CaseDimensions(WaveDimensions):
     # the keyplate reaches this far below the switch housing
     keyplate_under_housing: float = 0.7
     # material under the pin tips
-    floor_under_pins: float = 0.7
+    floor_under_pins: float = 0.4
+    # the keyplate ledge that holds the XIAO: from the top of the keyplate to the back of the board.
+    # The USB-C connector reaches 4.46 mm below the board back and may stand out of the bed face.
+    xiao_ledge: float = 0.6
+    # how far the lever of the power switch stands out of the bed face. The bumpers stand out further.
+    lever_protrusion: float = 0.8
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
         # Z chain, top to bottom. All levels are measured from the keyplate top (z = 0).
@@ -44,7 +49,7 @@ class CaseDimensions(WaveDimensions):
 
         xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 5
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance
-        xiao_pos_z: float = -1.45
+        xiao_pos_z: float = -self.xiao_ledge
         self.xiao_position: Vector = Vector(xiao_pos_x, xiao_pos_y, xiao_pos_z)
 
         xiao_to_power_switch: float = PowerSwitch.dims.d.Y/2 + PowerSwitch.dims.pin_length/2
@@ -52,7 +57,7 @@ class CaseDimensions(WaveDimensions):
         self.powerswitch_position: Vector = Vector(
                 xiao_pos_x + Xiao.dims.d.X/2 + xiao_to_power_switch,
                 xiao_pos_y - 1,
-                -(self.below_z - 0.75*PowerSwitch.lever.d.Z))
+                -(self.below_z - PowerSwitch.lever.reach + self.lever_protrusion))
 
         battery_d: RectDimensions = RectDimensions(31, 17, 6)
         self.battery_pd = PosAndDims(
@@ -96,11 +101,12 @@ class CaseDimensions(WaveDimensions):
         )
 
         self.bumper_locations = [
-            keys.thumb_clusters[0][1][0].p + Vector(switch.cap.d.X/2 - bumpers_radius/2 - 0.5, -switch.cap.d.Y/2+bumpers_radius/2 + 0.5).rotate(Axis.Z, keys.thumb_clusters[0][1][0].r),
+            keys.thumb_clusters[0][1][0].p + Vector(switch.cap.d.X/2 - bumpers_radius/2 - 0.5, -switch.cap.d.Y/2+bumpers_radius/2 + 0.5).rotate(Axis.Z, keys.thumb_clusters[0][1][0].r) + (1.5, 8.5),
             outline.top_right + Vector(-bumpers_radius, -bumpers_radius),
             outline.bottom_left + Vector(bumpers_radius, bumpers_radius),
-            outline.top_left + Vector(bumpers_radius, -bumpers_radius- 10),
-            (keys.finger_clusters[0][2][0].p + keys.finger_clusters[0][2][1].p) / 2 + (8, 0),
+            # clear of the XIAO processor pocket, which sits at the same depth
+            outline.top_left + Vector(bumpers_radius + 6, -bumpers_radius - 20),
+            (keys.finger_clusters[0][2][0].p + keys.finger_clusters[0][2][1].p) / 2 + (7, -3),
         ]
 
         self.space_invader: Location = Location(
@@ -130,10 +136,10 @@ class CompactCaseDimensions(CaseDimensions):
         ]
 
         self.bumper_locations = [
-            keys.thumb_clusters[0][1][0].p + Vector(switch.cap.d.X/2 - bumpers_radius/2 - 0.5, -switch.cap.d.Y/2+bumpers_radius/2 + 0.5).rotate(Axis.Z, keys.thumb_clusters[0][1][0].r),
+            keys.thumb_clusters[0][1][0].p + Vector(switch.cap.d.X/2 - bumpers_radius/2 - 0.5, -switch.cap.d.Y/2+bumpers_radius/2 + 0.5).rotate(Axis.Z, keys.thumb_clusters[0][1][0].r) + (-11, 8),
             outline.top_right + Vector(-bumpers_radius, -bumpers_radius),
             outline.bottom_left + Vector(bumpers_radius, bumpers_radius-3),
-            outline.top_left + Vector(bumpers_radius, -bumpers_radius -10),
+            outline.top_left + Vector(bumpers_radius + 1, -bumpers_radius - 20),
         ]
 
         self.space_invader: Location = Location((24, -6), (0, 0, -50))

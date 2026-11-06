@@ -91,7 +91,7 @@ def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures
     keyplate = xiao.add_large_usb_cutouts(side.mirrored(blanks.keyplate))
     viewer.push(keyplate, name=f"keyplate_{side.name}")
 
-    bottom = add_switch_post_cutouts(side.mirrored(blanks.bottom), ctx.switch, dims.bottom_plate_z, side.switch_locations)
+    bottom = add_switch_post_cutouts(side.mirrored(blanks.bottom), ctx.switch, dims.keyplate_z, side.switch_locations)
     bottom = xiao.add_large_usb_cutouts(bottom)
     bottom = xiao.add_reset_lever(
         bottom, side.xiao_plane.offset(dims.keyplate_z + dims.bottom_plate_z + dims.xiao_position.Z))

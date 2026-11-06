@@ -26,6 +26,8 @@ class WaveDimensions:
     above_z: float
     keyplate_under_housing: float
     floor_under_pins: float
+    xiao_ledge: float
+    lever_protrusion: float
     below_z: float
     bottom_plate_z: float
     keyplate_z: float

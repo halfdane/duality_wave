@@ -8,7 +8,7 @@ from duality_wave.models.model_types import RoundDimensions
 
 @dataclass
 class ScrewDimensions:
-    shaft: RoundDimensions = RoundDimensions(1.0, 8.0)
+    shaft: RoundDimensions = RoundDimensions(1.0, 6.0)
     head: RoundDimensions = RoundDimensions(2.25, 1)
 
 
