@@ -207,3 +207,6 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - Left for later: add_large_usb_cutouts 0.1 s x4, post cutouts 0.19 s x2, keywell cavity 0.26 s, connectors 0.23 s.
   - Budgets tightened again (R-10 to R-12). New baseline: docs/baseline/step6.json.
 - Step 7a done. `CaseDimensions` derives keyplate_z, below_z and bottom_plate_z in one chain. Values are the same (8.3, 2.9, 5.9, 3.0). `add_below_choc_posts` is now `floor_under_pins`. New parameter `keyplate_under_housing` (0.7). R-18 pins the chain. Geometry is identical to step6.json.
+- Step 7b done. `Choc(pin_len=2.0, side_post_len=0.0)`. Contacts are trimmed, side posts are gone, a post of length 0 does not exist (R-19). below_z falls from 5.9 to 4.9 and the bottom plate from 3.0 to 2.0. The stack is 1 mm thinner. The bottom volume drops by a third.
+  - Bug fixed on the way: the posts of the preview model sat inside the housing, because `faces().sort_by(Axis.Z)[0]` of a nested BuildPart picks a face in local coordinates. The posts are now placed in world coordinates (X, -Y), like the cutouts.
+  - Known for 7d: the cutouts of the centre post now stop 0.05 mm above the bottom face. 7d changes this.

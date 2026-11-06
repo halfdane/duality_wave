@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from build123d import *
 from duality_wave.models.model_types import RectDimensions, RoundDimensions, PosAndDims
 from duality_wave.models.switch import Switch
@@ -21,7 +21,29 @@ class PostDimensions:
     p1: PosAndDims = PosAndDims(p=Vector(0,5.9), d=RoundDimensions(0.2, 3))
     p2: PosAndDims = PosAndDims(p=Vector(-5,3.8), d=RoundDimensions(0.2, 3))
 
-    posts: tuple[PosAndDims] = (center, a1, a2, p1, p2)
+    @property
+    def posts(self) -> tuple[PosAndDims, ...]:
+        """The posts that exist. A post of length 0 is left out."""
+        return tuple(post for post in (self.center, self.a1, self.a2, self.p1, self.p2) if post.d.Z > 0)
+
+    def with_lengths(self, pin_len: float, side_post_len: float) -> "PostDimensions":
+        """Trim the contacts and the side posts. The centre post keeps its length. A post is never longer than its datasheet value."""
+
+        def trimmed(post: PosAndDims, length: float) -> PosAndDims:
+            return replace(post, d=RoundDimensions(post.d.radius, max(0.0, min(length, post.d.Z))))
+
+        return replace(
+            self,
+            a1=trimmed(self.a1, side_post_len),
+            a2=trimmed(self.a2, side_post_len),
+            p1=trimmed(self.p1, pin_len),
+            p2=trimmed(self.p2, pin_len),
+        )
+
+    @property
+    def below_length(self) -> float:
+        """How far the posts reach under the housing. The centre post is not counted: it passes through the bottom plate."""
+        return max([post.d.Z for post in self.posts if post is not self.center], default=0.0)
 
 
 @dataclass
@@ -56,7 +78,7 @@ class BelowDimensions:
     d: RectDimensions = RectDimensions(
         BottomHousingDimensions.d.X,
         BottomHousingDimensions.d.Y,
-        BottomHousingDimensions.d.Z + max([post.d.Z for post in PostDimensions.posts])
+        BottomHousingDimensions.d.Z + max(post.d.Z for post in PostDimensions().posts)
     )
 
 class Choc(Switch):
@@ -77,7 +99,11 @@ class Choc(Switch):
     cap_model_z: float = 4.5
     cap_model_overlap: float = 2.28
 
-    def __init__(self, show_model=False):
+    def __init__(self, show_model=False, pin_len: float = 2.0, side_post_len: float = 0.0):
+        """pin_len: length of the two contacts under the housing. side_post_len: length of the two small side posts."""
+        self.posts = PostDimensions().with_lengths(pin_len, side_post_len)
+        self.below = BelowDimensions(RectDimensions(
+            self.bottom_housing.d.X, self.bottom_housing.d.Y, self.bottom_housing.d.Z + self.posts.below_length))
         with BuildPart() as self.model:
             with BuildPart() as main_housing_base:
                 with Locations((0, 0, +self.base.d.Z / 2)):
@@ -87,9 +113,10 @@ class Choc(Switch):
                 with Locations((0, 0, self.bottom_housing.d.Z / 2)):
                     Box(self.bottom_housing.d.X, self.bottom_housing.d.Y, self.bottom_housing.d.Z)
 
-            with BuildPart(bottom_housing.faces().sort_by(Axis.Z)[0]) as posts:
+            # world coordinates: the underside is seen mirrored, so Y flips (like the post cutouts in the bottom plate)
+            with BuildPart() as posts:
                 for post in self.posts.posts:
-                    with Locations(post.p + (0, 0, -post.d.Z / 2)):
+                    with Locations((post.p.X, -post.p.Y, -self.bottom_housing.d.Z - post.d.Z / 2)):
                         Cylinder(post.d.radius, post.d.Z)
 
             with BuildPart(bottom_housing.faces().filter_by(Axis.X)) as snap_in_clamps:

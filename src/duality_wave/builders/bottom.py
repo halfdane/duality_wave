@@ -108,7 +108,7 @@ def _engrave_invader(ctx: CaseContext, dbg) -> None:
 def add_switch_post_cutouts(bottom: Shape, switch: Switch, bottom_plate_z: float, placements: list[Location]) -> Part:
     """Cut room for the switch posts and the terminal channel under every placed switch."""
     print("  switch post cutouts...")
-    posts = [switch.posts.center, switch.posts.a1, switch.posts.a2, switch.posts.p1, switch.posts.p2]
+    posts = switch.posts.posts
     with BuildPart() as cutter:
         with BuildSketch(Plane.XY.offset(-switch.below.d.Z + bottom_plate_z)):
             with Locations(placements):
