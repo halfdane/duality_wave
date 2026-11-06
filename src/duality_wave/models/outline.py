@@ -1,8 +1,23 @@
 import math
 from build123d import *
+from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
 from duality_wave.models.switch import Switch
 from duality_wave.models.keys import ErgoKeys
 from duality_wave.layout import get_points
+
+def merge_aligned_edges(sketch: Sketch, tolerance: float = 1e-6) -> Sketch:
+    """Merge edges that lie on one line.
+
+    ergogen rounds the points to 8 digits, so two rectangles in a row are off by about 1e-8.
+    clean() keeps their edges apart and the acute-angle fillets below then act on a different corner.
+    """
+    unifier = ShapeUpgrade_UnifySameDomain(sketch.wrapped, True, True, True)
+    unifier.AllowInternalEdges(False)
+    unifier.SetLinearTolerance(tolerance)
+    unifier.SetAngularTolerance(tolerance)
+    unifier.Build()
+    return Sketch(Compound(unifier.Shape()))
+
 
 class Outline:
     def __init__(self, switch: Switch, keys: ErgoKeys, wall_thickness=1.8, additional_top_space=10):
@@ -173,8 +188,8 @@ class Outline:
                         Rectangle(self.d_x*clearance_scale, self.d_y*clearance_scale, rotation=key.r)
 
         with BuildSketch() as keywell_outline:
-            insert(fingers_outline)
-            insert(thumbs_outline)
+            insert(merge_aligned_edges(fingers_outline.sketch))
+            insert(merge_aligned_edges(thumbs_outline.sketch))
 
             # remove small areas
             for wire in wires().filter_by(lambda w: w.area < 20):
@@ -218,7 +233,7 @@ if __name__ == "__main__":
     from duality_wave.paths import LAYOUT_DIR
 
     switch = Choc()
-    config_path = LAYOUT_DIR / 'wave.yml'
+    config_path = LAYOUT_DIR / 'wave.points.yaml'
     points = get_points(file_path=config_path)
     keys = ErgoKeys(points=points)
     

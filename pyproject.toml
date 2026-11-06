@@ -11,9 +11,7 @@ dependencies = [
   "numpy",
   # Python package for the standalone (browser) viewer: `python -m ocp_vscode`.
   "ocp_vscode",
-  # Used by the ergogen compatibility layer (layout.py): YAML parsing and
-  # symbolic evaluation of ergogen config expressions.
-  "sympy",
+  # layout.py reads the points that ergogen writes.
   "pyyaml",
 ]
 
@@ -45,7 +43,3 @@ extend-exclude = [".direnv", "build"]
 # Star imports of build123d and `with BuildPart() as name` are the house style.
 select = ["E4", "E7", "E9", "F"]
 ignore = ["F403", "F405", "F841", "E741"]
-
-[tool.ruff.lint.per-file-ignores]
-# layout.py is replaced by real ergogen output in step 4 of docs/PLAN-port-from-flatboard.md.
-"src/duality_wave/layout.py" = ["E722"]

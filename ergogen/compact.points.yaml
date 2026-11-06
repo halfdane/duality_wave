@@ -1,0 +1,212 @@
+matrix_index_bottom:
+    x: 0
+    'y': 4.25
+    r: 0
+    meta:
+        stagger: 4.25
+        spread: 18
+        splay: 0
+        origin:
+            - 0
+            - 0
+        orient: 0
+        shift:
+            - 0
+            - 0
+        rotate: 0
+        adjust: {}
+        width: 14.05
+        height: 14.05
+        padding: 17
+        autobind: 10
+        skip: false
+        asym: both
+        colrow: index_bottom
+        name: matrix_index_bottom
+        zone:
+            columns:
+                index:
+                    key:
+                        stagger: 0.25ky
+                    rows: {}
+                    name: index
+                inner:
+                    key:
+                        stagger: '-0.25ky'
+                    rows: {}
+                    name: inner
+            rows:
+                bottom: {}
+            name: matrix
+        col:
+            key:
+                stagger: 0.25ky
+            rows: {}
+            name: index
+        row: bottom
+        bind:
+            - 0
+            - 0
+            - 0
+            - 0
+matrix_inner_bottom:
+    x: 18
+    'y': 0
+    r: 0
+    meta:
+        stagger: -4.25
+        spread: 18
+        splay: 0
+        origin:
+            - 0
+            - 0
+        orient: 0
+        shift:
+            - 0
+            - 0
+        rotate: 0
+        adjust: {}
+        width: 14.05
+        height: 14.05
+        padding: 17
+        autobind: 10
+        skip: false
+        asym: both
+        colrow: inner_bottom
+        name: matrix_inner_bottom
+        zone:
+            columns:
+                index:
+                    key:
+                        stagger: 0.25ky
+                    rows: {}
+                    name: index
+                inner:
+                    key:
+                        stagger: '-0.25ky'
+                    rows: {}
+                    name: inner
+            rows:
+                bottom: {}
+            name: matrix
+        col:
+            key:
+                stagger: '-0.25ky'
+            rows: {}
+            name: inner
+        row: bottom
+        bind:
+            - 0
+            - 0
+            - 0
+            - 0
+thumb_middle:
+    x: 11.5
+    'y': -18
+    r: -8
+    meta:
+        stagger: 0
+        spread: 18
+        splay: 0
+        origin:
+            - -9.525
+            - -5.715
+        orient: 0
+        shift:
+            - 0
+            - 0
+        rotate: 0
+        adjust: {}
+        width: 14.05
+        height: 14.05
+        padding: 17
+        autobind: 10
+        skip: false
+        asym: both
+        colrow: middle_default
+        name: thumb_middle
+        zone:
+            columns:
+                middle:
+                    key:
+                        origin:
+                            - '-0.5U'
+                            - '-0.3U'
+                    rows: {}
+                    name: middle
+                reachy:
+                    key:
+                        origin:
+                            - '-0.5U'
+                            - '-0.3U'
+                    rows: {}
+                    name: reachy
+            name: thumb
+        col:
+            key:
+                origin:
+                    - '-0.5U'
+                    - '-0.3U'
+            rows: {}
+            name: middle
+        row: default
+        bind:
+            - 0
+            - 0
+            - 0
+            - 0
+thumb_reachy:
+    x: 29.3248252
+    'y': -20.5051158
+    r: -8
+    meta:
+        stagger: 0
+        spread: 18
+        splay: 0
+        origin:
+            - -9.525
+            - -5.715
+        orient: 0
+        shift:
+            - 0
+            - 0
+        rotate: 0
+        adjust: {}
+        width: 14.05
+        height: 14.05
+        padding: 17
+        autobind: 10
+        skip: false
+        asym: both
+        colrow: reachy_default
+        name: thumb_reachy
+        zone:
+            columns:
+                middle:
+                    key:
+                        origin:
+                            - '-0.5U'
+                            - '-0.3U'
+                    rows: {}
+                    name: middle
+                reachy:
+                    key:
+                        origin:
+                            - '-0.5U'
+                            - '-0.3U'
+                    rows: {}
+                    name: reachy
+            name: thumb
+        col:
+            key:
+                origin:
+                    - '-0.5U'
+                    - '-0.3U'
+            rows: {}
+            name: reachy
+        row: default
+        bind:
+            - 0
+            - 0
+            - 0
+            - 0

@@ -185,3 +185,8 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - Keywell, bottom and thumb cut are identical to step 0 (volume, bbox, validity).
   - `add()` renamed to `insert()` (deprecated in 0.13).
   - New baseline for later steps: docs/baseline/step3.json.
+- Step 4 done. The key positions come from real ergogen.
+  - The sympy port gave the same positions as ergogen for wave.yml and compact.yml (largest difference 7e-8 mm, same names, same order). FK's ergogen.yaml has the same layout.
+  - `task layout` runs ergogen and writes ergogen/wave.points.yaml and ergogen/compact.points.yaml. They are committed. tests/test_layout.py fails when they are out of date (R-08).
+  - layout.py shrank from 471 lines to 20. It reads the points file (R-09). sympy is no longer a direct dependency (build123d still pulls it in).
+  - Finding: ergogen rounds to 8 digits. Two thumb rectangles that were exactly aligned are now 1e-8 apart. clean() keeps their edges apart. The acute-angle fillets in `create_keywell_outline` then acted on another corner. The keywell cutout lost 6.3 mm2. Fix: `merge_aligned_edges` in outline.py (R-15). Geometry is identical to step3.json again.

@@ -128,6 +128,7 @@ The dev shell installs the Python dependencies with `uv`.
 The STEP files go to `build/step` and `coupons.stl` to `build/`.
 Git ignores the `build` directory.
 The key layout comes from `ergogen/wave.yml`.
+Run `task layout` after you change it. This runs ergogen and writes `ergogen/wave.points.yaml`. The build reads that file. Commit it.
 `WaveCase(debug=True)` builds the accessory models and sends everything to the viewer.
 The intermediate shapes arrive last, in a group named `debug` that starts hidden.
 `WaveCase(debug=False)` builds only the printable parts.
@@ -145,7 +146,7 @@ The Python code is the package `duality_wave` in `src/duality_wave/`.
 - `builders/side.py` places the parts on the left or right half.
 - `builders/accessories.py` builds the models that are only shown in the viewer.
 - `builders/viewer.py` decides what is pushed to the viewer.
-- `layout.py` is a small Python port of the ergogen layout code.
+- `layout.py` reads the `*.points.yaml` files that ergogen writes.
 - `models/` holds the part models and the outline.
 - `models/case_dimensions.py` holds the case dimensions of the main case and the compact variant.
 - `models/features.py` holds the cutters that the case and the coupons share.

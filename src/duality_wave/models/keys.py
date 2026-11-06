@@ -60,7 +60,7 @@ if __name__ == "__main__":
     from duality_wave.models.choc import Choc
     from duality_wave.paths import LAYOUT_DIR
 
-    config_path = LAYOUT_DIR / 'compact.yml'
+    config_path = LAYOUT_DIR / 'compact.points.yaml'
     points = get_points(file_path=config_path)
 
     def create_sizing(switch: Switch):

@@ -299,7 +299,7 @@ if __name__ == "__main__":
     from duality_wave.paths import BUILD_DIR, LAYOUT_DIR
 
     switch = Choc()
-    config_path = LAYOUT_DIR / "wave.yml"
+    config_path = LAYOUT_DIR / "wave.points.yaml"
     keys = ErgoKeys(points=get_points(file_path=config_path))
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)

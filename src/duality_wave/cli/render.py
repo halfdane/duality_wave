@@ -19,7 +19,7 @@ OUT_DIR = sys.argv[1] if len(sys.argv) > 1 else str(BUILD_DIR / "render")
 
 def main():
     switch = Choc()
-    config_path = LAYOUT_DIR / "wave.yml"
+    config_path = LAYOUT_DIR / "wave.points.yaml"
     keys = ErgoKeys(points=get_points(file_path=config_path))
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)

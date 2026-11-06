@@ -10,7 +10,7 @@ from duality_wave.paths import LAYOUT_DIR
 
 if __name__ == "__main__":
     switch = Choc()
-    config_path = LAYOUT_DIR / "compact.yml"
+    config_path = LAYOUT_DIR / "compact.points.yaml"
     keys = ErgoKeys(points=get_points(file_path=config_path))
     outline = Outline(switch=switch, keys=keys, wall_thickness=CompactCaseDimensions.wall_thickness, additional_top_space=22)
     dims = CompactCaseDimensions(switch=switch, outline=outline, keys=keys)

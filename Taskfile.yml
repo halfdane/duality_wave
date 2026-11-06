@@ -53,6 +53,15 @@ tasks:
     cmds:
       - python -m duality_wave.coupons
 
+  layout:
+    desc: Regenerate ergogen/*.points.yaml from ergogen/*.yml with ergogen.
+    summary: |
+      Run this after you change a layout file. Commit the points files.
+      tests/test_layout.py fails when a points file is out of date.
+    cmds:
+      - for: [wave, compact]
+        cmd: ergogen ergogen/{{.ITEM}}.yml -o build/ergogen/{{.ITEM}} && cp build/ergogen/{{.ITEM}}/points/points.yaml ergogen/{{.ITEM}}.points.yaml
+
   check:
     desc: Fast checks. Verifies uv.lock, lints, and runs the fast tests (no case is built).
     cmds:

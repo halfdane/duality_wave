@@ -23,12 +23,12 @@ from duality_wave.paths import LAYOUT_DIR
 def make_variant(name: str):
     switch = Choc()
     if name == "full":
-        keys = ErgoKeys(points=get_points(file_path=LAYOUT_DIR / "wave.yml"))
+        keys = ErgoKeys(points=get_points(file_path=LAYOUT_DIR / "wave.points.yaml"))
         outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
         dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
         both_sides = True
     else:
-        keys = ErgoKeys(points=get_points(file_path=LAYOUT_DIR / "compact.yml"))
+        keys = ErgoKeys(points=get_points(file_path=LAYOUT_DIR / "compact.points.yaml"))
         outline = Outline(
             switch=switch, keys=keys, wall_thickness=CompactCaseDimensions.wall_thickness, additional_top_space=22)
         dims = CompactCaseDimensions(switch=switch, outline=outline, keys=keys)

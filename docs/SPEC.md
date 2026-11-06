@@ -23,6 +23,12 @@ R-04: The keyplate top is at z = 0. The keywell spans from z = -below_z to z = a
 R-05: The keyplate fits inside the keywell in the XY plane.
 R-06: No switch contact touches the bottom plate. The cutouts leave room for them.
 
+## Layout
+
+R-08: The key positions come from ergogen. Each `ergogen/<name>.points.yaml` equals the output of ergogen for `ergogen/<name>.yml`. Run `task layout` to update it.
+R-09: The loader reads x, y and r of every point in file order. It drops points that the layout marks as skip.
+R-15: The outline of the keywell cutout does not change when a key position moves by 1e-7 mm or less. ergogen rounds the positions to 8 digits.
+
 ## Debug mode
 
 R-07: A build without debug builds no accessories and pushes nothing to the viewer. It builds the same parts as a build with debug.
