@@ -224,3 +224,6 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - Not snapped: the thumb floor (housing top, 3.3) and the magnet recess.
   - Found on the way: with the plate bottom at -3.0, the LED recess of the XIAO cutter left a film of 0.075 mm (a second solid in the keyplate). The recess is now 0.1 mm taller.
   - New baseline: docs/baseline/step7.json. Full build 3.1 s, compact 1.4 s. The budgets stay for step 8.
+- Step 8 done. Final numbers against step 0: full build 12.4 s -> 3.1 s, compact 6.1 s -> 1.4 s. Budgets (R-10 to R-12) are now about 2x the measured times: full 6 s, compact 3 s, keywell 1.2, keyplate 1.6, bottom 0.7, each finish 1.4.
+  - README: size 113 x 97 x 12.8 mm, screws 6 mm. The coupons take their values from CaseDimensions and need no change.
+  - Open for the user: the rim treatment (chamfer 0.8, taper 15) and what happens to FK. FK stays untouched as a reference.

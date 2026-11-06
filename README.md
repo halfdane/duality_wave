@@ -18,7 +18,7 @@ The images are renders, not photos.
 
 - 17 keys per half: 3 rows of 5 finger columns and 2 thumb keys.
 - 8 degree splayed pinky column, staggered finger columns and an angled thumb cluster.
-- Low profile. Each half is about 113 x 97 x 14 mm.
+- Low profile. Each half is about 113 x 97 x 12.8 mm.
 - Protective walls around the keys for secure transportation
 - Hand-wired. There is no PCB.
 - One XIAO nRF52840, one LiPo battery and one slide power switch in each half.
@@ -41,7 +41,7 @@ Quantities are for both halves.
 - 2 slide power switches, 9 x 3.4 x 4 mm
 - 16 magnets, 5 x 2 mm (two stacked in each of 8 recesses)
 - 12 M2 heat-set inserts, 3.5 mm outer diameter, 2 mm long
-- 12 low-profile M2 screws, 8 mm long
+- 12 low-profile M2 screws, 6 mm long
 - 10 rubber bumpers, 8 mm diameter
 - 34 diodes, one per key
 - 0.1 mm to 0.2 mm enamelled wire
