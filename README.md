@@ -142,7 +142,8 @@ The Python code is the package `duality_wave` in `src/duality_wave/`.
 - `scripts/render_blender.py` renders the images inside Blender.
 - `case.py` has `WaveCase`, which builds the three parts for each half.
 - `builders/` holds one builder per part (`keywell.py`, `keyplate.py`, `bottom.py`).
-- `builders/thumb_cut.py` builds the sculpted thumb slope of the keywell.
+- `builders/thumb_cut.py` builds the sculpted thumb slope of the keywell and chamfers its rim.
+- `geometry2d.py` holds the 2D helpers: `grow`, `round_convex` and `merge_aligned_edges`.
 - `builders/side.py` places the parts on the left or right half.
 - `builders/accessories.py` builds the models that are only shown in the viewer.
 - `builders/viewer.py` decides what is pushed to the viewer.

@@ -190,3 +190,11 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - `task layout` runs ergogen and writes ergogen/wave.points.yaml and ergogen/compact.points.yaml. They are committed. tests/test_layout.py fails when they are out of date (R-08).
   - layout.py shrank from 471 lines to 20. It reads the points file (R-09). sympy is no longer a direct dependency (build123d still pulls it in).
   - Finding: ergogen rounds to 8 digits. Two thumb rectangles that were exactly aligned are now 1e-8 apart. clean() keeps their edges apart. The acute-angle fillets in `create_keywell_outline` then acted on another corner. The keywell cutout lost 6.3 mm2. Fix: `merge_aligned_edges` in outline.py (R-15). Geometry is identical to step3.json again.
+- Step 5 done. The thumb cut has no expensive operations.
+  - One thumb zone (old layer-0 rectangles, merged, corners rounded with radius 2). Layers are `grow(zone, taper * progress)` with a cosine ease in z. `ThumbCutSpec`: taper 15, inset_inner 7, inset_outer 3, corner_radius 2, layers 16, rim_chamfer 0.8.
+  - The B-spline fillets are gone. A chamfer of 0.8 on the outer non-vertical keywell edges replaces them (R-16, R-17). Chamfer 1.0 fails (near-tangent slope top edges). 0.9 is the limit.
+  - The old run_inner (5) and run_outer (15) are replaced by one taper. The slope tops now sit +8 inner and +12 outer past the old floor edge, so the slope shape changed. Check it visually.
+  - Keywell stage: 2.89 s -> 0.59 s (full), 2.78 s -> 0.49 s (compact). Full build 7.7 s -> 5.5 s, compact 4.3 s -> 2.1 s.
+  - Keywell volume: -85 mm3 (full), -47 mm3 (compact). Bounding boxes, validity and solid counts are unchanged.
+  - Limit: the loft needs sections with the same edge count. A synthetic layout with a notch that fills up can fail. Both project layouts loft for taper 5..20 and layers 4..32.
+  - Budgets tightened (R-10 to R-12). New baseline: docs/baseline/step5.json.

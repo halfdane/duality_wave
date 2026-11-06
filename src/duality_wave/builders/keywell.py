@@ -1,7 +1,7 @@
 from build123d import *
 
 from duality_wave.builders.common import CaseContext, circle_sketch
-from duality_wave.builders.thumb_cut import ThumbCutSpec, fillet_thumb_edges, thumb_cutter, thumb_floor_z
+from duality_wave.builders.thumb_cut import ThumbCutSpec, chamfer_rim, thumb_cutter
 from duality_wave.builders.viewer import NullScope
 from duality_wave.models.features import magnet_recess_cutter
 from duality_wave.models.symbol import Symbol
@@ -13,14 +13,12 @@ def build_keywell(ctx: CaseContext, dbg=NullScope(), thumb_spec: ThumbCutSpec = 
     with BuildPart() as keywell:
         with BuildSketch(Plane.XY.offset(dims.above_z)):
             insert(ctx.outline.create_outline())
-        body = extrude(amount=-dims.below_z - dims.above_z)
+        extrude(amount=-dims.below_z - dims.above_z)
 
         print("  skulpting thumb cut...")
         insert(thumb_cutter(ctx.switch, ctx.keys.thumb_clusters, dims.above_z, thumb_spec, dbg.scope("thumb_cut")),
             mode=Mode.SUBTRACT)
-
-        print("  filleting thumb cut...")
-        fillet_thumb_edges(keywell, body, thumb_floor_z(ctx.switch, dims.above_z), dims.above_z, dbg)
+        chamfer_rim(keywell, ctx.outline.create_outline(), thumb_spec.rim_chamfer)
 
         _cut_cavity(ctx)
         _cut_insert_pilots(ctx, dbg)

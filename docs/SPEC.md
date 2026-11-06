@@ -22,6 +22,8 @@ R-03: Every part of every built half is one valid solid.
 R-04: The keyplate top is at z = 0. The keywell spans from z = -below_z to z = above_z. The bottom plate spans from z = -below_z to z = -keyplate_z.
 R-05: The keyplate fits inside the keywell in the XY plane.
 R-06: No switch contact touches the bottom plate. The cutouts leave room for them.
+R-16: The thumb cut is a loft of one zone. The zone is one face with round corners. The loft grows the zone by `taper` while it rises from `thumb_depth` below the top to the top.
+R-17: The outer edges of the keywell that are not vertical carry a chamfer of `rim_chamfer`. The keywell has no fillets. The chamfer keeps the envelope and the keywell stays one valid solid.
 
 ## Layout
 
@@ -38,9 +40,9 @@ R-07: A build without debug builds no accessories and pushes nothing to the view
 The limits below are for the development machine. Set `WAVE_PERF_FACTOR` to scale all of them.
 The limits are about 2.5 times the measured time. Tighten them after a speed-up step.
 
-R-10: A build of the full variant (both halves) takes at most 30 s.
-R-11: A build of the compact variant takes at most 15 s.
-R-12: A stage of the build stays under its limit: keywell 9 s, keyplate 7 s, bottom 2 s, each finish stage 8 s.
+R-10: A build of the full variant (both halves) takes at most 14 s.
+R-11: A build of the compact variant takes at most 6 s.
+R-12: A stage of the build stays under its limit: keywell 1.5 s, keyplate 3.5 s, bottom 1 s, each finish stage 4 s.
 R-13: A test that is not marked `slow` builds no case. The fast tier stays fast.
 
 ## Process

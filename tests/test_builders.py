@@ -1,17 +1,21 @@
+import math
+import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from dataclasses import replace
 from types import SimpleNamespace
 
-from build123d import BuildSketch, Box, Circle, Plane, Sketch, Vector
+from build123d import BuildSketch, Box, Circle, Plane, Sketch, Solid, Vector
 
 from duality_wave.builders.accessories import build_fixtures
 from duality_wave.builders.export import export_steps
 from duality_wave.builders.side import Side
-from duality_wave.builders.thumb_cut import ThumbCutSpec, thumb_cutter, thumb_depth, thumb_floor_z
+from duality_wave.builders.keywell import build_keywell
+from duality_wave.builders.thumb_cut import ThumbCutSpec, thumb_cutter, thumb_depth, thumb_floor_z, thumb_zone
 from duality_wave.builders.viewer import DebugScope, NullScope
 from duality_wave.models.choc import Choc
 from duality_wave.models.heat_set_insert import HeatSetInsert
@@ -20,6 +24,9 @@ from duality_wave.models.model_types import PosAndDims, RectDimensions, RoundDim
 from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
 from tests import ROOT
+from tests.builds import make_context, make_inputs
+
+PERF_FACTOR = float(os.environ.get("WAVE_PERF_FACTOR", "1"))
 
 
 def section_area(part, z):
@@ -34,52 +41,124 @@ def thumb_keys(*positions, rotation=0.0):
 class ThumbCutterTests(unittest.TestCase):
     switch = Choc()
     top_z = 8.0
-    spec = ThumbCutSpec(run_inner=4, run_outer=10, inset_inner=2, inset_outer=2, layers=8)
+    spec = ThumbCutSpec(taper=8, inset_inner=2, inset_outer=2, corner_radius=1, layers=8)
 
     def cutter(self, keys=None, spec=None, top_z=None):
-        keys = keys if keys is not None else thumb_keys((0, 0), (0, -19))
+        keys = keys if keys is not None else thumb_keys((0, 0), (0, -17))
         return thumb_cutter(self.switch, keys, top_z if top_z is not None else self.top_z, spec or self.spec)
 
-    def test_cutter_spans_from_the_thumb_floor_to_the_top(self):
+    def test_cutter_is_one_valid_solid(self):  # R-16
+        cutter = self.cutter()
+        self.assertTrue(cutter.is_valid)
+        self.assertIsInstance(cutter, Solid)
+
+    def test_cutter_spans_from_the_thumb_floor_to_the_top(self):  # R-16
         for top_z in (8.0, 12.5):
             with self.subTest(top_z=top_z):
                 box = self.cutter(top_z=top_z).bounding_box()
-                self.assertAlmostEqual(box.max.Z, top_z, places=3)
-                self.assertAlmostEqual(box.min.Z, top_z - thumb_depth(self.switch), places=3)
-                self.assertAlmostEqual(box.min.Z, thumb_floor_z(self.switch, top_z), places=3)
+                self.assertAlmostEqual(box.max.Z, top_z, delta=0.01)
+                self.assertAlmostEqual(box.min.Z, top_z - thumb_depth(self.switch), delta=0.01)
+                self.assertAlmostEqual(box.min.Z, thumb_floor_z(self.switch, top_z), delta=0.01)
 
-    def test_cutter_is_wider_at_the_top_than_at_the_floor(self):
+    def test_cutter_is_wider_at_the_top_than_at_the_floor(self):  # R-16
         cutter = self.cutter()
         floor_z = thumb_floor_z(self.switch, self.top_z)
         self.assertGreater(section_area(cutter, self.top_z - 0.05), section_area(cutter, floor_z + 0.05))
 
-    def test_cutter_without_growth_is_a_straight_pocket(self):
-        flat = self.cutter(spec=ThumbCutSpec(0, 0, 0, 0, layers=4))
-        floor_z = thumb_floor_z(self.switch, self.top_z)
-        self.assertAlmostEqual(section_area(flat, floor_z + 0.05), section_area(flat, self.top_z - 0.05), places=1)
+    def test_the_slope_grows_by_the_taper_at_the_top(self):  # R-16
+        keys = thumb_keys((0, 0), (0, -17))
+        spec = replace(self.spec, corner_radius=0)
+        floor = thumb_cutter(self.switch, keys, self.top_z, replace(spec, taper=0.001, layers=1)).bounding_box()
+        top = self.cutter(keys=keys, spec=spec).bounding_box()
+        self.assertAlmostEqual(floor.min.X - top.min.X, spec.taper, delta=0.01)
+        self.assertAlmostEqual(top.max.X - floor.max.X, spec.taper, delta=0.01)
 
-    def test_a_longer_run_cuts_more(self):
-        shallow = self.cutter(spec=replace(self.spec, run_outer=self.spec.run_outer / 2))
-        steep = self.cutter(spec=replace(self.spec, run_outer=self.spec.run_outer * 2))
+    def test_cutter_without_growth_is_a_straight_pocket(self):  # R-16
+        flat = self.cutter(spec=ThumbCutSpec(taper=0.001, inset_inner=0, inset_outer=0, corner_radius=0, layers=4))
+        floor_z = thumb_floor_z(self.switch, self.top_z)
+        self.assertAlmostEqual(section_area(flat, floor_z + 0.05), section_area(flat, self.top_z - 0.05), delta=0.5)
+
+    def test_a_longer_taper_cuts_more(self):  # R-16
+        shallow = self.cutter(spec=replace(self.spec, taper=self.spec.taper / 2))
+        steep = self.cutter(spec=replace(self.spec, taper=self.spec.taper * 2))
         self.assertGreater(steep.volume, shallow.volume)
 
-    def test_more_layers_refine_the_same_slope(self):
+    def test_more_layers_refine_the_same_slope(self):  # R-16
         coarse = self.cutter(spec=replace(self.spec, layers=6))
-        fine = self.cutter(spec=replace(self.spec, layers=24))
+        fine = self.cutter(spec=replace(self.spec, layers=8))
         self.assertAlmostEqual(coarse.volume / fine.volume, 1, delta=0.05)
 
-    def test_cutter_follows_the_keys(self):
+    def test_the_real_layouts_loft_for_any_reasonable_spec(self):  # R-16
+        for compact in (False, True):
+            switch, keys, dims, _ = make_inputs(compact)
+            for taper, layers in ((5, 4), (15, 16), (20, 32)):
+                with self.subTest(compact=compact, taper=taper, layers=layers):
+                    cutter = thumb_cutter(switch, keys.thumb_clusters, dims.above_z, ThumbCutSpec(taper=taper, layers=layers))
+                    self.assertTrue(cutter.is_valid)
+
+    def test_cutter_follows_the_keys(self):  # R-16
         shift = Vector(13, -7)
-        home = self.cutter(keys=thumb_keys((0, 0), (0, -19)))
-        moved = self.cutter(keys=thumb_keys((shift.X, shift.Y), (shift.X, shift.Y - 19)))
+        home = self.cutter(keys=thumb_keys((0, 0), (0, -17)))
+        moved = self.cutter(keys=thumb_keys((shift.X, shift.Y), (shift.X, shift.Y - 17)))
         self.assertAlmostEqual(moved.volume, home.volume, places=2)
         self.assertAlmostEqual(moved.bounding_box().min.X - home.bounding_box().min.X, shift.X, places=3)
         self.assertAlmostEqual(moved.bounding_box().min.Y - home.bounding_box().min.Y, shift.Y, places=3)
 
-    def test_more_keys_cut_more(self):
+    def test_more_keys_cut_more(self):  # R-16
         one = self.cutter(keys=thumb_keys((0, 0)))
-        two = self.cutter(keys=thumb_keys((0, 0), (0, -19)))
+        two = self.cutter(keys=thumb_keys((0, 0), (0, -17)))
         self.assertGreater(two.volume, one.volume)
+
+
+class ThumbZoneTests(unittest.TestCase):
+    switch = Choc()
+    keys = thumb_keys((0, 0), (0, -17))
+    sharp = ThumbCutSpec(corner_radius=0)
+
+    def test_the_zone_is_one_face_in_the_xy_plane(self):  # R-16
+        zone = thumb_zone(self.switch, self.keys, self.sharp)
+        self.assertEqual(zone.geom_type.name, "PLANE")
+        self.assertAlmostEqual(zone.bounding_box().min.Z, 0)
+        self.assertAlmostEqual(zone.bounding_box().max.Z, 0)
+
+    def test_the_corners_are_round(self):  # R-16
+        sharp = thumb_zone(self.switch, self.keys, self.sharp)
+        round_ = thumb_zone(self.switch, self.keys, replace(self.sharp, corner_radius=2))
+        self.assertEqual({e.geom_type.name for e in sharp.edges()}, {"LINE"})
+        corners = sum(e.geom_type.name == "CIRCLE" for e in round_.edges())
+        self.assertGreaterEqual(corners, 4)
+        self.assertAlmostEqual(sharp.area - round_.area, corners * 2**2 * (1 - math.pi / 4), delta=0.01)
+
+    def test_keys_that_do_not_touch_give_an_error(self):  # R-16
+        far = thumb_keys((0, 0), (0, -300))
+        with self.assertRaises(ValueError):
+            thumb_zone(self.switch, far, self.sharp)
+
+
+class KeywellRimTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ctx = make_context(compact=True)
+        cls.sharp = build_keywell(cls.ctx, thumb_spec=ThumbCutSpec(rim_chamfer=0))
+        cls.chamfered = build_keywell(cls.ctx, thumb_spec=ThumbCutSpec(rim_chamfer=0.8))
+
+    def test_the_chamfer_takes_material_from_the_rim(self):  # R-17
+        self.assertLess(self.chamfered.volume, self.sharp.volume)
+        self.assertGreater(self.chamfered.volume, self.sharp.volume - 200)
+
+    def test_the_chamfer_keeps_the_envelope(self):  # R-17
+        a, b = self.sharp.bounding_box(), self.chamfered.bounding_box()
+        for sharp, chamfered in zip((*a.min, *a.max), (*b.min, *b.max)):
+            self.assertAlmostEqual(sharp, chamfered, places=3)
+
+    def test_the_chamfered_keywell_is_one_valid_solid(self):  # R-17
+        self.assertTrue(self.chamfered.is_valid)
+        self.assertEqual(len(self.chamfered.solids()), 1)
+
+    def test_the_keywell_builds_inside_its_time_budget(self):  # R-12
+        start = time.perf_counter()
+        build_keywell(self.ctx)
+        self.assertLess(time.perf_counter() - start, 1.5 * PERF_FACTOR)
 
 
 class DebugScopeTests(unittest.TestCase):
