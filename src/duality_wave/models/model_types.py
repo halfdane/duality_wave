@@ -22,6 +22,7 @@ class PosAndDims:
 class WaveDimensions:
     print_profile: PrintProfile
     wall_thickness: float
+    additional_top_space: float
 
     above_z: float
     keyplate_under_housing: float

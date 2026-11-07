@@ -27,6 +27,9 @@ class PrintProfile:
 
     insert_pilot_radius: float = 1.6
 
+    # thinnest wall between two holes or between a hole and an edge: two perimeters of a 0.4 mm nozzle
+    min_wall: float = 0.8
+
     # radius of the circles that relieve the corners of the switch cutouts (0 = no relief)
     switch_corner_relief: float = 0.3
 

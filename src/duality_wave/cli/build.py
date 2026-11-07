@@ -14,7 +14,7 @@ if __name__ == "__main__":
     switch = Choc()
     config_path = LAYOUT_DIR / "wave.points.yaml"
     keys = ErgoKeys(points=get_points(file_path=config_path))
-    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness, additional_top_space=12)
+    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness, additional_top_space=CaseDimensions.additional_top_space)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
     case = WaveCase(switch=switch, keys=keys, caseDimensions=dims, outline=outline, debug=True, both_sides=True)
     show_in_viewer()

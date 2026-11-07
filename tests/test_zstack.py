@@ -1,7 +1,9 @@
-"""R-18 to R-24."""
+"""R-18 to R-24 and R-31."""
 
 import pytest
-from build123d import Align, Axis, Cylinder, Plane, Vector, extrude, offset
+from math import dist
+
+from build123d import Align, Axis, Cylinder, Plane, Vector, Vertex, extrude, offset
 
 from duality_wave.models.case_dimensions import CaseDimensions, CompactCaseDimensions
 from duality_wave.models.choc import Choc, PostDimensions
@@ -171,6 +173,53 @@ def test_the_bottom_plate_keeps_its_walls_around_the_pockets_and_under_the_pins(
             if tip > z0:
                 assert bottom.is_inside(Vector(xy.X, xy.Y, tip - 0.05)), f"no floor under the post at {key.p}"
                 assert tip - z0 == pytest.approx(dims.floor_under_pins)
+
+
+def wall_to_edge(face, center, radius):
+    """The wall between a round hole and the edge of a face. Negative when the hole leaves the face."""
+    distance = face.outer_wire().distance_to(Vertex(center.X, center.Y, 0))
+    return (distance if face.is_inside(Vector(center.X, center.Y, 0)) else -distance) - radius
+
+
+def wall_to_cutouts(faces, center, radius):
+    """The wall between a round hole and the key cutouts. Negative when the hole reaches into a cutout."""
+    if any(face.is_inside(Vector(center.X, center.Y, 0)) for face in faces):
+        return -radius
+    return min(face.outer_wire().distance_to(Vertex(center.X, center.Y, 0)) for face in faces) - radius
+
+
+def test_hand_placed_holes_keep_a_wall_to_each_other_and_to_the_edges():  # R-31
+    ctx = make_context()
+    dims, outline = ctx.dims, ctx.outline
+    profile = dims.print_profile
+    screws, magnets, bumpers = dims.fastener_positions, dims.magnet_positions, dims.bumper_locations
+    head_recess = ctx.screw.mount.head_recess.radius
+    pilot = ctx.insert.mount.pilot.radius
+    magnet = dims.magnet_d.radius + profile.magnet_clearance
+    bumper = ctx.bumper.dims.radius + dims.clearance
+
+    plate_edge = outline.create_inner_outline(offset_by=-dims.wall_thickness - profile.plate_clearance).faces()[0]
+    cavity = outline.inner_sketch.faces()[0]
+    cutouts = outline.keywell_sketch.faces()
+    layers = {
+        "bottom plate": ([("head recess", screws, head_recess), ("bumper", bumpers, bumper)], plate_edge, []),
+        "keywell": ([("pilot", screws, pilot), ("magnet", magnets, magnet)], cavity, cutouts),
+    }
+
+    walls = {}
+    for layer, (holes, edge, key_cutouts) in layers.items():
+        placed = [(kind, i, center, radius) for kind, centers, radius in holes for i, center in enumerate(centers)]
+        for n, (kind, i, center, radius) in enumerate(placed):
+            walls[f"{layer}: {kind} {i} to the edge"] = wall_to_edge(edge, center, radius)
+            if key_cutouts:
+                walls[f"{layer}: {kind} {i} to the key cutouts"] = wall_to_cutouts(key_cutouts, center, radius)
+            for other_kind, j, other, other_radius in placed[n + 1:]:
+                walls[f"{layer}: {kind} {i} to {other_kind} {j}"] = (
+                    dist((center.X, center.Y), (other.X, other.Y)) - radius - other_radius
+                )
+
+    too_thin = {name: round(wall, 2) for name, wall in walls.items() if wall < profile.min_wall}
+    assert not too_thin
 
 
 def test_a_height_snaps_to_whole_layers():  # R-24

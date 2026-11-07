@@ -23,6 +23,8 @@ class CaseDimensions(WaveDimensions):
 
     print_profile: PrintProfile = field(default_factory=PrintProfile)
     wall_thickness: float = 1.8
+    # room between the top row of keys and the outline, for the XIAO, the power switch and a magnet
+    additional_top_space: float = 13
     heat_insert_z: float = 3.5
     # the wall of the keywell reaches this far above the keycaps
     wall_over_cap: float = 0.18
@@ -58,8 +60,6 @@ class CaseDimensions(WaveDimensions):
         xiao_pos_z: float = self.snap_z(-self.xiao_ledge)
         self.xiao_position: Vector = Vector(xiao_pos_x, xiao_pos_y, xiao_pos_z)
 
-        print("xiao_position:", self.xiao_position)
-
         xiao_to_power_switch: float = PowerSwitch.dims.d.Y/2 + PowerSwitch.dims.pin_length/2
         self.powerswitch_rotation: Vector = Vector(0, 180, -90)
         # down, so the body keeps clear of the battery
@@ -72,7 +72,7 @@ class CaseDimensions(WaveDimensions):
         self.battery_pd = PosAndDims(
             d=battery_d,
             p=outline.top_left \
-                + ((self.wall_thickness + self.clearance), -(self.wall_thickness + self.clearance)) \
+                + ((self.wall_thickness + 2), -(self.wall_thickness + self.clearance)) \
                 + (battery_d.X/2, - battery_d.Y/2, (self.snap_z(self.above_z - self.wall_thickness, up=False) - battery_d.Z/2)))
 
         self.magnet_d: RoundDimensions = RoundDimensions(5, 2)
@@ -85,7 +85,7 @@ class CaseDimensions(WaveDimensions):
         return round(snap(z + self.below_z) - self.below_z, 6)
 
     def _xiao_pos_x_additional(self) -> float:
-        return 5 + 3.1
+        return 11
 
 
     @property
@@ -131,9 +131,9 @@ class CaseDimensions(WaveDimensions):
 
         self.bumper_locations = [
             # bottom right
-            keys.thumb_clusters[0][1][0].p + Vector(switch.cap.d.X/2 - bumpers_radius/2 - 0.5, switch.cap.d.Y/2-bumpers_radius/2).rotate(Axis.Z, keys.thumb_clusters[0][1][0].r),
+            keys.thumb_clusters[0][1][0].p + Vector(switch.cap.d.X/2 - bumpers_radius/2 - 1, switch.cap.d.Y/2-bumpers_radius/2 +0.5).rotate(Axis.Z, keys.thumb_clusters[0][1][0].r),
             # top right
-            outline.top_right + Vector(-bumpers_radius -4 , -bumpers_radius - 4),
+            outline.top_right + Vector(-bumpers_radius - 4.5 , -bumpers_radius - 4.5),
             # bottom left
             outline.bottom_left + Vector(bumpers_radius + 1, bumpers_radius + 6),
             # top left: clear of the XIAO processor pocket, which sits at the same depth
@@ -151,6 +151,7 @@ class CaseDimensions(WaveDimensions):
 class CompactCaseDimensions(CaseDimensions):
     """The small variant for test prints."""
 
+    additional_top_space: float = 22
     heat_insert_z: float = HeatSetInsert.dims.d.Z
     right_side_offset: float = 100
 

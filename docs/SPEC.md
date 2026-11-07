@@ -12,7 +12,6 @@ Every ID that a test cites exists in this file.
 `tests/test_spec.py` checks the last two rules.
 Retired IDs are not used again.
 Lengths are in millimetres. Times are in seconds.
-See `docs/PLAN-port-from-flatboard.md` for the plan of the port from flatboard.
 
 ## Scope
 
@@ -33,6 +32,7 @@ R-21: Nothing sticks out of the bed face by more than the bumpers do. This cover
 R-22: No fixture collides with a part. The inserts are pressed into the keywell and are the only exception. The power switch stays clear of the battery.
 R-23: The bottom plate keeps a wall around every bumper pocket. Every contact has a floor under its tip. The centre post has a hole.
 R-24: Every level of the case sits on a layer boundary, counted from the bed face in steps of `layer_height`. This covers `below_z`, `above_z`, the top of the bottom plate, the back of the XIAO, the power switch and the roof of the battery recess. A level moves only in the safe direction: the keywell top, the keyplate depth and the XIAO move up or out, the power switch and the battery roof move down. A level moves by less than one layer.
+R-31: The screws, the magnets and the bumpers keep a wall of at least `min_wall` to each other, to the cutout of the keys and to the edge of the plate. This is checked in the layer where both parts have a hole: the bottom plate for the head recesses and the bumper pockets, the keywell for the insert pilots and the magnet pockets. It is checked for the full variant. The compact variant is for test prints and is not placed by hand.
 
 ## Outline
 

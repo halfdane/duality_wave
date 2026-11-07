@@ -25,7 +25,7 @@ def make_outline(compact: bool = False, spec: OutlineSpec = OutlineSpec(), point
     dimensions = CompactCaseDimensions if compact else CaseDimensions
     keys = ErgoKeys(points if points is not None else get_points(COMPACT_LAYOUT if compact else WAVE_LAYOUT))
     return Outline(
-        Choc(), keys, wall_thickness=dimensions.wall_thickness, additional_top_space=22 if compact else 10, spec=spec)
+        Choc(), keys, wall_thickness=dimensions.wall_thickness, additional_top_space=dimensions.additional_top_space, spec=spec)
 
 
 def make_inputs(compact: bool = False):
