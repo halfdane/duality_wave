@@ -6,8 +6,14 @@ settings as the final case, then copy the winning values into the PrintProfile.
 
   A  switch plate     switch cutout size, with and without corner relief
   B  plate in cavity  plate clearance (try each plate both ways round)
-  C  round holes      magnet recess size and heat-set insert pilot size
-  D  pockets          XIAO pocket clearance and the battery pocket
+  C  insert pilots    heat-set insert pilot size
+  D  pockets          XIAO pocket clearance and battery pocket clearance
+  E  magnet pockets   magnet pocket size, and the skin that closes the pocket
+  E  skin, mate       a second copy of the skin coupon, to feel the pull through two skins
+
+The magnet coupons print with the skin on the bed and the pocket open upwards, like the keywell.
+The mate of the skin coupon has its pockets on the centre line. Turn it over about the long axis and the
+pockets of both coupons face each other, skin against skin.
 
 Run `task coupons` to export build/coupons.stl and to preview the coupons in the OCP viewer.
 """
@@ -127,20 +133,17 @@ def plate_fit_coupon(
     return cavity.part, plates
 
 
-def round_hole_coupon(
+def insert_pilot_coupon(
     profile: PrintProfile,
-    magnet: RoundDimensions,
-    block_z: float,
     pilot_depth: float,
-    magnet_clearances: tuple[float, ...] = (0.0, 0.05, 0.10, 0.15, 0.20),
     pilot_diameters: tuple[float, ...] = (2.9, 3.0, 3.1, 3.2, 3.3),
     pitch: float = 9.5,
     margin: float = 5.5,
 ) -> Part:
-    """C: magnet recesses open towards the bed, heat-set insert pilots open upwards."""
-    count = max(len(magnet_clearances), len(pilot_diameters))
-    width = (count - 1) * pitch + 2 * margin
-    pilot_y, magnet_y, height = 6.0, 19.0, 26.0
+    """C: heat-set insert pilots of different diameters. The pilots open upwards like in the keywell."""
+    block_z = profile.snap_up(pilot_depth + 1.5)
+    width = (len(pilot_diameters) - 1) * pitch + 2 * margin
+    pilot_y, height = 6.0, 16.0
 
     with BuildPart() as coupon:
         with BuildSketch():
@@ -148,20 +151,77 @@ def round_hole_coupon(
                 RectangleRounded(width, height, CORNER_RADIUS)
         extrude(amount=block_z)
 
-        for index, clearance in enumerate(magnet_clearances):
-            x = margin + index * pitch
-            cutter = magnet_recess_cutter(magnet, replace(profile, magnet_clearance=clearance), [Vector(x, -magnet_y)], top_z=block_z)
-            insert(to_bed(cutter, block_z), mode=Mode.SUBTRACT)
-
         for index, diameter in enumerate(pilot_diameters):
             x = margin + index * pitch
             with BuildPart(Plane.XY.offset(block_z - pilot_depth), mode=Mode.SUBTRACT):
                 with Locations((x, pilot_y)):
                     Cylinder(diameter / 2, pilot_depth, align=(Align.CENTER, Align.CENTER, Align.MIN))
 
-    labels = [(f"{2 * (magnet.radius + c):.2f}", margin + index * pitch, magnet_y) for index, c in enumerate(magnet_clearances)]
-    labels += [(f"{d:.1f}", margin + index * pitch, pilot_y + 5.5) for index, d in enumerate(pilot_diameters)]
+    labels = [(f"{d:.1f}", margin + index * pitch, pilot_y + 5.5) for index, d in enumerate(pilot_diameters)]
     return engrave(coupon.part, block_z, labels, size=2.0)
+
+
+def magnet_block(
+    profile: PrintProfile,
+    magnet: RoundDimensions,
+    pockets: list[tuple[float, float]],
+    labels: list[str],
+    margin: float = 3.0,
+    wall: float = 2.0,
+    label_room: float = 5.0,
+) -> Part:
+    """A block with one magnet pocket for each (clearance, skin) pair, in a row along x.
+
+    The skin is on the bed at z=0 and the pocket opens at the top. The pocket is deep enough for the two
+    stacked magnets and 1 mm more. The pockets sit on the centre line, so a copy turned over about the x axis
+    puts pocket i on top of pocket i of the original.
+    """
+    skins = [profile.snap_up(skin) for _, skin in pockets]
+    block_z = profile.snap_up(max(skins) + 2 * magnet.Z + 1.0)
+    diameter = 2 * (magnet.radius + max(clearance for clearance, _ in pockets))
+    pitch = diameter + wall
+    width = len(pockets) * pitch - wall + 2 * margin
+    height = diameter + 2 * (margin + label_room)
+
+    with BuildPart() as block:
+        with BuildSketch():
+            with Locations((width / 2, height / 2)):
+                RectangleRounded(width, height, CORNER_RADIUS)
+        extrude(amount=block_z)
+        for index, ((clearance, _), skin) in enumerate(zip(pockets, skins)):
+            x = margin + diameter / 2 + index * pitch
+            cutter = magnet_recess_cutter(
+                magnet, replace(profile, magnet_clearance=clearance), [Vector(x, height / 2)],
+                top_z=block_z, depth=block_z - skin)
+            insert(cutter, mode=Mode.SUBTRACT)
+
+    texts = [(text, margin + diameter / 2 + index * pitch, margin + label_room / 2) for index, text in enumerate(labels)]
+    return engrave(block.part, block_z, texts, size=2.0)
+
+
+def magnet_pocket_coupon(
+    profile: PrintProfile,
+    magnet: RoundDimensions,
+    clearances: tuple[float, ...] = (0.0, 0.05, 0.10, 0.15, 0.20),
+) -> Part:
+    """E: magnet pockets of different sizes under the skin of the case. Labelled with the pocket diameter."""
+    pockets = [(clearance, profile.magnet_skin) for clearance in clearances]
+    labels = [f"{2 * (magnet.radius + clearance):.2f}" for clearance in clearances]
+    return magnet_block(profile, magnet, pockets, labels)
+
+
+def magnet_skin_coupon(
+    profile: PrintProfile,
+    magnet: RoundDimensions,
+    skins: tuple[float, ...] = (0.2, 0.4, 0.6, 0.8),
+) -> Part:
+    """E: magnet pockets with different skins. Labelled with the skin.
+
+    Put two stacked magnets in a pocket and hold a loose magnet on the skin side to feel the pull.
+    Two copies of this coupon, skin against skin, show the pull through two skins like between the halves.
+    """
+    pockets = [(profile.magnet_clearance, skin) for skin in skins]
+    return magnet_block(profile, magnet, pockets, [f"s{skin:g}" for skin in skins])
 
 
 def pocket_coupon(
@@ -170,21 +230,24 @@ def pocket_coupon(
     plate_z: float,
     battery: RectDimensions,
     xiao_clearances: tuple[float, ...] = (0.0, 0.05, 0.10, 0.15),
+    battery_clearances: tuple[float, ...] = (0.0, 0.10, 0.20),
     battery_depth: float = 2.0,
     margin: float = 3.0,
 ) -> Part:
-    """D: XIAO pockets with different clearances in a keyplate-like plate, plus the battery pocket.
+    """D: XIAO pockets with different clearances in a keyplate-like plate, plus battery pockets.
 
     Everything opens upwards. The XIAO pockets have the window and the pocket of the keyplate.
+    The battery pockets have the size of the real battery, so the battery itself is the gauge.
     """
     columns = 2
     rows = -(-len(xiao_clearances) // columns)
     pitch_x = Xiao.dims.d.X + 2 * max(xiao_clearances) + 4
     pitch_y = Xiao.dims.d.Y + 2 * max(xiao_clearances) + 5
-    battery_x = battery.X + 2 * profile.battery_clearance
-    battery_y = battery.Y + 2 * profile.battery_clearance
-    width = columns * pitch_x + battery_x + 3 * margin
-    height = max(rows * pitch_y, battery_y + 8) + 2 * margin
+    tallest = battery.Y + 2 * max(battery_clearances)
+    widest = battery.X + 2 * max(battery_clearances)
+    battery_pitch = tallest + 6
+    width = columns * pitch_x + widest + 3 * margin
+    height = max(rows * pitch_y, len(battery_clearances) * battery_pitch) + 2 * margin
 
     labels = []
     with BuildPart() as coupon:
@@ -202,12 +265,16 @@ def pocket_coupon(
             insert(to_bed(cutter, 0), mode=Mode.SUBTRACT)
             labels.append((f"{clearance:.2f}", x, y - pitch_y / 2 + 1.5))
 
-        battery_center = (width - margin - battery_x / 2, height / 2)
-        with BuildSketch(Plane.XY.offset(plate_z)):
-            with Locations(battery_center):
-                Rectangle(battery_x, battery_y)
-        extrude(amount=-battery_depth, mode=Mode.SUBTRACT)
-        labels.append(("battery", battery_center[0], battery_center[1] - battery_y / 2 - 3))
+        center_x = width - margin - widest / 2
+        top = (height + len(battery_clearances) * battery_pitch) / 2
+        for index, clearance in enumerate(battery_clearances):
+            size_x, size_y = battery.X + 2 * clearance, battery.Y + 2 * clearance
+            center_y = top - battery_pitch * (index + 0.5) + 3
+            with BuildSketch(Plane.XY.offset(plate_z)):
+                with Locations((center_x, center_y)):
+                    Rectangle(size_x, size_y)
+            extrude(amount=-battery_depth, mode=Mode.SUBTRACT)
+            labels.append((f"{clearance:.2f}", center_x, center_y - size_y / 2 - 3))
     return engrave(coupon.part, plate_z, labels, size=1.8)
 
 
@@ -265,12 +332,16 @@ def create_coupon_parts(switch: Switch, dims, profile: PrintProfile | None = Non
     """All coupon parts by name, arranged on one print bed."""
     profile = profile or dims.print_profile
     cavity, plates = plate_fit_coupon(profile, dims.keyplate_z, dims.wall_thickness)
+    skin = magnet_skin_coupon(profile, dims.magnet_d)
     parts = {
         "A switch plate": switch_plate_coupon(switch, profile, dims.keyplate_z),
         "B cavity": cavity,
         **{f"B plate {index + 1}": plate for index, plate in enumerate(plates)},
-        "C round holes": round_hole_coupon(profile, dims.magnet_d, dims.above_z, dims.heat_insert_z),
+        "C insert pilots": insert_pilot_coupon(profile, dims.heat_insert_z),
         "D pockets": pocket_coupon(profile, dims.xiao_position.Z, dims.keyplate_z, dims.battery_pd.d),
+        "E magnet pockets": magnet_pocket_coupon(profile, dims.magnet_d),
+        "E skin": skin,
+        "E skin, mate": skin,
     }
     return arrange(parts)
 

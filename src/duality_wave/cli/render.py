@@ -33,9 +33,9 @@ def main():
     caps = switch_part & cap_cutter
     bodies = switch_part - cap_cutter
 
-    # two stacked magnets fill each recess, flush with the top of the keywell
+    # two stacked magnets sit in each pocket, under the skin of the keywell
     left_magnets = Compound([
-        Pos(position.X, position.Y, dims.above_z) * Cylinder(
+        Pos(position.X, position.Y, dims.magnet_z) * Cylinder(
             dims.magnet_d.radius, 2 * dims.magnet_d.Z, align=(Align.CENTER, Align.CENTER, Align.MAX))
         for position in dims.magnet_positions
     ])

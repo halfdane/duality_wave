@@ -73,8 +73,10 @@ def _cut_magnets(ctx: CaseContext, dbg) -> None:
     dims = ctx.dims
     if not dims.magnet_positions:
         return
-    print("  magnet recesses...")
-    magnet_recesses = magnet_recess_cutter(dims.magnet_d, dims.print_profile, dims.magnet_positions, top_z=dims.above_z)
+    print("  magnet pockets...")
+    # the pockets open into the cavity at z=0 and stop under the skin
+    magnet_recesses = magnet_recess_cutter(
+        dims.magnet_d, dims.print_profile, dims.magnet_positions, top_z=0, depth=dims.magnet_z).mirror(Plane.XY)
     insert(magnet_recesses, mode=Mode.SUBTRACT)
     dbg.note("magnet_recesses", magnet_recesses)
 

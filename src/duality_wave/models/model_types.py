@@ -44,6 +44,8 @@ class WaveDimensions:
     battery_pd: PosAndDims
 
     magnet_d: RoundDimensions
+    magnet_spacer: RoundDimensions
+    magnet_z: float
     magnet_positions: list[Vector]
 
     bumper_locations: list[Vector]

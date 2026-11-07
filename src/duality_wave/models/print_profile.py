@@ -23,6 +23,10 @@ class PrintProfile:
     # XIAO pocket in the keyplate
     xiao_clearance: float = 0.02
     magnet_clearance: float = 0.02
+    # material between a magnet and the top face of the keywell: two layers, which the keywell prints on the bed
+    magnet_skin: float = 0.4
+    # the spacer disc under the magnets is this much shorter than the pocket it fills, so the keyplate always seats
+    magnet_spacer_gap: float = 0.2
     battery_clearance: float = 0.02
     bumper_clearance: float = 0.1
 
@@ -38,7 +42,7 @@ class PrintProfile:
     plate_bed_chamfer: float = 0.25
     # chamfer on the plate edges that do not face the print bed
     plate_edge_chamfer: float = 0.1
-    # chamfer where a hole opens towards the print bed (switch cutouts, magnet recesses)
+    # chamfer where a hole opens towards the print bed (switch cutouts) and where the magnets enter their pockets
     mouth_chamfer: float = 0.2
 
     def snap_up(self, height: float) -> float:

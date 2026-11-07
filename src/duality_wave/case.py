@@ -5,6 +5,7 @@ from duality_wave.builders.keyplate import build_keyplate
 from duality_wave.builders.keywell import build_keywell
 from duality_wave.builders.side import Blanks, BuiltSide, Side, finish_side
 from duality_wave.builders.viewer import NullViewer, OcpViewer
+from duality_wave.models.features import magnet_spacer
 from duality_wave.models.heat_set_insert import HeatSetInsert
 from duality_wave.models.keys import ErgoKeys
 from duality_wave.models.model_types import WaveDimensions
@@ -20,6 +21,7 @@ class WaveCase:
     The parts are available as case.left and case.right (BuiltSide). case.right is None unless both_sides is set.
     With debug the accessories are built as well and everything is pushed to the viewer, the intermediate
     shapes last in a group that starts hidden. Pass a viewer to show the parts somewhere else.
+    case.magnet_spacer is the one disc to print for every magnet pocket, or None without magnets.
     case.timings holds the seconds spent in each build stage.
     """
 
@@ -28,6 +30,8 @@ class WaveCase:
         self.ctx = ctx = CaseContext(
             switch, keys, caseDimensions, outline,
             RubberBumper(), HeatSetInsert(caseDimensions.print_profile.insert_pilot_radius), LowProfileScrew())
+
+        self.magnet_spacer = magnet_spacer(caseDimensions.magnet_spacer) if caseDimensions.magnet_positions else None
 
         print("Creating case...")
         self.timings = StageTimings()

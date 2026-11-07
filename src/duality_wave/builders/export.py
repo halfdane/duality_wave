@@ -8,7 +8,10 @@ STEP_DIR = BUILD_DIR / "step"
 
 
 def export_steps(case, suffix: str = "", out_dir: Path = STEP_DIR) -> list[Path]:
-    """Write a STEP file for every printable part of every built half, for example keywell_left.step."""
+    """Write a STEP file for every printable part of every built half, for example keywell_left.step.
+
+    The magnet spacer is one disc for all pockets of both halves.
+    """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     written = []
@@ -19,4 +22,8 @@ def export_steps(case, suffix: str = "", out_dir: Path = STEP_DIR) -> list[Path]
             path = out_dir / f"{name}_{built.side.name}{suffix}.step"
             export_step(getattr(built, name), str(path))
             written.append(path)
+    if case.magnet_spacer is not None:
+        path = out_dir / f"magnet_spacer{suffix}.step"
+        export_step(case.magnet_spacer, str(path))
+        written.append(path)
     return written

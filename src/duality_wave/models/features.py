@@ -52,16 +52,19 @@ def xiao_pocket_cutter(profile: PrintProfile, position: Vector, plate_z: float) 
     return cutter.part
 
 
-def magnet_recess_cutter(magnet: RoundDimensions, profile: PrintProfile, positions: list[Vector], top_z: float) -> Part:
-    """Cutter for round magnet recesses that open at top_z and take two stacked magnets."""
+def magnet_recess_cutter(
+    magnet: RoundDimensions, profile: PrintProfile, positions: list[Vector], top_z: float, depth: float | None = None
+) -> Part:
+    """Cutter for round magnet recesses that open at top_z. By default a recess takes two stacked magnets."""
     radius = magnet.radius + profile.magnet_clearance
+    depth = 2 * magnet.Z if depth is None else depth
     xy = [(position.X, position.Y) for position in positions]
 
     with BuildPart() as cutter:
         with BuildSketch(Plane.XY.offset(top_z)):
             with Locations(xy):
                 Circle(radius)
-        extrude(amount=-2 * magnet.Z)
+        extrude(amount=-depth)
 
         if profile.mouth_chamfer > 0:
             with BuildSketch(Plane.XY.offset(top_z)):
@@ -69,3 +72,8 @@ def magnet_recess_cutter(magnet: RoundDimensions, profile: PrintProfile, positio
                     Circle(radius + profile.mouth_chamfer)
             extrude(amount=-profile.mouth_chamfer, taper=45)
     return cutter.part
+
+
+def magnet_spacer(spacer: RoundDimensions) -> Part:
+    """The disc that fills a magnet pocket between the keyplate and the magnets. Its bottom is at z=0."""
+    return Cylinder(spacer.radius, spacer.Z, align=(Align.CENTER, Align.CENTER, Align.MIN))

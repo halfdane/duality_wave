@@ -180,6 +180,7 @@ def fixture_context(magnets=True):
         fastener_positions=[Vector(0, 0), Vector(30, 10)],
         battery_pd=PosAndDims(d=RectDimensions(31, 17, 6), p=Vector(15, 40, 4)),
         magnet_d=RoundDimensions(2.5, 2),
+        magnet_spacer=RoundDimensions(2, 3),
         magnet_positions=[Vector(10, 10, 8.3), Vector(30, 20, 8.3)] if magnets else [],
         right_side_offset=100,
     )
@@ -206,6 +207,7 @@ class FixtureTests(unittest.TestCase):
     def test_without_magnet_positions_there_are_no_magnets(self):
         fixtures = build_fixtures(fixture_context(magnets=False))
         self.assertIsNone(fixtures.magnets)
+        self.assertIsNone(fixtures.spacers)
         self.assertIsNone(fixtures.mirrored(Plane.YZ).magnets)
 
     def test_magnets_sit_at_their_positions(self):
@@ -216,11 +218,19 @@ class FixtureTests(unittest.TestCase):
         self.assertAlmostEqual(box.max.X, 30 + radius, places=3)
         self.assertAlmostEqual(box.max.Z, 8.3, places=3)
 
+    def test_a_spacer_stands_under_every_stack_of_magnets(self):
+        ctx = fixture_context()
+        fixtures = build_fixtures(ctx)
+        self.assertEqual(len(fixtures.spacers.solids()), len(ctx.dims.magnet_positions))
+        box = fixtures.spacers.bounding_box()
+        self.assertAlmostEqual(box.min.Z, 0, places=3)
+        self.assertAlmostEqual(box.max.Z, ctx.dims.magnet_spacer.Z, places=3)
+
     def test_mirrored_fixtures_swap_sides(self):
         fixtures = build_fixtures(fixture_context())
         about = Plane((50, 0, 0), x_dir=Plane.YZ.x_dir, z_dir=Plane.YZ.z_dir)
         mirrored = fixtures.mirrored(about)
-        for name in ("bumpers", "power_switch", "battery", "inserts", "screws", "magnets"):
+        for name in ("bumpers", "power_switch", "battery", "inserts", "screws", "magnets", "spacers"):
             with self.subTest(part=name):
                 original, flipped = getattr(fixtures, name), getattr(mirrored, name)
                 self.assertAlmostEqual(original.volume, flipped.volume, places=3)
@@ -272,16 +282,18 @@ class ExportTests(unittest.TestCase):
         return SimpleNamespace(side=SimpleNamespace(name=name), **parts)
 
     def test_exports_every_part_of_every_built_half(self):
-        case = SimpleNamespace(left=self.built_side("left"), right=self.built_side("right"))
+        case = SimpleNamespace(left=self.built_side("left"), right=self.built_side("right"), magnet_spacer=Box(1, 1, 1))
         with tempfile.TemporaryDirectory() as tmp:
             written = export_steps(case, suffix="_x", out_dir=Path(tmp) / "nested")
-            self.assertEqual(len(written), 6)
+            self.assertEqual(len(written), 7)
             for path in written:
                 self.assertGreater(path.stat().st_size, 0)
-            self.assertIn("keywell_right_x.step", {path.name for path in written})
+            names = {path.name for path in written}
+            self.assertIn("keywell_right_x.step", names)
+            self.assertIn("magnet_spacer_x.step", names)
 
     def test_skips_a_half_that_was_not_built(self):
-        case = SimpleNamespace(left=self.built_side("left"), right=None)
+        case = SimpleNamespace(left=self.built_side("left"), right=None, magnet_spacer=None)
         with tempfile.TemporaryDirectory() as tmp:
             written = export_steps(case, out_dir=tmp)
             self.assertEqual({path.name for path in written}, {"keywell_left.step", "keyplate_left.step", "bottom_left.step"})

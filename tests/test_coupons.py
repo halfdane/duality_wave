@@ -2,11 +2,20 @@ import unittest
 
 import pytest
 
-from build123d import Vector
+from build123d import Axis, Vector
 
 from tests import WAVE_LAYOUT
 
-from duality_wave.coupons import create_coupon_parts, create_coupons, plate_fit_coupon, pocket_coupon, round_hole_coupon, switch_plate_coupon
+from duality_wave.coupons import (
+    create_coupon_parts,
+    create_coupons,
+    insert_pilot_coupon,
+    magnet_pocket_coupon,
+    magnet_skin_coupon,
+    plate_fit_coupon,
+    pocket_coupon,
+    switch_plate_coupon,
+)
 from duality_wave.models.case_dimensions import CaseDimensions
 from duality_wave.models.choc import Choc
 from duality_wave.models.xiao import Xiao
@@ -57,19 +66,65 @@ class CouponTests(unittest.TestCase):
                 self.assertLess(sum(s.volume for s in overlap.solids()) if overlap else 0, 1e-6)
                 self.assertAlmostEqual(box.size.Z, self.dims.keyplate_z, places=3)
 
-    def test_round_holes_open_on_the_expected_faces(self):
-        magnet, block_z, pilot_depth = self.dims.magnet_d, self.dims.above_z, self.dims.heat_insert_z
-        coupon = round_hole_coupon(self.profile, magnet, block_z, pilot_depth, magnet_clearances=(0.1,), pilot_diameters=(3.0,))
+    def test_insert_pilots_open_upwards_with_the_requested_diameters(self):
+        pilot_depth, diameters, pitch, margin = self.dims.heat_insert_z, (3.0, 3.2), 9.5, 5.5
+        coupon = insert_pilot_coupon(self.profile, pilot_depth, pilot_diameters=diameters, pitch=pitch, margin=margin)
         self.assertSingleSolid(coupon)
-        x, pilot_y, magnet_y = 5.5, 6.0, 19.0
-        self.assertFalse(coupon.is_inside(Vector(x, magnet_y, 0.3)))
-        self.assertFalse(coupon.is_inside(Vector(x, magnet_y, 2 * magnet.Z - 0.1)))
-        self.assertTrue(coupon.is_inside(Vector(x, magnet_y, 2 * magnet.Z + 0.1)))
-        self.assertTrue(coupon.is_inside(Vector(x + magnet.radius + 0.2, magnet_y, 1.0)))
-        self.assertFalse(coupon.is_inside(Vector(x, pilot_y, block_z - 0.1)))
-        self.assertFalse(coupon.is_inside(Vector(x, pilot_y, block_z - pilot_depth + 0.1)))
-        self.assertTrue(coupon.is_inside(Vector(x, pilot_y, block_z - pilot_depth - 0.1)))
-        self.assertTrue(coupon.is_inside(Vector(x + 1.6, pilot_y, block_z - 1.0)))
+        top = coupon.bounding_box().max.Z
+        self.assertGreater(top, pilot_depth)
+        y = 6.0
+        for index, diameter in enumerate(diameters):
+            x = margin + index * pitch
+            with self.subTest(diameter=diameter):
+                self.assertFalse(coupon.is_inside(Vector(x, y, top - 0.1)))
+                self.assertFalse(coupon.is_inside(Vector(x, y, top - pilot_depth + 0.1)))
+                self.assertTrue(coupon.is_inside(Vector(x, y, top - pilot_depth - 0.1)))
+                self.assertFalse(coupon.is_inside(Vector(x + diameter / 2 - 0.02, y, top - 1.0)))
+                self.assertTrue(coupon.is_inside(Vector(x + diameter / 2 + 0.02, y, top - 1.0)))
+
+    def test_magnet_pockets_have_the_requested_sizes_and_a_skin_on_the_bed(self):
+        magnet, clearances = self.dims.magnet_d, (0.0, 0.2)
+        coupon = magnet_pocket_coupon(self.profile, magnet, clearances=clearances)
+        self.assertSingleSolid(coupon)
+        top = coupon.bounding_box().max.Z
+        skin = self.profile.magnet_skin
+        self.assertGreaterEqual(top - skin, 2 * magnet.Z)
+        # the pitch follows the largest pocket
+        diameter = 2 * (magnet.radius + max(clearances))
+        for index, clearance in enumerate(clearances):
+            x = 3.0 + diameter / 2 + index * (diameter + 2.0)
+            y = coupon.bounding_box().size.Y / 2
+            radius = magnet.radius + clearance
+            with self.subTest(clearance=clearance):
+                self.assertTrue(coupon.is_inside(Vector(x, y, skin / 2)), "the skin is on the bed")
+                self.assertFalse(coupon.is_inside(Vector(x, y, skin + 0.1)))
+                self.assertFalse(coupon.is_inside(Vector(x, y, top - 0.1)), "the pocket opens upwards")
+                self.assertFalse(coupon.is_inside(Vector(x + radius - 0.02, y, top / 2)))
+                self.assertTrue(coupon.is_inside(Vector(x + radius + 0.05, y, top / 2)))
+
+    def test_magnet_skins_have_the_requested_thickness(self):
+        skins = (0.2, 0.6)
+        coupon = magnet_skin_coupon(self.profile, self.dims.magnet_d, skins=skins)
+        self.assertSingleSolid(coupon)
+        diameter = 2 * (self.dims.magnet_d.radius + self.profile.magnet_clearance)
+        for index, skin in enumerate(skins):
+            x = 3.0 + diameter / 2 + index * (diameter + 2.0)
+            y = coupon.bounding_box().size.Y / 2
+            with self.subTest(skin=skin):
+                self.assertTrue(coupon.is_inside(Vector(x, y, skin - 0.05)))
+                self.assertFalse(coupon.is_inside(Vector(x, y, skin + 0.05)))
+
+    def test_a_turned_over_skin_coupon_puts_its_pockets_on_top_of_the_originals(self):
+        skins = (0.2, 0.6)
+        coupon = magnet_skin_coupon(self.profile, self.dims.magnet_d, skins=skins)
+        box = coupon.bounding_box()
+        turned = coupon.rotate(Axis.X, 180).translate((0, box.min.Y + box.max.Y, box.max.Z))
+        diameter = 2 * (self.dims.magnet_d.radius + self.profile.magnet_clearance)
+        for index, skin in enumerate(skins):
+            x, y = 3.0 + diameter / 2 + index * (diameter + 2.0), box.size.Y / 2
+            with self.subTest(skin=skin):
+                self.assertTrue(turned.is_inside(Vector(x, y, box.max.Z - skin / 2)))
+                self.assertFalse(turned.is_inside(Vector(x, y, box.max.Z - skin - 0.1)))
 
     def test_xiao_pockets_have_a_window_and_a_pocket_of_the_requested_size(self):
         clearances = (0.0, 0.10)
@@ -89,15 +144,23 @@ class CouponTests(unittest.TestCase):
                 self.assertTrue(coupon.is_inside(Vector(x + half_x + 0.02, y, plate_z - 0.5)))
                 self.assertTrue(coupon.is_inside(Vector(x, y + half_y + 0.02, plate_z - 0.5)))
 
-    def test_battery_pocket_is_open_upwards(self):
+    def test_battery_pockets_are_open_upwards_and_differ_by_their_clearance(self):
         battery = self.dims.battery_pd.d
-        coupon = pocket_coupon(self.profile, self.dims.xiao_position.Z, self.dims.keyplate_z, battery, xiao_clearances=(0.05,), battery_depth=2.0)
+        clearances = (0.0, 0.2)
+        coupon = pocket_coupon(
+            self.profile, self.dims.xiao_position.Z, self.dims.keyplate_z, battery,
+            xiao_clearances=(0.05,), battery_clearances=clearances, battery_depth=2.0)
+        self.assertSingleSolid(coupon)
         top = self.dims.keyplate_z
         box = coupon.bounding_box()
-        y = box.size.Y / 2
-        x = box.size.X - 3 - (battery.X + 2 * self.profile.battery_clearance) / 2
-        self.assertFalse(coupon.is_inside(Vector(x, y, top - 1.0)))
-        self.assertTrue(coupon.is_inside(Vector(x, y, top - 2.5)))
+        x = box.size.X - 3 - (battery.X + 2 * max(clearances)) / 2
+        # walk along the column of the pockets
+        column = [y / 4 for y in range(0, int(box.size.Y * 4))]
+        opens = [y for y in column if not coupon.is_inside(Vector(x, y, top - 1.0))]
+        self.assertTrue(opens)
+        gaps = [b - a for a, b in zip(opens, opens[1:]) if b - a > 1.0]
+        self.assertEqual(len(gaps), len(clearances) - 1, "one pocket for every clearance")
+        self.assertTrue(all(coupon.is_inside(Vector(x, y, top - 2.5)) for y in opens))
 
     def test_all_coupons_fit_on_a_small_print_bed(self):
         coupons = create_coupons(self.switch, self.dims)

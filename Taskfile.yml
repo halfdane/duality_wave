@@ -46,8 +46,9 @@ tasks:
   coupons:
     desc: Export the fit calibration coupons (duality_wave.coupons) as one print plate.
     summary: |
-      Writes build/coupons.stl with a switch plate, a plate-in-cavity fit test, round
-      holes for magnets and heat-set inserts, and pockets. Print it
+      Writes build/coupons.stl with a switch plate, a plate-in-cavity fit test, heat-set
+      insert pilots, pockets for the XIAO and the battery, and magnet pockets with
+      different skins and a mate to feel the pull. Print it
       with the settings of the final case, then update the PrintProfile.
       With `task viewer` running, the coupons also show up in the browser.
     cmds:

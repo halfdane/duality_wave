@@ -1,4 +1,4 @@
-"""R-18 to R-24 and R-31."""
+"""R-18 to R-24 and R-31 to R-33."""
 
 import pytest
 from math import dist
@@ -14,6 +14,9 @@ from duality_wave.models.rubber_bumper import BumperDimensions
 from duality_wave.models.screw import ScrewDimensions
 from duality_wave.models.xiao import Xiao
 from duality_wave.builders.bottom import add_switch_post_cutouts, build_bottom
+from duality_wave.builders.keyplate import build_keyplate
+from duality_wave.builders.keywell import build_keywell
+from duality_wave.geometry2d import rect_face
 from duality_wave.builders.side import Side
 from tests.builds import make_context, make_inputs
 
@@ -118,6 +121,7 @@ def test_no_fixture_collides_with_a_part(variant, request):  # R-22
         "bumpers": fixtures.bumpers,
         "screws": fixtures.screws,
         "magnets": fixtures.magnets,
+        "spacers": fixtures.spacers,
         **{name: getattr(built, name) for name in PARTS},
     }
     # the inserts are pressed into the keywell on purpose and are left out
@@ -156,7 +160,7 @@ def test_the_bottom_plate_keeps_its_walls_around_the_pockets_and_under_the_pins(
     # the chamfer on the bed edge takes away the rim, so the web only counts inside it
     inside_chamfer = offset(outline, amount=-dims.print_profile.plate_bed_chamfer)
     footprint = extrude(Plane.XY.offset(z0) * inside_chamfer, amount=BumperDimensions.base_z)
-    pocket_radius = BumperDimensions.radius + dims.clearance
+    pocket_radius = BumperDimensions.radius + dims.print_profile.bumper_clearance
     for location in dims.bumper_locations:
         ring = Cylinder(
             pocket_radius + web, BumperDimensions.base_z, align=(Align.CENTER, Align.CENTER, Align.MIN)
@@ -196,11 +200,14 @@ def test_hand_placed_holes_keep_a_wall_to_each_other_and_to_the_edges():  # R-31
     head_recess = ctx.screw.mount.head_recess.radius
     pilot = ctx.insert.mount.pilot.radius
     magnet = dims.magnet_d.radius + profile.magnet_clearance
-    bumper = ctx.bumper.dims.radius + dims.clearance
+    bumper = ctx.bumper.dims.radius + profile.bumper_clearance
 
     plate_edge = outline.create_inner_outline(offset_by=-dims.wall_thickness - profile.plate_clearance).faces()[0]
     cavity = outline.inner_sketch.faces()[0]
-    cutouts = outline.keywell_sketch.faces()
+    battery = dims.battery_pd
+    battery_recess = rect_face(
+        (battery.p.X, battery.p.Y), battery.d.X + 2 * profile.battery_clearance, battery.d.Y + 2 * profile.battery_clearance)
+    cutouts = [*outline.keywell_sketch.faces(), battery_recess]
     layers = {
         "bottom plate": ([("head recess", screws, head_recess), ("bumper", bumpers, bumper)], plate_edge, []),
         "keywell": ([("pilot", screws, pilot), ("magnet", magnets, magnet)], cavity, cutouts),
@@ -212,7 +219,7 @@ def test_hand_placed_holes_keep_a_wall_to_each_other_and_to_the_edges():  # R-31
         for n, (kind, i, center, radius) in enumerate(placed):
             walls[f"{layer}: {kind} {i} to the edge"] = wall_to_edge(edge, center, radius)
             if key_cutouts:
-                walls[f"{layer}: {kind} {i} to the key cutouts"] = wall_to_cutouts(key_cutouts, center, radius)
+                walls[f"{layer}: {kind} {i} to the cutouts"] = wall_to_cutouts(key_cutouts, center, radius)
             for other_kind, j, other, other_radius in placed[n + 1:]:
                 walls[f"{layer}: {kind} {i} to {other_kind} {j}"] = (
                     dist((center.X, center.Y), (other.X, other.Y)) - radius - other_radius
@@ -220,6 +227,38 @@ def test_hand_placed_holes_keep_a_wall_to_each_other_and_to_the_edges():  # R-31
 
     too_thin = {name: round(wall, 2) for name, wall in walls.items() if wall < profile.min_wall}
     assert not too_thin
+
+
+def test_a_magnet_pocket_opens_into_the_cavity_and_a_skin_closes_the_top_face():  # R-32
+    ctx = make_context()
+    dims, profile = ctx.dims, ctx.dims.print_profile
+    keywell = build_keywell(ctx)
+    radius = dims.magnet_d.radius + profile.magnet_clearance
+    assert dims.above_z - dims.magnet_z >= profile.magnet_skin - 1e-6
+    assert dims.magnet_positions
+    for magnet in dims.magnet_positions:
+        def solid(z, away=0.0):
+            return keywell.is_inside(Vector(magnet.X + away, magnet.Y, z))
+
+        assert not solid(0.1), "the pocket opens at the cavity"
+        assert not solid(dims.magnet_z - 0.1), "the pocket reaches the skin"
+        assert solid(dims.magnet_z + 0.1) and solid(dims.above_z - 0.1), "the skin closes the top face"
+        assert solid(dims.magnet_z / 2, away=radius + 0.3), "the pocket has a wall"
+
+
+def test_a_spacer_disc_fills_the_pocket_and_the_keyplate_carries_it():  # R-33
+    ctx = make_context()
+    dims, profile = ctx.dims, ctx.dims.print_profile
+    spacer = dims.magnet_spacer
+    assert spacer.radius < dims.magnet_d.radius + profile.magnet_clearance
+    assert spacer.Z + 2 * dims.magnet_d.Z + profile.magnet_spacer_gap == pytest.approx(dims.magnet_z)
+
+    keyplate = build_keyplate(ctx)
+    for magnet in dims.magnet_positions:
+        rim = [Vector(magnet.X, magnet.Y, -0.1)] + [
+            Vector(magnet.X, magnet.Y, -0.1) + Vector(spacer.radius, 0).rotate(Axis.Z, angle) for angle in range(0, 360, 45)
+        ]
+        assert all(keyplate.is_inside(point) for point in rim), f"no keyplate under the spacer at {magnet}"
 
 
 def test_a_height_snaps_to_whole_layers():  # R-24
@@ -250,6 +289,7 @@ def test_every_level_sits_on_a_layer_boundary_counted_from_the_bed_face(compact,
         "xiao back": dims.xiao_position.Z,
         "power switch": dims.powerswitch_position.Z,
         "battery roof": dims.battery_pd.p.Z + dims.battery_pd.d.Z / 2,
+        "top of the magnets": dims.magnet_z,
     }
     for name, z in levels.items():
         layers = bed_layers(dims, z)
@@ -275,3 +315,6 @@ def test_snapping_moves_a_level_only_in_the_safe_direction(compact, layer_height
     assert raw_switch - layer - eps < dims.powerswitch_position.Z <= raw_switch + eps
     roof = dims.battery_pd.p.Z + dims.battery_pd.d.Z / 2
     assert dims.above_z - roof >= dims.wall_thickness - eps
+    # the skin over the magnets never gets thinner than asked
+    skin = dims.above_z - dims.magnet_z
+    assert dims.print_profile.magnet_skin - eps <= skin < dims.print_profile.magnet_skin + layer + eps

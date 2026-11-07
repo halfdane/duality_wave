@@ -76,6 +76,9 @@ class CaseDimensions(WaveDimensions):
                 + (battery_d.X/2, - battery_d.Y/2, (self.snap_z(self.above_z - self.wall_thickness, up=False) - battery_d.Z/2)))
 
         self.magnet_d: RoundDimensions = RoundDimensions(5, 2)
+        # a loose disc, smaller than the pocket so it falls out on its own. It stands on the keyplate under the magnets.
+        self.magnet_spacer: RoundDimensions = RoundDimensions(
+            4, self.magnet_z - 2 * self.magnet_d.Z - profile.magnet_spacer_gap)
 
         self.place_fixtures(switch, outline, keys)
 
@@ -94,8 +97,8 @@ class CaseDimensions(WaveDimensions):
 
     @property
     def magnet_z(self) -> float:
-        """Flush with the surface: 0mm gap when the halves are together."""
-        return self.above_z
+        """The top of the magnet stack. The skin of the keywell covers it. It grows, never shrinks, to a whole layer."""
+        return self.snap_z(self.above_z - self.print_profile.magnet_skin, up=False)
 
     def place_fixtures(self, switch: Switch, outline: Outline, keys: ErgoKeys) -> None:
         """Set fastener_positions, magnet_positions, bumper_locations and space_invader."""

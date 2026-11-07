@@ -3,6 +3,7 @@ from dataclasses import dataclass, fields, replace
 from build123d import *
 
 from duality_wave.builders.common import CaseContext
+from duality_wave.models.features import magnet_spacer
 from duality_wave.models.power_switch import PowerSwitch
 
 
@@ -16,6 +17,7 @@ class Fixtures:
     inserts: Part
     screws: Part
     magnets: Part | None
+    spacers: Part | None
 
     def mirrored(self, about: Plane) -> "Fixtures":
         return replace(self, **{
@@ -41,6 +43,7 @@ class Accessories:
             "power_switch": self.fixtures.power_switch,
             "battery": self.fixtures.battery,
             "magnets": self.fixtures.magnets,
+            "magnet_spacers": self.fixtures.spacers,
             "inserts": self.fixtures.inserts,
             "screws": self.fixtures.screws,
         }
@@ -77,14 +80,18 @@ def build_fixtures(ctx: CaseContext) -> Fixtures:
 
     battery = Box(dims.battery_pd.d.X, dims.battery_pd.d.Y, dims.battery_pd.d.Z).translate(dims.battery_pd.p)
 
-    magnets = None
+    magnets = spacers = None
     if dims.magnet_positions:
+        # two stacked magnets, pushed against the skin
         with BuildPart() as magnet_part:
             with BuildSketch(Plane.XY.offset(dims.magnet_positions[0].Z)):
                 with Locations(dims.magnet_positions):
                     Circle(dims.magnet_d.radius)
-            extrude(amount=-dims.magnet_d.Z)
+            extrude(amount=-2 * dims.magnet_d.Z)
         magnets = magnet_part.part
+
+        spacer = magnet_spacer(dims.magnet_spacer)
+        spacers = Part() + [Pos(position.X, position.Y, 0) * spacer for position in dims.magnet_positions]
 
     return Fixtures(
         bumpers=bumpers.part,
@@ -93,6 +100,7 @@ def build_fixtures(ctx: CaseContext) -> Fixtures:
         inserts=inserts.part,
         screws=screws.part,
         magnets=magnets,
+        spacers=spacers,
     )
 
 
