@@ -12,13 +12,13 @@ def build_keywell(ctx: CaseContext, dbg=NullScope(), thumb_spec: ThumbCutSpec = 
     dims = ctx.dims
     with BuildPart() as keywell:
         with BuildSketch(Plane.XY.offset(dims.above_z)):
-            insert(ctx.outline.create_outline())
+            insert(ctx.outline.sketch)
         extrude(amount=-dims.below_z - dims.above_z)
 
         print("  skulpting thumb cut...")
         insert(thumb_cutter(ctx.switch, ctx.keys.thumb_clusters, dims.above_z, thumb_spec, dbg.scope("thumb_cut")),
             mode=Mode.SUBTRACT)
-        chamfer_rim(keywell, ctx.outline.create_outline(), thumb_spec.rim_chamfer)
+        chamfer_rim(keywell, ctx.outline.sketch, thumb_spec.rim_chamfer)
 
         _cut_cavity(ctx)
         _cut_insert_pilots(ctx, dbg)
@@ -37,7 +37,7 @@ def _cut_cavity(ctx: CaseContext) -> None:
     extrude(amount=-dims.below_z, mode=Mode.SUBTRACT)
 
     with BuildSketch(Plane.XY.offset(dims.above_z)) as key_cut_sketch:
-        insert(ctx.outline.create_keywell_outline())
+        insert(ctx.outline.keywell_sketch)
     extrude(to_extrude=key_cut_sketch.sketch, amount=-dims.below_z - dims.above_z, mode=Mode.SUBTRACT)
 
 

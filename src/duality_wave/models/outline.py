@@ -1,4 +1,3 @@
-import math
 from dataclasses import dataclass
 
 from build123d import *
@@ -44,7 +43,7 @@ class Outline:
         self.d_x = switch.cap.d.X / 2 + 2*wall_thickness
         self.d_y = switch.cap.d.Y / 2 + 2*wall_thickness
 
-        self.keywell_sketch = self._create_keywell_outline()
+        self._raw_keywell = self._create_keywell_outline()
 
         finger_corners = [v for key in keys.finger_keys for v in self._cell(key, 1.5).vertices()]
         self.left = min(v.X for v in finger_corners) - wall_thickness
@@ -66,12 +65,13 @@ class Outline:
         self.sketch = sketch_of(self._outer_face)
         self._inner_sketches: dict[float, Sketch] = {}
         self.inner_sketch = self.create_inner_outline(-self.wall_thickness)
-        self.keywell_sketch = self._clip_to_cavity(self.keywell_sketch)
+        self.keywell_sketch = self._clip_to_cavity(self._raw_keywell)
 
     def _cell(self, key, scale: float) -> Face:
         return rect_face(key.p, self.d_x * scale, self.d_y * scale, key.r)
 
     def _create_keywell_outline(self) -> Sketch:
+        """The cutout for the keys, before it is clipped to the cavity."""
         # the cells are 1.5 times the key dimensions, so there is no interference with the keycaps
         cells = [self._cell(key, 1.5) for key in self.keys.keys]
         regions = bridge_gaps(cells, self.spec.bridge_gap)
@@ -79,20 +79,8 @@ class Outline:
             round_convex(close_concave(region, self.spec.cutout_concave_radius), self.spec.cutout_convex_radius)
             for region in regions])
 
-    def _clip_to_cavity(self, cutout: Sketch) -> Sketch:
-        """The rounded wall can poke into the cutout at a corner. The cutout keeps out of the wall."""
-        cavity = self.inner_sketch.faces()[0]
-        parts = [part for face in cutout.faces() for part in (face.intersect(cavity).faces() if face.intersect(cavity) else [])]
-        return sketch_of(*parts)
-
-    def create_keywell_outline(self) -> Sketch:
-        return self.keywell_sketch
-
-    def create_outline(self) -> Sketch:
-        return self.sketch
-
     def _overlaps_keywell(self, face: Face) -> bool:
-        return any(overlap_area(face, cutout) > 1e-6 for cutout in self.keywell_sketch.faces())
+        return any(overlap_area(face, cutout) > 1e-6 for cutout in self._raw_keywell.faces())
 
     def _create_body(self) -> Face:
         """Fingers and thumbs inside the walls, without the cirque notch and without rounding."""
@@ -102,10 +90,10 @@ class Outline:
         polygon = polygon_face([self.bottom_left, self.top_left, self.top_right, shoulder, self.thumb_top, self.thumb_bottom_left])
         return close_concave(union_faces([polygon, *thumb_cells])[0], self.sweep_radius)
 
-    def _create_cirque_notch(self) -> Face | None:
-        """The round recess of the trackpad, in the first place that fits between a key and the thumb cluster.
+    def _create_cirque_notch(self) -> tuple[Face, Vector] | None:
+        """The round recess of the trackpad and its center, in the first place that fits between a key and the thumb cluster.
 
-        The recess moves sideways to that place: cirque_recess_position changes.
+        The recess moves sideways to that place.
         """
         for key in self.keys.keys:
             key_bottom_right = key.p + Vector(self.d_x, -self.d_y).rotate(Axis.Z, key.r)
@@ -115,50 +103,42 @@ class Outline:
             center = Vector(((key_bottom_right + self.thumb_bottom_left) / 2).X, self.cirque_recess_position.Y)
             notch = circle_face(center, self.cirque_recess_radius)
             if not self._overlaps_keywell(notch):
-                self.cirque_recess_position = center
-                return notch
+                return notch, center
         return None
+
+    @staticmethod
+    def _round(face: Face, radius: float) -> Face:
+        return round_convex(close_concave(face, radius), radius)
 
     def _create_outer_face(self) -> Face:
         face = self._create_body()
-        notch = self._create_cirque_notch()
-        if notch is not None:
+        found = self._create_cirque_notch()
+        if found is not None:
+            notch, self.cirque_recess_position = found
             self.has_cirque_notch = True
             face = face.cut(notch)
-        return self._round(face)
-
-    def _round(self, face: Face) -> Face:
-        return round_convex(close_concave(face, self.spec.corner_radius), self.spec.corner_radius)
+        return self._round(face, self.spec.corner_radius)
 
     def create_inner_outline(self, offset_by=-1.8) -> Sketch:
-        """The outline moved inwards (negative) or outwards. Corners that turn sharp are rounded again."""
-        if offset_by not in self._inner_sketches:
-            face = grow(self._outer_face, offset_by) if offset_by != 0 else self._outer_face
+        """The outline moved inwards (negative) or outwards.
 
-            if self.has_cirque_notch:
-                # a thicker wall around the notch
-                rect_y = 15
-                stadium_center = self.cirque_recess_position + (0, self.cirque_recess_radius - rect_y/3)
-                with BuildSketch() as stadium:
-                    with Locations(stadium_center):
-                        RectangleRounded(25, rect_y, radius=rect_y/2 - 0.01)
-                stadium_face = stadium.sketch.faces()[0]
-                if not self._overlaps_keywell(stadium_face):
-                    face = face.cut(stadium_face)
-            if offset_by != 0:
-                face = self._round(face)
+        An offset keeps the center of a corner arc, so a corner of radius r gets r - |offset_by| on the side that shrinks.
+        Rounding with that radius changes nothing there. When that radius gets small, the corner would turn (nearly) sharp.
+        Then the rounding keeps it at half of r.
+        """
+        assert offset_by != 0, "Offset by zero is not allowed for inner outline."
+        if offset_by not in self._inner_sketches:
+            face = grow(self._outer_face, offset_by)
+            face = self._round(face, max(self.spec.corner_radius - abs(offset_by), self.spec.corner_radius / 2))
             self._inner_sketches[offset_by] = sketch_of(face)
         return self._inner_sketches[offset_by]
 
+    def _clip_to_cavity(self, cutout: Sketch) -> Sketch:
+        """The rounded wall can poke into the cutout at a corner. The cutout keeps out of the wall."""
+        cavity = self.inner_sketch.faces()[0]
+        parts = [part for face in cutout.faces() for part in (face.intersect(cavity).faces() if face.intersect(cavity) else [])]
+        return sketch_of(*parts)
 
-def add_arrows(edges):
-    with BuildSketch() as arrows:
-        for edge in edges:
-            with Locations(edge.center()):
-                # get rotation angle in degrees
-                angle = math.degrees(math.atan2(edge.end_point().Y - edge.start_point().Y, edge.end_point().X - edge.start_point().X))
-                ArrowHead(size=5, rotation=angle)
-    return arrows.sketch
 
 # main method
 if __name__ == "__main__":
@@ -183,11 +163,8 @@ if __name__ == "__main__":
                 with Locations(key.p):
                     Rectangle(switch.below.d.X, switch.below.d.Y, rotation=key.r)
     choc_sketch = outline.sketch
-    choc_sketch_arrows = add_arrows(choc_sketch.edges())
     choc_inner_sketch = outline.inner_sketch
-    choc_inner_sketch_arrows = add_arrows(choc_inner_sketch.edges())
     choc_keywell = outline.keywell_sketch
-    choc_keywell_arrows = add_arrows(choc_keywell.edges())
 
     show_all()
 

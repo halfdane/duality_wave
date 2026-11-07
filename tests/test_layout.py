@@ -39,7 +39,7 @@ def test_keywell_outline_ignores_noise_in_the_last_digits(compact):  # R-15
         points = get_points(COMPACT_LAYOUT if compact else WAVE_LAYOUT)
         for i, point in enumerate(points.values()):
             point.p = point.p + Vector(noise * ((i % 3) - 1), noise * ((i % 2) * 2 - 1))
-        sketch = make_outline(compact, points=points).create_keywell_outline()
+        sketch = make_outline(compact, points=points).keywell_sketch
         return sketch.area, len(sketch.edges())
 
     area, edges = keywell_outline(0)

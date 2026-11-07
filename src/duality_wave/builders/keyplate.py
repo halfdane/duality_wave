@@ -25,8 +25,6 @@ def build_keyplate(ctx: CaseContext, dbg=NullScope()) -> Part:
         chamfer(objects=plate_faces[0].edges(), length=dims.print_profile.plate_edge_chamfer)
         chamfer(objects=plate_faces[-1].edges(), length=dims.print_profile.plate_bed_chamfer)
 
-        dbg.note("base edges", base.edges())
-
         _cut_fasteners(ctx, dbg)
         _cut_switches(ctx, dbg)
         _cut_xiao(ctx, dbg)

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import pytest
 from build123d import Vector
 
-from duality_wave.geometry2d import bridge_gaps, circle_face, close_concave, overlap_area, polygon_face, rect_face, round_convex
+from duality_wave.geometry2d import bridge_gaps, circle_face, close_concave, grow, overlap_area, polygon_face, rect_face, round_convex
 from duality_wave.layout import Point, get_points
 from duality_wave.models.outline import Outline, OutlineSpec
 from tests import COMPACT_LAYOUT, PERF_FACTOR, WAVE_LAYOUT
@@ -161,6 +161,13 @@ def test_a_closed_gap_has_straight_edges():  # R-25
     (bridged,) = bridge_gaps(cells, gap)
     assert bridged.area > sum(cell.area for cell in cells)
     assert all(edge.geom_type.name == "LINE" for edge in bridged.outer_wire().edges())
+
+
+def test_the_walls_have_one_thickness_around_the_rounded_corners(outline):  # R-26
+    if outline.spec.corner_radius < 2 * outline.wall_thickness:
+        pytest.skip("the corners are too tight to stay concentric")
+    inner = outline.create_inner_outline(-outline.wall_thickness).faces()[0]
+    assert inner.area == pytest.approx(grow(outline._outer_face, -outline.wall_thickness).area, abs=1e-6)
 
 
 @pytest.mark.perf
