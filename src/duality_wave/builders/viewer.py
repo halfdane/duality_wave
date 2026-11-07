@@ -65,17 +65,29 @@ class OcpViewer:
         push_object(obj, name=name)
 
     def push_debug(self) -> None:
+        """The debug group starts hidden. A mode overrides the visibility the user set in the viewer, so it is only
+        passed when the viewer does not know the group yet."""
         from ocp_vscode import Render, push_object
 
-        push_object(self.debug.content, name="debug", mode=Render.NONE)
+        known = _viewer_knows_debug_group()
+        push_object(self.debug.content, name="debug", mode=None if known else Render.NONE)
+
+
+def _viewer_knows_debug_group() -> bool:
+    from ocp_vscode import status
+
+    try:
+        states = status().get("states") or {}
+    except Exception:
+        return False
+    return any("debug" in str(path) for path in states)
 
 
 def show_in_viewer(port: int = 3939) -> None:
     """Display everything that was pushed to the OCP CAD Viewer."""
-    from ocp_vscode import Camera, ColorMap, set_colormap, set_defaults, set_port, show_clear, show_objects
+    from ocp_vscode import Camera, ColorMap, set_colormap, set_defaults, set_port, show_objects
 
     set_port(port)
-    show_clear()
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     set_colormap(ColorMap.seeded(colormap="rgb", alpha=1, seed_value="wave"))
     show_objects()
