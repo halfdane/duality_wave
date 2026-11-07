@@ -235,3 +235,11 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
   - The user set `corner_radius` 5 and `cutout_concave_radius` 0.5. R-27 got small tolerances for this.
   - `create_keywell_outline()` returns one Sketch. The inner outlines have no kinks.
   - Keywell volume: full -738 mm3, compact -283 mm3. Keywell stage 0.51 s -> 0.32 s. Outline build 0.18 s -> 0.14 s.
+- Step 10 done (not committed). Test diet and spec cleanup.
+  - The cutout is clipped to the cavity in `Outline`. It no longer pokes into the wall at a rounded corner. Keywell volume +0.56 mm3. New baseline: docs/baseline/step10.json.
+  - The spec states outcomes. R-13, R-14, R-20 and R-30 are retired (R-20 is part of R-18, R-30 is part of R-12). R-27 now says the cutout lies inside the cavity, without tolerances.
+  - Tests take their numbers from `dims`, specs and the layout. `tests/test_outline.py` runs on seven outline cases: both variants, other radii and gaps, an extra column and an extra row. Small layouts for the bridge and the notch live in the test file.
+  - Found on the way: a `corner_radius` above about 6 cuts the keycap of the last thumb key. The test with a large radius guards this.
+  - Removed: pinned areas and coordinates, duplicate time budgets, trivial determinism test. The development notes moved from the README to CONTRIBUTING.md.
+  - Test tiers: the marker `integration` replaces `slow`. Integration tests share three builds (`full`, `compact`, `quiet`) from `tests/conftest.py`. R-22 battery clearance and R-23 walls are unit tests now. The marker `perf` holds the wall-clock limits. `task test` runs them alone at the end.
+  - Open for the user: the screw head measurement and what happens to FK. The rim chamfer is decided: keep it.

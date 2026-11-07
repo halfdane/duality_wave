@@ -12,21 +12,7 @@ from duality_wave.models.choc import Choc
 from duality_wave.models.features import magnet_recess_cutter, switch_cutter
 from duality_wave.models.model_types import RoundDimensions
 from duality_wave.models.print_profile import PrintProfile
-from duality_wave.models.case_dimensions import CaseDimensions
-from duality_wave.models.keys import ErgoKeys, get_points
-from duality_wave.models.outline import Outline
-from tests import WAVE_LAYOUT
 from tests.builds import PARTS, build_case
-
-
-class OutlineTests(unittest.TestCase):
-    def test_inner_outline_is_deterministic(self):
-        switch = Choc()
-        keys = ErgoKeys(get_points(WAVE_LAYOUT))
-        outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
-        for offset_by in (-1.8, -1.82):
-            areas = {round(outline.create_inner_outline(offset_by=offset_by).area, 6) for _ in range(5)}
-            self.assertEqual(len(areas), 1, f"inner outline area varies between calls: {sorted(areas)}")
 
 
 def width_at(part, z):
@@ -72,95 +58,92 @@ def pushed_names(push_object):
     return [call.kwargs["name"] for call in push_object.call_args_list]
 
 
-@pytest.mark.slow
-class DebugFlagTests(unittest.TestCase):
-    def test_debug_off_pushes_nothing_and_builds_no_accessories(self):  # R-07
-        case, push_object = build_case(debug=False)
-        push_object.assert_not_called()
-        self.assertIsNone(case.left.accessories)
-        self.assertIsNone(case.right.accessories)
-
-    def test_debug_off_builds_the_same_parts_as_debug_on(self):  # R-07
-        quiet, _ = build_case(debug=False)
-        verbose, _ = build_case(debug=True)
-        for side in ("left", "right"):
-            for name in PARTS:
-                with self.subTest(part=f"{name}_{side}"):
-                    self.assertAlmostEqual(
-                        getattr(getattr(quiet, side), name).volume, getattr(getattr(verbose, side), name).volume, places=3)
-
-    def test_debug_on_pushes_every_part_and_the_debug_group_last(self):
-        case, push_object = build_case(debug=True)
-        names = pushed_names(push_object)
-        self.assertEqual(names[-1], "debug")
-        self.assertEqual(names.count("debug"), 1)
-        for side in ("left", "right"):
-            for name in ("accessories", *PARTS):
-                self.assertIn(f"{name}_{side}", names[:-1])
-
-    def test_debug_group_starts_hidden_and_the_parts_do_not(self):
-        _, push_object = build_case(debug=True)
-        modes = {call.kwargs["name"]: call.kwargs.get("mode") for call in push_object.call_args_list}
-        self.assertEqual(modes.pop("debug"), Render.NONE)
-        self.assertTrue(all(mode is None for mode in modes.values()))
-
-    def test_debug_group_holds_what_the_builders_noted(self):
-        _, push_object = build_case(debug=True)
-        group = next(c.args[0] for c in push_object.call_args_list if c.kwargs["name"] == "debug")
-        for name in PARTS:
-            self.assertTrue(group[name], f"nothing noted for {name}")
-
-    def test_accessories_are_built_for_both_halves(self):
-        case, _ = build_case(debug=True)
-        for built in (case.left, case.right):
-            for part in built.accessories.as_dict().values():
-                self.assertGreater(part.volume, 0)
+@pytest.mark.integration
+def test_debug_off_pushes_nothing_and_builds_no_accessories(quiet):  # R-07
+    case, push_object = quiet
+    push_object.assert_not_called()
+    assert case.left.accessories is None
 
 
-@pytest.mark.slow
-class SidesTests(unittest.TestCase):
-    def test_one_sided_case_has_no_right_half(self):
-        case, _ = build_case(debug=False, both_sides=False)
-        self.assertIsNone(case.right)
-        for name in PARTS:
-            self.assertGreater(getattr(case.left, name).volume, 0)
+@pytest.mark.integration
+def test_debug_off_builds_the_same_parts_as_debug_on(quiet, full):  # R-07
+    for name in PARTS:
+        assert getattr(quiet[0].left, name).volume == pytest.approx(getattr(full.left, name).volume, abs=1e-3), name
 
-    def test_right_half_mirrors_the_left_half(self):  # R-02
-        case, _ = build_case(debug=False)
-        offset = case.ctx.dims.right_side_offset
-        for name in PARTS:
-            with self.subTest(part=name):
-                left, right = getattr(case.left, name), getattr(case.right, name)
-                self.assertAlmostEqual(left.volume / right.volume, 1, places=3)
-                self.assertAlmostEqual(right.bounding_box().min.X, offset - left.bounding_box().max.X, places=3)
-                self.assertAlmostEqual(right.bounding_box().max.X, offset - left.bounding_box().min.X, places=3)
-                self.assertAlmostEqual(right.bounding_box().min.Y, left.bounding_box().min.Y, places=3)
+
+@pytest.mark.integration
+def test_debug_on_pushes_every_part_and_the_debug_group_last():
+    case, push_object = build_case(debug=True)
+    names = pushed_names(push_object)
+    assert names[-1] == "debug"
+    assert names.count("debug") == 1
+    for side in ("left", "right"):
+        for name in ("accessories", *PARTS):
+            assert f"{name}_{side}" in names[:-1]
+
+
+@pytest.mark.integration
+def test_debug_group_starts_hidden_and_the_parts_do_not():
+    _, push_object = build_case(debug=True)
+    modes = {call.kwargs["name"]: call.kwargs.get("mode") for call in push_object.call_args_list}
+    assert modes.pop("debug") == Render.NONE
+    assert all(mode is None for mode in modes.values())
+
+
+@pytest.mark.integration
+def test_debug_group_holds_what_the_builders_noted():
+    _, push_object = build_case(debug=True)
+    group = next(c.args[0] for c in push_object.call_args_list if c.kwargs["name"] == "debug")
+    for name in PARTS:
+        assert group[name], f"nothing noted for {name}"
+
+
+@pytest.mark.integration
+def test_accessories_are_built_for_both_halves(full):
+    for built in (full.left, full.right):
+        for part in built.accessories.as_dict().values():
+            assert part.volume > 0
+
+
+@pytest.mark.integration
+def test_one_sided_case_has_no_right_half(quiet):
+    case, _ = quiet
+    assert case.right is None
+    for name in PARTS:
+        assert getattr(case.left, name).volume > 0
+
+
+@pytest.mark.integration
+def test_right_half_mirrors_the_left_half(full):  # R-02
+    offset = full.ctx.dims.right_side_offset
+    for name in PARTS:
+        left, right = getattr(full.left, name), getattr(full.right, name)
+        assert left.volume / right.volume == pytest.approx(1, abs=1e-3), name
+        assert right.bounding_box().min.X == pytest.approx(offset - left.bounding_box().max.X, abs=1e-3), name
+        assert right.bounding_box().max.X == pytest.approx(offset - left.bounding_box().min.X, abs=1e-3), name
+        assert right.bounding_box().min.Y == pytest.approx(left.bounding_box().min.Y, abs=1e-3), name
+
+
+@pytest.mark.integration
+def test_complete_case_terminal_clearance(full):  # R-06
+    switch, keys, dims = full.ctx.switch, full.ctx.keys, full.ctx.dims
+    for side in ("left", "right"):
+        bottom = getattr(full, side).bottom
+        for key in keys.keys:
+            position = key.p if side == "left" else Vector(dims.right_side_offset - key.p.X, key.p.Y, key.p.Z)
+            rotation = key.r if side == "left" else -key.r
+            for post in (switch.posts.p1, switch.posts.p2):
+                terminal = Solid.make_cylinder(
+                    post.d.radius,
+                    post.d.Z,
+                    Plane(origin=(post.p.X, -post.p.Y, -switch.bottom_housing.d.Z), z_dir=(0, 0, -1)),
+                ).rotate(Axis.Z, rotation).translate(position)
+                overlap = bottom & terminal
+                volume = sum(s.volume for s in overlap.solids()) if overlap else 0
+                assert volume < 1e-7, f"{side} key at {key.p}, post at {post.p}"
 
 
 class SwitchPostCutoutTests(unittest.TestCase):
-    @pytest.mark.slow
-    def test_complete_case_terminal_clearance(self):  # R-06
-        case, _ = build_case(debug=False)
-        switch, keys, dims = case.ctx.switch, case.ctx.keys, case.ctx.dims
-        for side in ("left", "right"):
-            for name in PARTS:
-                part = getattr(getattr(case, side), name)
-                self.assertTrue(part.is_valid)
-                self.assertEqual(len(part.solids()), 1)
-            bottom = getattr(case, side).bottom
-            for key in keys.keys:
-                position = key.p if side == "left" else Vector(dims.right_side_offset - key.p.X, key.p.Y, key.p.Z)
-                rotation = key.r if side == "left" else -key.r
-                for post in (switch.posts.p1, switch.posts.p2):
-                    with self.subTest(side=side, key=key.p, post=post.p):
-                        terminal = Solid.make_cylinder(
-                            post.d.radius,
-                            post.d.Z,
-                            Plane(origin=(post.p.X, -post.p.Y, -switch.bottom_housing.d.Z), z_dir=(0, 0, -1)),
-                        ).rotate(Axis.Z, rotation).translate(position)
-                        overlap = bottom & terminal
-                        self.assertLess(sum(s.volume for s in overlap.solids()) if overlap else 0, 1e-7)
-
     def test_physical_footprint_on_both_halves(self):  # R-06
         for angle in (0, 23, -37):
             for right in (False, True):

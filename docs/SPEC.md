@@ -1,19 +1,22 @@
 # Specification
 
 This file lists the requirements of the duality_wave case.
+A requirement states an outcome.
+It does not state how the code reaches the outcome.
+It names a parameter, not the value of the parameter, unless the value is the requirement.
 Every requirement has an ID.
-Every ID is named by at least one test in `tests/`.
-Every ID that a test names exists in this file.
-`tests/test_spec.py` checks both rules.
+Every ID has at least one test in `tests/`.
+A test can cite an ID in a comment.
+A test does not need an ID.
+Every ID that a test cites exists in this file.
+`tests/test_spec.py` checks the last two rules.
+Retired IDs are not used again.
 Lengths are in millimetres. Times are in seconds.
-
-Many requirements describe the behaviour of the code at the start of the port from flatboard.
-They keep the later steps honest.
-See `docs/PLAN-port-from-flatboard.md` for the plan.
+See `docs/PLAN-port-from-flatboard.md` for the plan of the port from flatboard.
 
 ## Scope
 
-R-01: Each half of the full variant has 17 Choc V1 keys.
+R-01: Each half has a switch for every key of the layout.
 R-02: The right half is the left half mirrored.
 R-03: Every part of every built half is one valid solid.
 
@@ -22,30 +25,28 @@ R-03: Every part of every built half is one valid solid.
 R-04: The keyplate top is at z = 0. The keywell spans from z = -below_z to z = above_z. The bottom plate spans from z = -below_z to z = -keyplate_z. The one exception is the bump under the reset button of the XIAO: it rises to the button.
 R-05: The keyplate fits inside the keywell in the XY plane.
 R-06: No switch contact touches the bottom plate. The cutouts leave room for them.
-R-16: The thumb cut is a loft of one zone. The zone is one face with round corners. The loft grows the zone by `taper` while it rises from the floor to the top. The floor is the top of the switch housing. It does not move with the top of the keywell.
+R-16: The thumb cut is a tapered pocket that follows the thumb keys. It grows by `taper` from the floor to the top. The floor is the top of the switch housing. It does not move with the top of the keywell.
 R-17: The outer edges of the keywell that are not vertical carry a chamfer of `rim_chamfer`. The keywell has no fillets. The chamfer keeps the envelope and the keywell stays one valid solid.
-R-18: The Z levels come from one chain in `CaseDimensions`. `keyplate_z` is the housing height plus `keyplate_under_housing`. `below_z` is the switch height below the plate plus `floor_under_pins`. `bottom_plate_z` is `below_z` minus `keyplate_z`.
-R-19: The switch model has the parameters `pin_len` (default 2.0) and `side_post_len` (default 0). A post is never longer than its datasheet value. A post of length 0 does not exist. The centre post keeps its length. The depth of the switch below the housing is the longest contact or side post. The centre post does not count.
-R-20: The top of the keywell is `wall_over_cap` (0.18) above the top of the keycaps. The cap top is the stack of base, upper housing, stem and cap, minus the overlap of cap and stem (8.02 in total).
+R-18: The Z levels come from one chain in `CaseDimensions`. The keyplate depth follows from the housing height. The depth of the case below the plate follows from the switch height below the plate. The roof of the keywell is `wall_over_cap` over the keycaps.
+R-19: The contacts and the side posts of the switch are trimmed to `pin_len` and `side_post_len`. A post is never longer than its datasheet value. A post of length 0 does not exist. The depth of the switch below the housing is the longest contact or side post. The centre post does not count.
 R-21: Nothing sticks out of the bed face by more than the bumpers do. This covers the centre post of the switch, the USB-C connector of the XIAO and the lever of the power switch. The screw is long enough to pass the insert and short enough to stay clear of the cap.
-R-22: No fixture collides with a part. The inserts are pressed into the keywell and are the only exception. The power switch stays 0.1 mm or more under the battery.
-R-23: The bottom plate keeps a wall of 0.5 mm around every bumper pocket. Every contact has a floor of `floor_under_pins` under its tip. The centre post has a hole.
-R-24: Every level of the case sits on a layer boundary, counted from the bed face (z = -below_z) in steps of `layer_height` (0.2). This covers `below_z`, `above_z`, the top of the bottom plate, the back of the XIAO, the power switch and the roof of the battery recess. A level moves only in the safe direction: the keywell top, the keyplate depth and the XIAO move up or out, the power switch and the battery roof move down. A level moves by less than one layer.
+R-22: No fixture collides with a part. The inserts are pressed into the keywell and are the only exception. The power switch stays clear of the battery.
+R-23: The bottom plate keeps a wall around every bumper pocket. Every contact has a floor under its tip. The centre post has a hole.
+R-24: Every level of the case sits on a layer boundary, counted from the bed face in steps of `layer_height`. This covers `below_z`, `above_z`, the top of the bottom plate, the back of the XIAO, the power switch and the roof of the battery recess. A level moves only in the safe direction: the keywell top, the keyplate depth and the XIAO move up or out, the power switch and the battery roof move down. A level moves by less than one layer.
 
 ## Outline
 
-R-25: The cutout of the keywell is one region. A gap between two key cells that is narrower than `bridge_gap` (4.4) is closed with straight edges. Rounding then leaves no gap narrower than twice `cutout_concave_radius` (2.0).
-R-26: No outline has a kink. This covers the cutout, the outer outline and the inner outlines. The inner corners of the cutout have a radius of at least `cutout_concave_radius`. The outer corners have at least `cutout_convex_radius` (0.5). The corners of the outer outline have `corner_radius` (1.0).
-R-27: Every keycap lies inside the cutout. The cutout lies inside the cavity, except for at most 0.2 mm2 at the rounded corners of the wall. The outer outline holds the cells of all keys, except for what its `corner_radius` takes off two corners of a cell.
-R-28: The round notch for the trackpad is cut in the first place where a circle of `cirque_recess_radius` fits between a key and the thumb cluster without touching the cutout. The compact variant has no such place and no notch. The inner outline keeps a thicker wall around the notch.
-R-29: The right wall meets the thumb cluster in an arc. A disc rolls along the wall and the cluster and fills the corner. Its radius is `sweep_ratio` (0.5) times the height of the wall above the thumb cluster. That height runs from the top of the outline to the top corner of the thumb cluster. On the full variant the outline stays within 2 mm2 of the former tangent arc.
-R-30: Building an outline and one inner outline takes at most 0.4 s.
+R-25: The cutout of the keywell has no gap narrower than `bridge_gap` between key cells. Such a gap is closed with straight edges. A wider gap stays open.
+R-26: No outline has a kink. This covers the cutout, the outer outline and the inner outlines. The corners of the cutout are rounded with `cutout_concave_radius` and `cutout_convex_radius`. The outer outline is rounded with `corner_radius`.
+R-27: Every keycap and every switch body lies inside the cutout. The cutout lies inside the cavity. The cavity is the outer outline moved inwards by the wall thickness.
+R-28: The round notch for the trackpad is cut only where it fits between a key and the thumb cluster. It keeps clear of the cutout. The inner outline keeps a thicker wall around it.
+R-29: The right wall meets the thumb cluster in an arc. The radius of the arc is `sweep_ratio` times the height of the wall above the thumb cluster.
 
 ## Layout
 
 R-08: The key positions come from ergogen. Each `ergogen/<name>.points.yaml` equals the output of ergogen for `ergogen/<name>.yml`. Run `task layout` to update it.
 R-09: The loader reads x, y and r of every point in file order. It drops points that the layout marks as skip.
-R-15: The outline of the keywell cutout does not change when a key position moves by 1e-7 mm or less. ergogen rounds the positions to 8 digits.
+R-15: The cutout of the keywell does not change when a key position moves by 1e-7 mm or less. ergogen rounds the positions to 8 digits.
 
 ## Debug mode
 
@@ -58,9 +59,4 @@ The limits are about 2.5 times the measured time. Tighten them after a speed-up 
 
 R-10: A build of the full variant (both halves) takes at most 6 s.
 R-11: A build of the compact variant takes at most 3 s.
-R-12: A stage of the build stays under its limit: keywell 1.2 s, keyplate 1.6 s, bottom 0.7 s, each finish stage 1.4 s.
-R-13: A test that is not marked `slow` builds no case. The fast tier stays fast.
-
-## Process
-
-R-14: Every requirement in this file is named by a test. Every requirement that a test names is in this file.
+R-12: A stage of the build stays under its limit: keywell 1.2 s, keyplate 1.6 s, bottom 0.7 s, each finish stage 1.4 s. An outline with one inner outline takes at most 0.4 s.

@@ -66,6 +66,7 @@ class Outline:
         self.sketch = sketch_of(self._outer_face)
         self._inner_sketches: dict[float, Sketch] = {}
         self.inner_sketch = self.create_inner_outline(-self.wall_thickness)
+        self.keywell_sketch = self._clip_to_cavity(self.keywell_sketch)
 
     def _cell(self, key, scale: float) -> Face:
         return rect_face(key.p, self.d_x * scale, self.d_y * scale, key.r)
@@ -77,6 +78,12 @@ class Outline:
         return sketch_of(*[
             round_convex(close_concave(region, self.spec.cutout_concave_radius), self.spec.cutout_convex_radius)
             for region in regions])
+
+    def _clip_to_cavity(self, cutout: Sketch) -> Sketch:
+        """The rounded wall can poke into the cutout at a corner. The cutout keeps out of the wall."""
+        cavity = self.inner_sketch.faces()[0]
+        parts = [part for face in cutout.faces() for part in (face.intersect(cavity).faces() if face.intersect(cavity) else [])]
+        return sketch_of(*parts)
 
     def create_keywell_outline(self) -> Sketch:
         return self.keywell_sketch

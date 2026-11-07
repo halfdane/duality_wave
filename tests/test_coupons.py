@@ -13,8 +13,10 @@ from duality_wave.models.xiao import Xiao
 from duality_wave.models.keys import ErgoKeys, get_points
 from duality_wave.models.outline import Outline
 
+SMALL_PRINT_BED = 180
 
-@pytest.mark.slow
+
+@pytest.mark.integration
 class CouponTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -99,9 +101,9 @@ class CouponTests(unittest.TestCase):
 
     def test_all_coupons_fit_on_a_small_print_bed(self):
         coupons = create_coupons(self.switch, self.dims)
-        self.assertEqual(len(coupons.solids()), 9)
+        self.assertEqual(len(coupons.solids()), len(create_coupon_parts(self.switch, self.dims)))
         size = coupons.bounding_box().size
-        self.assertLessEqual(max(size.X, size.Y), 180)
+        self.assertLessEqual(max(size.X, size.Y), SMALL_PRINT_BED)
         self.assertAlmostEqual(coupons.bounding_box().min.Z, 0, places=6)
 
     def test_coupons_do_not_touch_each_other(self):

@@ -123,40 +123,13 @@ The dev shell installs the Python dependencies with `uv`.
 | `task compact` | Builds the compact variant with `duality_wave.cli.compact`. |
 | `task coupons` | Exports `build/coupons.stl` and previews the coupons in the viewer. |
 | `task render` | Renders the images in `docs/images` with Blender. |
-| `task test` | Runs the checks and the unit tests. This takes about 30 s. |
 
 The STEP files go to `build/step` and `coupons.stl` to `build/`.
 Git ignores the `build` directory.
 The key layout comes from `ergogen/wave.yml`.
 Run `task layout` after you change it. This runs ergogen and writes `ergogen/wave.points.yaml`. The build reads that file. Commit it.
-`WaveCase(debug=True)` builds the accessory models and sends everything to the viewer.
-The intermediate shapes arrive last, in a group named `debug` that starts hidden.
-`WaveCase(debug=False)` builds only the printable parts.
-The finished halves are `case.left` and `case.right`.
 
-The Python code is the package `duality_wave` in `src/duality_wave/`.
-
-- `cli/build.py` runs the main build.
-- `cli/compact.py` builds a compact variant for test prints.
-- `cli/render.py` exports the meshes for the images.
-- `scripts/render_blender.py` renders the images inside Blender.
-- `case.py` has `WaveCase`, which builds the three parts for each half.
-- `builders/` holds one builder per part (`keywell.py`, `keyplate.py`, `bottom.py`).
-- `builders/thumb_cut.py` builds the sculpted thumb slope of the keywell and chamfers its rim.
-- `geometry2d.py` holds the 2D helpers: `grow`, `round_convex` and `merge_aligned_edges`.
-- `builders/side.py` places the parts on the left or right half.
-- `builders/accessories.py` builds the models that are only shown in the viewer.
-- `builders/viewer.py` decides what is pushed to the viewer.
-- `layout.py` reads the `*.points.yaml` files that ergogen writes.
-- `models/` holds the part models and the outline.
-- `models/case_dimensions.py` holds the case dimensions of the main case and the compact variant.
-- `models/features.py` holds the cutters that the case and the coupons share.
-- `coupons.py` builds the calibration coupons.
-- `paths.py` has the paths to the layouts and the `build` directory.
-- `tests/` holds the unit tests.
-
-This project is the descendant of the duality_particle.
-Some names, for example `cirque_recess_*` in `models/outline.py`, still show that origin.
+To change the code, read `CONTRIBUTING.md`.
 
 ## License and credits
 
