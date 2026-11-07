@@ -154,10 +154,11 @@ def test_the_bottom_plate_keeps_its_walls_around_the_pockets_and_under_the_pins(
     # the chamfer on the bed edge takes away the rim, so the web only counts inside it
     inside_chamfer = offset(outline, amount=-dims.print_profile.plate_bed_chamfer)
     footprint = extrude(Plane.XY.offset(z0) * inside_chamfer, amount=BumperDimensions.base_z)
+    pocket_radius = BumperDimensions.radius + dims.clearance
     for location in dims.bumper_locations:
         ring = Cylinder(
-            BumperDimensions.radius + web, BumperDimensions.base_z, align=(Align.CENTER, Align.CENTER, Align.MIN)
-        ) - Cylinder(BumperDimensions.radius, BumperDimensions.base_z, align=(Align.CENTER, Align.CENTER, Align.MIN))
+            pocket_radius + web, BumperDimensions.base_z, align=(Align.CENTER, Align.CENTER, Align.MIN)
+        ) - Cylinder(pocket_radius, BumperDimensions.base_z, align=(Align.CENTER, Align.CENTER, Align.MIN))
         ring = (ring.translate((location.X, location.Y, z0)) & footprint)
         assert (ring & bottom).volume == pytest.approx(ring.volume, rel=0.01), f"bumper at {location}"
 

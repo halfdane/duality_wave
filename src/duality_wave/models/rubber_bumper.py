@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 @dataclass
 class BumperDimensions:
-    base_z: float = 1
-    dome_z: float = 1
+    base_z: float = 0.6
+    dome_z: float = 1.4
     radius: float = 4
 
 

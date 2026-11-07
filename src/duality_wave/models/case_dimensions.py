@@ -52,11 +52,13 @@ class CaseDimensions(WaveDimensions):
         self.keyplate_z: float = round(self.below_z - plate, 6)
         self.bottom_plate_z: float = plate
 
-        xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + 5
+        xiao_pos_x: float = outline.top_left.X + Xiao.dims.d.X/2 + self._xiao_pos_x_additional()
         xiao_pos_y: float = outline.top_left.Y - Xiao.dims.d.Y/2 - Xiao.usb.forward_y - self.wall_thickness - 2*self.clearance
         # up, so the USB-C connector never stands out further than the ledge asks
         xiao_pos_z: float = self.snap_z(-self.xiao_ledge)
         self.xiao_position: Vector = Vector(xiao_pos_x, xiao_pos_y, xiao_pos_z)
+
+        print("xiao_position:", self.xiao_position)
 
         xiao_to_power_switch: float = PowerSwitch.dims.d.Y/2 + PowerSwitch.dims.pin_length/2
         self.powerswitch_rotation: Vector = Vector(0, 180, -90)
@@ -82,6 +84,10 @@ class CaseDimensions(WaveDimensions):
         snap = self.print_profile.snap_up if up else self.print_profile.snap_down
         return round(snap(z + self.below_z) - self.below_z, 6)
 
+    def _xiao_pos_x_additional(self) -> float:
+        return 5 + 3.1
+
+
     @property
     def bumper_radius(self) -> float:
         return BumperDimensions.radius + self.bumper_base_offset
@@ -96,28 +102,43 @@ class CaseDimensions(WaveDimensions):
         magnet_z = self.magnet_z
         bumpers_radius = self.bumper_radius
 
+        fastener_top = outline.top_right.Y - HeatSetInsert.dims.d.radius*2 -2
+        fastener_left = outline.top_left.X + HeatSetInsert.dims.d.radius*2 +2
+        fastener_bottom = outline.bottom_left.Y + HeatSetInsert.dims.d.radius*2 +2
         self.fastener_positions = [
-            Vector(-12, 2),
-            Vector(22, 62),
-            Vector(-12, 50),
-            Vector(70, 65),
-            Vector(86, 7),
-            Vector(36, 6),
+            # bottom left
+            Vector(fastener_left, fastener_bottom),
+            # top middle  
+            Vector(27, fastener_top),
+            # top left
+            Vector(fastener_left, 50),
+            # top right
+            Vector(outline.top_right.X - HeatSetInsert.dims.d.radius*2 -2, fastener_top),
+            Vector(86, 7), # above thumb cluster
+            Vector(45, 6), # bottom middle
         ]
 
         self.magnet_positions: list[Vector] = (
-            outline.top_right + (-self.wall_thickness - self.clearance - self.magnet_d.radius - 4, -self.wall_thickness - self.clearance - self.magnet_d.radius - 4, magnet_z),
-            keys.finger_clusters[0][0][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 2, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][0][2].r),
-            keys.finger_clusters[0][2][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 1.5, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][2].r),
+            # top right
+            outline.top_right + (-self.wall_thickness - self.clearance - self.magnet_d.radius - 5, -self.wall_thickness - self.clearance - self.magnet_d.radius - 5, magnet_z),
+            # pinkie top
+            keys.finger_clusters[0][0][2].p + Vector(4, switch.cap.d.Y/2 + self.magnet_d.radius + 2, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][0][2].r),
+            # top middle
+            keys.finger_clusters[0][2][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 2, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][2].r),
+            # bottom middle
             keys.finger_clusters[0][2][0].p + Vector(0, -switch.cap.d.Y/2 - self.magnet_d.radius - 4, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][0].r),
         )
 
         self.bumper_locations = [
-            keys.thumb_clusters[0][1][0].p + Vector(switch.cap.d.X/2 - bumpers_radius/2 - 0.5, -switch.cap.d.Y/2+bumpers_radius/2 + 0.5).rotate(Axis.Z, keys.thumb_clusters[0][1][0].r) + (1.5, 8.5),
-            outline.top_right + Vector(-bumpers_radius, -bumpers_radius),
-            outline.bottom_left + Vector(bumpers_radius, bumpers_radius),
-            # clear of the XIAO processor pocket, which sits at the same depth
-            outline.top_left + Vector(bumpers_radius + 6, -bumpers_radius - 20),
+            # bottom right
+            keys.thumb_clusters[0][1][0].p + Vector(switch.cap.d.X/2 - bumpers_radius/2 - 0.5, switch.cap.d.Y/2-bumpers_radius/2).rotate(Axis.Z, keys.thumb_clusters[0][1][0].r),
+            # top right
+            outline.top_right + Vector(-bumpers_radius -4 , -bumpers_radius - 4),
+            # bottom left
+            outline.bottom_left + Vector(bumpers_radius + 1, bumpers_radius + 6),
+            # top left: clear of the XIAO processor pocket, which sits at the same depth
+            outline.top_left + Vector(bumpers_radius + 1, -bumpers_radius - 1),
+            # center
             (keys.finger_clusters[0][2][0].p + keys.finger_clusters[0][2][1].p) / 2 + (7, -3),
         ]
 
@@ -132,6 +153,9 @@ class CompactCaseDimensions(CaseDimensions):
 
     heat_insert_z: float = HeatSetInsert.dims.d.Z
     right_side_offset: float = 100
+
+    def _xiao_pos_x_additional(self) -> float:
+        return 5
 
     def place_fixtures(self, switch: Switch, outline: Outline, keys: ErgoKeys) -> None:
         magnet_z = self.magnet_z

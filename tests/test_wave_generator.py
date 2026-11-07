@@ -90,6 +90,17 @@ def test_debug_group_starts_hidden_and_the_parts_do_not():
     assert all(mode is None for mode in modes.values())
 
 
+def test_a_debug_group_the_viewer_already_knows_keeps_the_visibility_of_the_user():
+    from unittest.mock import patch
+
+    from duality_wave.builders.viewer import OcpViewer
+
+    for states, mode in (({}, Render.NONE), ({"/wave/debug": [0, 0]}, None)):
+        with patch("ocp_vscode.push_object") as push_object, patch("ocp_vscode.status", return_value={"states": states}):
+            OcpViewer().push_debug()
+        assert push_object.call_args.kwargs["mode"] == mode
+
+
 @pytest.mark.integration
 def test_debug_group_holds_what_the_builders_noted():
     _, push_object = build_case(debug=True)
