@@ -39,7 +39,7 @@ Quantities are for both halves.
 - 2 Seeed XIAO nRF52840
 - 2 LiPo batteries, 31 x 17 x 6 mm
 - 2 slide power switches, 9 x 3.4 x 4 mm
-- 16 magnets, 5 x 2 mm (two stacked in each of 8 recesses)
+- 16 magnets, 10 mm diameter, 2 mm thick (two stacked in each of 8 pockets)
 - 12 M2 heat-set inserts, 3.5 mm outer diameter, 2 mm long
 - 12 low-profile M2 screws, 6 mm long
 - 10 rubber bumpers, 8 mm diameter
@@ -52,10 +52,12 @@ Check the repository of the keycaps for the files and the license.
 ## Printing
 
 Each half has three printed parts.
+The magnet spacers are a fourth kind of part, and both halves share them.
 
 - `keywell` is the top shell. Print it upside down.
 - `keyplate` holds the switches. Print it upside down.
 - `bottom` closes the case. Print it right side up.
+- `magnet_spacer` is a small disc. Print 8 of them, 4 for each half.
 
 Run `task build` to create the STEP files for all parts.
 Run `task coupons` to create the calibration coupons.
@@ -67,9 +69,9 @@ The fit depends on your printer, your material and your slicer.
 ## Assembly
 
 1. Press an M2 heat-set insert into each of the six holes of the keywell. Press each insert in until it is flush with the keywell face.
-2. Glue two magnets on top of each other into each magnet recess. See the section about polarity.
+2. Lay the keywell upside down. Glue two magnets on top of each other and put each pair into a magnet pocket from below. A thin skin of the keywell covers the magnets on the outside. See the section about polarity. Put a spacer disc on each pair of magnets.
 3. Wire the switches, the diodes, the XIAO, the power switch and the battery. Wiring is your choice. The keyplate has channels for the wire and the bottom plate has recesses for the switch pins and the diodes.
-4. Put the keyplate into the keywell, then put the bottom plate on top. Fasten the six M2 screws from the bottom.
+4. Put the keyplate into the keywell. It holds the spacers and the magnets. Then put the bottom plate on top. Fasten the six M2 screws from the bottom.
 5. Put the rubber bumpers into their recesses.
 
 Both halves are mostly mirror images of each other.
@@ -79,7 +81,8 @@ Both halves are mostly mirror images of each other.
 Only the relative polarity matters.
 Place the magnets in one half however you want.
 Use a magnetized tool to make sure the magnets in the other half face the opposite way.
-You cannot dry-fit the halves, because the magnets pull out of their recesses.
+Fit the keyplate before you bring the halves together.
+Without the spacers and the keyplate, magnets that repel each other push out of their pockets.
 
 ![Underside of both halves](docs/images/bottom.jpg)
 
@@ -96,6 +99,7 @@ Change the profile for every new printer, material or slicer.
 4. Copy the winning values into a `PrintProfile`.
 
 The coupons are built in their real print orientation.
+The magnet coupons have the skin on the print bed, like the keywell.
 They reuse the cutters from `models/features.py`.
 The coupons fit on a 180 mm print bed.
 
@@ -103,12 +107,22 @@ The coupons fit on a 180 mm print bed.
 | --- | --- |
 | A, switch plate | Which switch cutout size is right? Does corner relief help? |
 | B, plate in cavity | Which plate clearance is right? Try each plate both ways round. |
-| C, round holes | Which magnet recess size and which insert pilot size is right? |
-| D, pockets | Which XIAO pocket clearance is right? Does the battery fit? |
+| C, insert pilots | Which insert pilot size is right? Press an insert into each hole. |
+| D, pockets | Which XIAO pocket clearance is right? Which battery pocket clearance is right? Test the real battery. |
+| E, magnet pockets | Which magnet pocket size is right? The label is the pocket diameter. Push a stack of two magnets into each pocket. |
+| E, skin and mate | How thick can the skin over the magnets be? The label is the skin in mm. Put a stack of two magnets in a pocket, then hold a loose magnet on the skin side. |
+
+Print the mate of the skin coupon too.
+Put magnets in the pockets of both skin coupons, with opposite polarity.
+Turn one coupon over about its long side and hold the skins together.
+The pull through two skins is the pull between the two halves.
+Choose the thickest skin that still holds the halves as firmly as you want.
+Set it as `magnet_skin`.
+Set the pocket size as `magnet_clearance`.
 
 The case counters elephant foot with chamfers on the side that faces the print bed.
 `plate_bed_chamfer` sets the chamfer on the plate faces.
-`mouth_chamfer` sets the chamfer where switch cutouts and magnet recesses open towards the bed.
+`mouth_chamfer` sets the chamfer where switch cutouts open towards the bed and where the magnets enter their pockets.
 Sanding the plate edges along the z axis removes the layer ridges that rub on insertion.
 
 ## Build from source
