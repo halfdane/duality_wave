@@ -24,6 +24,7 @@ class PrintProfile:
     xiao_clearance: float = 0.02
     magnet_clearance: float = 0.02
     battery_clearance: float = 0.02
+    bumper_clearance: float = 0.1
 
     insert_pilot_radius: float = 1.6
 

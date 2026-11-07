@@ -73,7 +73,7 @@ def _cut_xiao_support(ctx: CaseContext, dbg) -> None:
 
 def _cut_bumpers(ctx: CaseContext) -> None:
     print("  bumper cutouts...")
-    bumper_cutouts = circle_sketch(ctx.dims.bumper_locations, ctx.bumper.dims.radius + ctx.dims.clearance, Plane.XY.offset(-ctx.dims.below_z))
+    bumper_cutouts = circle_sketch(ctx.dims.bumper_locations, ctx.bumper.dims.radius + ctx.dims.print_profile.bumper_clearance, Plane.XY.offset(-ctx.dims.below_z))
     bumper_cutout_z = ctx.dims.print_profile.snap_down(ctx.bumper.dims.base_z)
     extrude(to_extrude=bumper_cutouts.sketch, amount=bumper_cutout_z, mode=Mode.SUBTRACT)
 
