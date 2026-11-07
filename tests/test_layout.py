@@ -67,7 +67,7 @@ def test_keywell_outline_ignores_noise_in_the_last_digits(name):  # R-15
         switch = Choc()
         outline = Outline(
             switch=switch, keys=ErgoKeys(points), wall_thickness=CompactCaseDimensions.wall_thickness, additional_top_space=22)
-        sketch = outline.create_keywell_outline()[0]
+        sketch = outline.create_keywell_outline()
         return sketch.area, len(sketch.edges())
 
     area, edges = keywell_outline(0)

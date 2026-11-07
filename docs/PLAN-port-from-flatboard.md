@@ -227,3 +227,11 @@ Each step adds its own R-IDs to docs/SPEC.md and its own tests.
 - Step 8 done. Final numbers against step 0: full build 12.4 s -> 3.1 s, compact 6.1 s -> 1.4 s. Budgets (R-10 to R-12) are now about 2x the measured times: full 6 s, compact 3 s, keywell 1.2, keyplate 1.6, bottom 0.7, each finish 1.4.
   - README: size 113 x 97 x 12.8 mm, screws 6 mm. The coupons take their values from CaseDimensions and need no change.
   - Open for the user: the rim treatment (chamfer 0.8, taper 15) and what happens to FK. FK stays untouched as a reference.
+- Step 9 done (not committed). The outline uses `grow`, `close_concave` and `round_convex` from `geometry2d`. The fillet code is gone.
+  - New: `OutlineSpec` with `corner_radius`, `sweep_radius`, `bridge_gap`, `cutout_concave_radius`, `cutout_convex_radius`. R-25 to R-30.
+  - The keywell cutout comes from key cells, `bridge_gaps` (4.4), a closing (2.0) and an opening (0.5). It has no gap that a 2 mm disc cannot enter.
+  - The user chose the closing. The tangent arc is gone. The disc radius is `sweep_ratio` (0.5) times the wall height above the thumb cluster. Full: 36.8 mm, within 2 mm2 of the old arc. Compact: 23.7 mm.
+  - A radius from the finger cluster height gives 10.6 mm on compact. The compact fastener at (34, -10) then leaves the cavity. So the rule uses the wall height.
+  - The user set `corner_radius` 5 and `cutout_concave_radius` 0.5. R-27 got small tolerances for this.
+  - `create_keywell_outline()` returns one Sketch. The inner outlines have no kinks.
+  - Keywell volume: full -738 mm3, compact -283 mm3. Keywell stage 0.51 s -> 0.32 s. Outline build 0.18 s -> 0.14 s.

@@ -1,202 +1,148 @@
 import math
+from dataclasses import dataclass
+
 from build123d import *
-from duality_wave.geometry2d import merge_aligned_edges
-from duality_wave.models.switch import Switch
-from duality_wave.models.keys import ErgoKeys
+
+from duality_wave.geometry2d import (
+    bridge_gaps, circle_face, close_concave, grow, overlap_area, polygon_face, rect_face, round_convex, sketch_of, union_faces)
 from duality_wave.layout import get_points
+from duality_wave.models.keys import ErgoKeys
+from duality_wave.models.switch import Switch
+
+
+@dataclass(frozen=True)
+class OutlineSpec:
+    """Rounding and bridging of the outlines. All lengths are in mm.
+
+    corner_radius rounds the corners of the outer outline, convex and concave.
+    sweep_ratio times the height of the right wall above the thumb cluster is the radius of a disc that rolls along the right wall and the thumb cluster.
+    The disc fills the corner between them with an arc. The height runs from the top of the outline to the top corner of the thumb cluster.
+    bridge_gap closes the gaps between key cells that are narrower than this. The edges of the bridge are straight.
+    cutout_concave_radius rounds the inner corners of the keywell cutout, where the wall pokes into the cutout.
+    cutout_convex_radius rounds the outer corners of the cutout.
+    """
+
+    corner_radius: float = 5.0
+    sweep_ratio: float = 0.5
+    bridge_gap: float = 4.4
+    cutout_concave_radius: float = 0.5
+    cutout_convex_radius: float = 0.5
+
 
 class Outline:
-    def __init__(self, switch: Switch, keys: ErgoKeys, wall_thickness=1.8, additional_top_space=10):
+    def __init__(self, switch: Switch, keys: ErgoKeys, wall_thickness=1.8, additional_top_space=10, spec: OutlineSpec = OutlineSpec()):
         self.switch = switch
         self.keys = keys
-        
+        self.spec = spec
+
         self.wall_thickness = wall_thickness
 
         self.cirque_recess_radius = 22
         self.cirque_recess_position = Vector(30, -24)
-        
+        self.has_cirque_notch = False
+
         self.d_x = switch.cap.d.X / 2 + 2*wall_thickness
         self.d_y = switch.cap.d.Y / 2 + 2*wall_thickness
 
-        self.keywell_sketch, fingers_sketch = self.create_keywell_outline()
-        # find left, right, top, bottom points
-        finger_outer_points = ShapeList({e.start_point() for e in fingers_sketch.edges()} | {e.end_point() for e in fingers_sketch.edges()})
-        self.left = finger_outer_points.sort_by(Axis.X)[0].X - self.wall_thickness
-        self.right = finger_outer_points.sort_by(Axis.X)[-1].X + self.wall_thickness
-        self.bottom = finger_outer_points.sort_by(Axis.Y)[0].Y - self.wall_thickness
-        self.top = finger_outer_points.sort_by(Axis.Y)[-1].Y + self.wall_thickness + additional_top_space
+        self.keywell_sketch = self._create_keywell_outline()
+
+        finger_corners = [v for key in keys.finger_keys for v in self._cell(key, 1.5).vertices()]
+        self.left = min(v.X for v in finger_corners) - wall_thickness
+        self.right = max(v.X for v in finger_corners) + wall_thickness
+        self.bottom = min(v.Y for v in finger_corners) - wall_thickness
+        self.top = max(v.Y for v in finger_corners) + wall_thickness + additional_top_space
 
         self.bottom_left = Vector(self.left, self.bottom)
-        self.top_left = Vector(self.left, self.top) 
-        self.top_right = Vector(self.right, self.top) 
-        self.bottom_right = Vector(self.right, self.bottom) 
-        self.mid_right = (self.top_right + self.bottom_right) / 2
+        self.top_left = Vector(self.left, self.top)
+        self.top_right = Vector(self.right, self.top)
 
-        self.sketch = self.create_outline()
+        first_thumb = keys.thumb_clusters[0][0][0]
+        last_column = keys.thumb_clusters[0][-1]
+        self.thumb_bottom_left = first_thumb.p + Vector(-self.d_x + self.wall_thickness, -self.d_y + 1).rotate(Axis.Z, first_thumb.r)
+        self.thumb_top = last_column[-1].p + Vector(self.d_x, self.d_y).rotate(Axis.Z, last_column[-1].r)
+        self.sweep_radius = spec.sweep_ratio * (self.top - self.thumb_top.Y)
+
+        self._outer_face = self._create_outer_face()
+        self.sketch = sketch_of(self._outer_face)
+        self._inner_sketches: dict[float, Sketch] = {}
         self.inner_sketch = self.create_inner_outline(-self.wall_thickness)
 
-    def is_crossing_keywell(self, edges: list[Edge]) -> bool:
-        for e in edges: 
-            for edge in self.keywell_sketch.edges():
-                inter = e.intersect(edge)
-                if inter:
-                    return True
-        return False
+    def _cell(self, key, scale: float) -> Face:
+        return rect_face(key.p, self.d_x * scale, self.d_y * scale, key.r)
 
-    def create_outline(self):
-        bottom_left_thumb_key = self.keys.thumb_clusters[0][0][0]
-        bottom_right_thumb_key = self.keys.thumb_clusters[0][len(self.keys.thumb_clusters[0])-1][0]
+    def _create_keywell_outline(self) -> Sketch:
+        # the cells are 1.5 times the key dimensions, so there is no interference with the keycaps
+        cells = [self._cell(key, 1.5) for key in self.keys.keys]
+        regions = bridge_gaps(cells, self.spec.bridge_gap)
+        return sketch_of(*[
+            round_convex(close_concave(region, self.spec.cutout_concave_radius), self.spec.cutout_convex_radius)
+            for region in regions])
 
-        self.thumb_bottom_left = bottom_left_thumb_key.p + Vector(-self.d_x+self.wall_thickness, -self.d_y+1).rotate(Axis.Z, bottom_left_thumb_key.r)
-        self.thumb_bottom_right = bottom_right_thumb_key.p + Vector(self.d_x, -self.d_y).rotate(Axis.Z, bottom_right_thumb_key.r)
+    def create_keywell_outline(self) -> Sketch:
+        return self.keywell_sketch
 
-        
-        with BuildSketch() as outline:
-            with BuildLine() as line:
-                l1 = Line(self.bottom_left, self.top_left)
-                l2 = Line(self.top_left, self.top_right)
-                l3 = Line(self.top_right, self.mid_right)
+    def create_outline(self) -> Sketch:
+        return self.sketch
 
-                # just try every top thumb key until there's one that doesn't intersect the keywell
-                for thumb_col_index in range(len(self.keys.thumb_clusters[0])):
-                    top_right_thumb_key = self.keys.thumb_clusters[0][thumb_col_index][len(self.keys.thumb_clusters[0][thumb_col_index])-1]
-                    self.thumb_top = top_right_thumb_key.p + Vector(self.d_x, self.d_y).rotate(Axis.Z, top_right_thumb_key.r)
-                    t = TangentArc([self.mid_right, self.thumb_top], tangent=l3 % 1, mode=Mode.PRIVATE)
-                    if not self.is_crossing_keywell(t.edges()):
-                        insert(t)
-                        break
+    def _overlaps_keywell(self, face: Face) -> bool:
+        return any(overlap_area(face, cutout) > 1e-6 for cutout in self.keywell_sketch.faces())
 
-                l4 = Line(self.thumb_top, self.thumb_bottom_left)
-                l5 = Line(self.thumb_bottom_left, self.bottom_left)
-            make_face()
+    def _create_body(self) -> Face:
+        """Fingers and thumbs inside the walls, without the cirque notch and without rounding."""
+        thumb_cells = [self._cell(key, 2) for key in self.keys.thumb_keys]
+        # the right wall ends level with the thumb corner. The closing fills the corner between wall and cluster
+        shoulder = Vector(self.right, self.thumb_top.Y)
+        polygon = polygon_face([self.bottom_left, self.top_left, self.top_right, shoulder, self.thumb_top, self.thumb_bottom_left])
+        return close_concave(union_faces([polygon, *thumb_cells])[0], self.sweep_radius)
 
-            # add rectangles for all thumb keys to add them to the outline
-            for thumb_key in self.keys.thumb_keys:
-                with Locations(thumb_key.p):
-                    Rectangle(2*self.d_x, 2*self.d_y, rotation=thumb_key.r)
+    def _create_cirque_notch(self) -> Face | None:
+        """The round recess of the trackpad, in the first place that fits between a key and the thumb cluster.
 
-            # position the circle in a way that it touches self.thumb_bottom_left
-            # iterate over lowest keys to find a good place
-            found_position = False
-            for cluster in self.keys.clusters:
-                if found_position:
-                    break
-                for col in cluster:
-                    if found_position:
-                        break
-                    for key in col:
-                        if found_position:
-                            break
-
-                        key_bottom_right = key.p + Vector(self.d_x, -self.d_y).rotate(Axis.Z, key.r)
-                        midpoint = (key_bottom_right + self.thumb_bottom_left) / 2
-                        chord_vec = self.thumb_bottom_left - key_bottom_right
-
-                        loc = Vector(midpoint.X, self.cirque_recess_position.Y)
-                        with Locations(loc):
-                            c = Circle(self.cirque_recess_radius, mode=Mode.PRIVATE)
-                        if self.cirque_recess_radius < chord_vec.length / 2 and not self.is_crossing_keywell(c.edges()):
-                            # there's definitelly enough space for the circle here - just position it next to the thumb cluster
-                            insert(c, mode=Mode.SUBTRACT)
-                            self.cirque_recess_position = loc
-                            found_position = True
-            # fillet all vertices except self.mid_right: there's no corner, it's a tangent arc
-            # Vertex.__eq__ compares OCCT TShape identity, not position, so compare coordinates instead
-            fillet(
-                vertices().filter_by(
-                    lambda v: (Vector(v.X, v.Y, v.Z) - self.mid_right).length > 1e-6
-                ),
-                radius=1,
-            )
-        return outline.sketch
-    
-    def fillet_sharp_corners(self, radius: float, min_angle: float = 1.0):
-        """Fillet every sharp corner of the sketch that is currently being built.
-
-        Corners are handled one at a time in a fixed (x, y) order, and the vertices are looked up
-        again after every fillet: filleting a stale vertex changes the result depending on the
-        order in which OCCT happens to return the vertices, which differs from run to run.
+        The recess moves sideways to that place: cirque_recess_position changes.
         """
-        attempted: set[tuple[float, float]] = set()
+        for key in self.keys.keys:
+            key_bottom_right = key.p + Vector(self.d_x, -self.d_y).rotate(Axis.Z, key.r)
+            chord = self.thumb_bottom_left - key_bottom_right
+            if self.cirque_recess_radius >= chord.length / 2:
+                continue
+            center = Vector(((key_bottom_right + self.thumb_bottom_left) / 2).X, self.cirque_recess_position.Y)
+            notch = circle_face(center, self.cirque_recess_radius)
+            if not self._overlaps_keywell(notch):
+                self.cirque_recess_position = center
+                return notch
+        return None
 
-        def is_sharp(vertex: Vertex) -> bool:
-            position = Vector(vertex.X, vertex.Y, vertex.Z)
-            directions = []
-            for edge in edges():
-                if (edge.start_point() - position).length < 1e-6:
-                    directions.append(edge.tangent_at(0))
-                elif (edge.end_point() - position).length < 1e-6:
-                    directions.append(-edge.tangent_at(1))
-            return len(directions) == 2 and directions[0].get_angle(directions[1]) < 180 - min_angle
+    def _create_outer_face(self) -> Face:
+        face = self._create_body()
+        notch = self._create_cirque_notch()
+        if notch is not None:
+            self.has_cirque_notch = True
+            face = face.cut(notch)
+        return self._round(face)
 
-        while True:
-            candidates = sorted(
-                (v for v in vertices() if (round(v.X, 4), round(v.Y, 4)) not in attempted and is_sharp(v)),
-                key=lambda v: (round(v.X, 4), round(v.Y, 4)),
-            )
-            if not candidates:
-                return
-            vertex = candidates[0]
-            attempted.add((round(vertex.X, 4), round(vertex.Y, 4)))
-            try:
-                fillet(vertex, radius=radius)
-            except Exception:
-                # corners that cannot be rounded stay sharp
-                pass
+    def _round(self, face: Face) -> Face:
+        return round_convex(close_concave(face, self.spec.corner_radius), self.spec.corner_radius)
 
-    def create_inner_outline(self, offset_by=-1.8):
-        with BuildSketch() as inner_outline:
-            insert(self.sketch)
+    def create_inner_outline(self, offset_by=-1.8) -> Sketch:
+        """The outline moved inwards (negative) or outwards. Corners that turn sharp are rounded again."""
+        if offset_by not in self._inner_sketches:
+            face = grow(self._outer_face, offset_by) if offset_by != 0 else self._outer_face
+
+            if self.has_cirque_notch:
+                # a thicker wall around the notch
+                rect_y = 15
+                stadium_center = self.cirque_recess_position + (0, self.cirque_recess_radius - rect_y/3)
+                with BuildSketch() as stadium:
+                    with Locations(stadium_center):
+                        RectangleRounded(25, rect_y, radius=rect_y/2 - 0.01)
+                stadium_face = stadium.sketch.faces()[0]
+                if not self._overlaps_keywell(stadium_face):
+                    face = face.cut(stadium_face)
             if offset_by != 0:
-                offset(amount=offset_by)
-                self.fillet_sharp_corners(radius=1)
+                face = self._round(face)
+            self._inner_sketches[offset_by] = sketch_of(face)
+        return self._inner_sketches[offset_by]
 
-            rect_y = 15
-            with Locations(self.cirque_recess_position + (0, self.cirque_recess_radius - rect_y/3)):
-                r = RectangleRounded(25, rect_y, radius=rect_y/2 - 0.01, mode=Mode.PRIVATE)
-                if not self.is_crossing_keywell(r.edges()):
-                    RectangleRounded(25, rect_y, radius=rect_y/2 - 0.01, mode=Mode.SUBTRACT)
-
-        return inner_outline.sketch
-
-    def create_keywell_outline(self):
-        # how much should key-dims be scaled for the outline, so there's no interference with the keywell
-        clearance_scale = 1.5
-        with BuildSketch() as fingers_outline:
-            for key in self.keys.finger_keys:
-                with BuildSketch():
-                    with Locations(key.p):
-                        Rectangle(self.d_x*clearance_scale, self.d_y*clearance_scale, rotation=key.r)
-        with BuildSketch() as thumbs_outline:
-            for key in self.keys.thumb_keys:
-                with BuildSketch():
-                    with Locations(key.p):
-                        Rectangle(self.d_x*clearance_scale, self.d_y*clearance_scale, rotation=key.r)
-
-        with BuildSketch() as keywell_outline:
-            insert(merge_aligned_edges(fingers_outline.sketch))
-            insert(merge_aligned_edges(thumbs_outline.sketch))
-
-            # remove small areas
-            for wire in wires().filter_by(lambda w: w.area < 20):
-                with BuildLine() as line:
-                    insert(wire)
-                make_face()
-
-            # iterate over pairs of edges and fillet acute angles
-            t = edges()
-            pairs = zip(t, t[1:] + t[:1])
-            for e1, e2 in pairs:
-                angle = e1.tangent_at(0).get_angle(e2.tangent_at(0))
-                if angle < 30 or angle > 150:
-                    v = vertices().filter_by(lambda v: v in e1.vertices() and v in e2.vertices())
-                    if v:
-                        try:
-                            fillet(v, radius=0.7)
-                        except Exception as e:
-                            pass
-
-        return keywell_outline.sketch, fingers_outline.sketch
 
 def add_arrows(edges):
     with BuildSketch() as arrows:

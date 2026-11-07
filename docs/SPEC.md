@@ -32,6 +32,15 @@ R-22: No fixture collides with a part. The inserts are pressed into the keywell 
 R-23: The bottom plate keeps a wall of 0.5 mm around every bumper pocket. Every contact has a floor of `floor_under_pins` under its tip. The centre post has a hole.
 R-24: Every level of the case sits on a layer boundary, counted from the bed face (z = -below_z) in steps of `layer_height` (0.2). This covers `below_z`, `above_z`, the top of the bottom plate, the back of the XIAO, the power switch and the roof of the battery recess. A level moves only in the safe direction: the keywell top, the keyplate depth and the XIAO move up or out, the power switch and the battery roof move down. A level moves by less than one layer.
 
+## Outline
+
+R-25: The cutout of the keywell is one region. A gap between two key cells that is narrower than `bridge_gap` (4.4) is closed with straight edges. Rounding then leaves no gap narrower than twice `cutout_concave_radius` (2.0).
+R-26: No outline has a kink. This covers the cutout, the outer outline and the inner outlines. The inner corners of the cutout have a radius of at least `cutout_concave_radius`. The outer corners have at least `cutout_convex_radius` (0.5). The corners of the outer outline have `corner_radius` (1.0).
+R-27: Every keycap lies inside the cutout. The cutout lies inside the cavity, except for at most 0.2 mm2 at the rounded corners of the wall. The outer outline holds the cells of all keys, except for what its `corner_radius` takes off two corners of a cell.
+R-28: The round notch for the trackpad is cut in the first place where a circle of `cirque_recess_radius` fits between a key and the thumb cluster without touching the cutout. The compact variant has no such place and no notch. The inner outline keeps a thicker wall around the notch.
+R-29: The right wall meets the thumb cluster in an arc. A disc rolls along the wall and the cluster and fills the corner. Its radius is `sweep_ratio` (0.5) times the height of the wall above the thumb cluster. That height runs from the top of the outline to the top corner of the thumb cluster. On the full variant the outline stays within 2 mm2 of the former tangent arc.
+R-30: Building an outline and one inner outline takes at most 0.4 s.
+
 ## Layout
 
 R-08: The key positions come from ergogen. Each `ergogen/<name>.points.yaml` equals the output of ergogen for `ergogen/<name>.yml`. Run `task layout` to update it.
