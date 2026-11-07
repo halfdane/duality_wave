@@ -54,10 +54,11 @@ That is intended.
 
 `scripts/baseline.py` records the volume and the bounding box of every part and the time of every build stage.
 
-    PYTHONPATH=. python scripts/baseline.py write docs/baseline/stepN.json
-    PYTHONPATH=. python scripts/baseline.py compare docs/baseline/stepN.json
+    PYTHONPATH=. python scripts/baseline.py write build/baseline.json
+    PYTHONPATH=. python scripts/baseline.py compare build/baseline.json
 
-Use it to see what a change did to the geometry.
+Write the record before a change and compare after it, to see what the change did to the geometry.
+The record is not kept in the repository.
 Tests do not pin these numbers.
 
 ## Debug mode
