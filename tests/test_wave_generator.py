@@ -163,7 +163,7 @@ class SwitchPostCutoutTests(unittest.TestCase):
                     rotation = -angle if right else angle
                     placement = Location(position, (0, 0, rotation))
                     blank = Box(30, 30, 3).translate(position + Vector(0, 0, -4.4))
-                    bottom = add_switch_post_cutouts(blank, Choc, 2.9, [placement])
+                    bottom = add_switch_post_cutouts(blank, Choc, 2.9, [placement], PrintProfile().post_clearance)
                     self.assertTrue(bottom.is_valid)
                     self.assertEqual(len(bottom.solids()), 1)
                     for post in (Choc.posts.center, Choc.posts.p1, Choc.posts.p2):
@@ -175,7 +175,7 @@ class SwitchPostCutoutTests(unittest.TestCase):
                         overlap = bottom & terminal
                         self.assertLess(sum(s.volume for s in overlap.solids()) if overlap else 0, 1e-7)
                         center = Vector(post.p.X, -post.p.Y, -4).rotate(Axis.Z, rotation) + position
-                        edge = Vector(post.d.radius + 0.11, 0, 0).rotate(Axis.Z, rotation)
+                        edge = Vector(post.d.radius + PrintProfile().post_clearance + 0.01, 0, 0).rotate(Axis.Z, rotation)
                         self.assertFalse(bottom.is_inside(center))
                         self.assertTrue(bottom.is_inside(center + edge))
 
@@ -183,6 +183,18 @@ class SwitchPostCutoutTests(unittest.TestCase):
                     mirrored_terminal = mirrored_terminal.rotate(Axis.Z, rotation) + position
                     self.assertTrue(bottom.is_inside(mirrored_terminal))
                     self.assertTrue(bottom.is_inside(position + Vector(0, 0, -5.3)))
+
+    def test_post_clearance_sets_the_radius_of_the_hole(self):
+        position = Vector(30, 20, 0)
+        blank = Box(30, 30, 3).translate(position + Vector(0, 0, -4.4))
+        post = Choc.posts.center
+        for clearance in (0.05, 0.3):
+            with self.subTest(clearance=clearance):
+                bottom = add_switch_post_cutouts(blank, Choc, 2.9, [Location(position)], clearance)
+                center = Vector(post.p.X, -post.p.Y, -4) + position
+                radius = post.d.radius + clearance
+                self.assertFalse(bottom.is_inside(center + Vector(radius - 0.02, 0, 0)))
+                self.assertTrue(bottom.is_inside(center + Vector(radius + 0.02, 0, 0)))
 
 
 if __name__ == "__main__":

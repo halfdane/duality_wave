@@ -36,7 +36,8 @@ def build_keyplate(ctx: CaseContext, dbg=NullScope()) -> Part:
 
 def _cut_fasteners(ctx: CaseContext, dbg) -> None:
     print("  fastener holes...")
-    fastener_holes = circle_sketch(ctx.dims.fastener_positions, ctx.screw.mount.clearance.radius)
+    hole_radius = ctx.screw.dims.shaft.radius + ctx.dims.print_profile.screw_clearance
+    fastener_holes = circle_sketch(ctx.dims.fastener_positions, hole_radius)
     extrude(to_extrude=fastener_holes.sketch, amount=-ctx.dims.keyplate_z, mode=Mode.SUBTRACT)
     dbg.note("fastener holes", fastener_holes)
 

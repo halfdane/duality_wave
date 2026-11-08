@@ -29,6 +29,10 @@ class PrintProfile:
     magnet_spacer_gap: float = 0.2
     battery_clearance: float = 0.02
     bumper_clearance: float = 0.1
+    # holes in the bottom plate: around a switch post, around the screw shaft, around the screw head
+    post_clearance: float = 0.1
+    screw_clearance: float = 0.2
+    screw_head_clearance: float = 0.1
 
     insert_pilot_radius: float = 1.6
 

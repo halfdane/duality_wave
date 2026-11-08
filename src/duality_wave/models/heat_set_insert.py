@@ -11,19 +11,10 @@ class HeatSetInsertDimensions:
     bore: RoundDimensions = RoundDimensions(1.0, 2.0)
 
 
-@dataclass
-class HeatSetInsertMountDimensions:
-    pilot: RoundDimensions
-
-
 class HeatSetInsert:
     dims = HeatSetInsertDimensions()
 
-    def __init__(self, pilot_radius: float):
-        self.mount = HeatSetInsertMountDimensions(
-            pilot=RoundDimensions(pilot_radius, 2.2),
-        )
-
+    def __init__(self):
         with BuildPart() as model:
             Cylinder(self.dims.d.radius, self.dims.d.Z)
             Cylinder(self.dims.bore.radius, self.dims.bore.Z, mode=Mode.SUBTRACT)

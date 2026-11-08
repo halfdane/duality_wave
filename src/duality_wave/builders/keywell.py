@@ -42,7 +42,7 @@ def _cut_cavity(ctx: CaseContext) -> None:
 def _cut_insert_pilots(ctx: CaseContext, dbg) -> None:
     print("  heat-set insert pilots...")
     dims = ctx.dims
-    insert_pilots = circle_sketch(dims.fastener_positions, ctx.insert.mount.pilot.radius, Plane.XY.offset(dims.heat_insert_z))
+    insert_pilots = circle_sketch(dims.fastener_positions, dims.print_profile.insert_pilot_radius, Plane.XY.offset(dims.heat_insert_z))
     extrude(to_extrude=insert_pilots.sketch, amount=-20, mode=Mode.SUBTRACT)
     dbg.note("insert pilots", insert_pilots)
 
@@ -50,7 +50,8 @@ def _cut_insert_pilots(ctx: CaseContext, dbg) -> None:
 def _cut_fastener_holes(ctx: CaseContext, dbg) -> None:
     print("  fastener holes...")
     dims = ctx.dims
-    fastener_holes = circle_sketch(dims.fastener_positions, ctx.screw.mount.clearance.radius, Plane.XY.offset(-dims.below_z))
+    hole_radius = ctx.screw.dims.shaft.radius + dims.print_profile.screw_clearance
+    fastener_holes = circle_sketch(dims.fastener_positions, hole_radius, Plane.XY.offset(-dims.below_z))
     extrude(to_extrude=fastener_holes.sketch, amount=ctx.screw.dims.shaft.Z + ctx.screw.dims.head.Z + 0.1, mode=Mode.SUBTRACT)
     dbg.note("fastener holes", fastener_holes)
 

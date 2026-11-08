@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from build123d import BuildSketch, Box, Circle, Plane, Rectangle, Sketch, Solid, Vector
 
 from duality_wave.builders.accessories import build_fixtures
+from duality_wave.builders.bottom import build_bottom
 from duality_wave.builders.export import export_steps
 from duality_wave.builders.side import Side
 from duality_wave.builders.keywell import build_keywell
@@ -19,6 +20,7 @@ from duality_wave.models.choc import Choc
 from duality_wave.models.heat_set_insert import HeatSetInsert
 from duality_wave.models.keys import Point
 from duality_wave.models.model_types import PosAndDims, RectDimensions, RoundDimensions
+from duality_wave.models.print_profile import PrintProfile
 from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
 from tests import ROOT
@@ -142,6 +144,32 @@ class KeywellRimTests(unittest.TestCase):
         self.assertEqual(len(self.chamfered.solids()), 1)
 
 
+class BottomFitTests(unittest.TestCase):
+    def bottom(self, **fit):
+        ctx = make_context(profile=replace(PrintProfile(), **fit))
+        return ctx, build_bottom(ctx)
+
+    def test_screw_clearance_sets_the_radius_of_the_hole(self):
+        for clearance in (0.1, 0.3):
+            with self.subTest(clearance=clearance):
+                ctx, bottom = self.bottom(screw_clearance=clearance)
+                center = ctx.dims.fastener_positions[0]
+                z = -ctx.dims.below_z + ctx.dims.bottom_plate_z - 0.1
+                radius = LowProfileScrew.dims.shaft.radius + clearance
+                self.assertFalse(bottom.is_inside(Vector(center.X + radius - 0.02, center.Y, z)))
+                self.assertTrue(bottom.is_inside(Vector(center.X + radius + 0.02, center.Y, z)))
+
+    def test_screw_head_clearance_sets_the_radius_of_the_recess(self):
+        for clearance in (0.05, 0.3):
+            with self.subTest(clearance=clearance):
+                ctx, bottom = self.bottom(screw_head_clearance=clearance)
+                center = ctx.dims.fastener_positions[0]
+                z = -ctx.dims.below_z + LowProfileScrew.dims.head.Z / 2
+                radius = LowProfileScrew.dims.head.radius + clearance
+                self.assertFalse(bottom.is_inside(Vector(center.X + radius - 0.02, center.Y, z)))
+                self.assertTrue(bottom.is_inside(Vector(center.X + radius + 0.02, center.Y, z)))
+
+
 class DebugScopeTests(unittest.TestCase):
     def test_scope_nests_what_it_notes(self):
         debug = DebugScope()
@@ -186,7 +214,7 @@ def fixture_context(magnets=True):
     )
     return SimpleNamespace(
         dims=dims, switch=Choc(), keys=None,
-        bumper=RubberBumper(), insert=HeatSetInsert(1.9), screw=LowProfileScrew())
+        bumper=RubberBumper(), insert=HeatSetInsert(), screw=LowProfileScrew())
 
 
 class FixtureTests(unittest.TestCase):

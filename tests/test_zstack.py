@@ -152,7 +152,8 @@ def test_the_power_switch_keeps_off_the_battery(compact):  # R-22
 def test_the_bottom_plate_keeps_its_walls_around_the_pockets_and_under_the_pins(compact):  # R-23
     ctx = make_context(compact)
     dims, switch = ctx.dims, ctx.switch
-    bottom = add_switch_post_cutouts(build_bottom(ctx), switch, dims.keyplate_z, Side.left(ctx).switch_locations)
+    bottom = add_switch_post_cutouts(
+        build_bottom(ctx), switch, dims.keyplate_z, Side.left(ctx).switch_locations, dims.print_profile.post_clearance)
     z0 = -dims.below_z
 
     web = 0.5
@@ -197,8 +198,8 @@ def test_hand_placed_holes_keep_a_wall_to_each_other_and_to_the_edges():  # R-31
     dims, outline = ctx.dims, ctx.outline
     profile = dims.print_profile
     screws, magnets, bumpers = dims.fastener_positions, dims.magnet_positions, dims.bumper_locations
-    head_recess = ctx.screw.mount.head_recess.radius
-    pilot = ctx.insert.mount.pilot.radius
+    head_recess = ctx.screw.dims.head.radius + profile.screw_head_clearance
+    pilot = profile.insert_pilot_radius
     magnet = dims.magnet_d.radius + profile.magnet_clearance
     bumper = ctx.bumper.dims.radius + profile.bumper_clearance
 

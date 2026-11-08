@@ -13,6 +13,7 @@ from duality_wave.models.choc import Choc
 from duality_wave.models.heat_set_insert import HeatSetInsert
 from duality_wave.models.keys import ErgoKeys, get_points
 from duality_wave.models.outline import Outline, OutlineSpec
+from duality_wave.models.print_profile import PrintProfile
 from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
 from tests import COMPACT_LAYOUT, WAVE_LAYOUT
@@ -28,18 +29,18 @@ def make_outline(compact: bool = False, spec: OutlineSpec = OutlineSpec(), point
         Choc(), keys, wall_thickness=dimensions.wall_thickness, additional_top_space=dimensions.additional_top_space, spec=spec)
 
 
-def make_inputs(compact: bool = False):
-    """Switch, keys, dimensions and outline of the full or the compact variant."""
+def make_inputs(compact: bool = False, profile: PrintProfile | None = None):
+    """Switch, keys, dimensions and outline of the full or the compact variant. The default print profile is the standard one."""
     outline = make_outline(compact)
     dimensions = CompactCaseDimensions if compact else CaseDimensions
-    return outline.switch, outline.keys, dimensions(switch=outline.switch, outline=outline, keys=outline.keys), outline
+    extra = {} if profile is None else {"print_profile": profile}
+    return outline.switch, outline.keys, dimensions(switch=outline.switch, outline=outline, keys=outline.keys, **extra), outline
 
 
-def make_context(compact: bool = False) -> CaseContext:
+def make_context(compact: bool = False, profile: PrintProfile | None = None) -> CaseContext:
     """The context for one part builder. This builds no case."""
-    switch, keys, dims, outline = make_inputs(compact)
-    return CaseContext(
-        switch, keys, dims, outline, RubberBumper(), HeatSetInsert(dims.print_profile.insert_pilot_radius), LowProfileScrew())
+    switch, keys, dims, outline = make_inputs(compact, profile)
+    return CaseContext(switch, keys, dims, outline, RubberBumper(), HeatSetInsert(), LowProfileScrew())
 
 
 @cache

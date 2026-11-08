@@ -29,7 +29,7 @@ class WaveCase:
         self.viewer = viewer if viewer is not None else (OcpViewer() if debug else NullViewer())
         self.ctx = ctx = CaseContext(
             switch, keys, caseDimensions, outline,
-            RubberBumper(), HeatSetInsert(caseDimensions.print_profile.insert_pilot_radius), LowProfileScrew())
+            RubberBumper(), HeatSetInsert(), LowProfileScrew())
 
         self.magnet_spacer = magnet_spacer(caseDimensions.magnet_spacer) if caseDimensions.magnet_positions else None
 

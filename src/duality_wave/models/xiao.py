@@ -45,9 +45,8 @@ class Xiao:
 
     plane: Plane
 
-    def __init__(self, plane=Plane.XY, clearance=0.01):
+    def __init__(self, plane=Plane.XY):
         self.plane = plane
-        self.clearance = clearance
 
         self.model = self._create_model()
         self.reset_button_bump = self._create_reset_button_bump()
@@ -118,20 +117,20 @@ class Xiao:
 
         return reset_bump.sketch
 
-    def _create_usb_cut_sketch(self):
+    def _create_usb_cut_sketch(self, clearance: float):
         with BuildSketch() as usb_sketch:
             with Locations((0, Xiao.dims.d.Z/2)):
                 with Locations((0, Xiao.usb.d.Z/2)):
-                    RectangleRounded(Xiao.usb.d.X + 2*self.clearance, Xiao.usb.d.Z+2*self.clearance, radius=Xiao.usb.radius+self.clearance)
+                    RectangleRounded(Xiao.usb.d.X + 2*clearance, Xiao.usb.d.Z+2*clearance, radius=Xiao.usb.radius+clearance)
         return usb_sketch.sketch
 
-    def _create_free_usb_space_sketch(self):
+    def _create_free_usb_space_sketch(self, clearance: float):
         with BuildSketch() as usb_sketch:
             with Locations((0, Xiao.dims.d.Z/2)):
                 with Locations((0, Xiao.usb.d.Z/2)):
-                    RectangleRounded(Xiao.usb.d.X + 2*self.clearance, Xiao.usb.d.Z+2*self.clearance, radius=Xiao.usb.radius+self.clearance)
+                    RectangleRounded(Xiao.usb.d.X + 2*clearance, Xiao.usb.d.Z+2*clearance, radius=Xiao.usb.radius+clearance)
                 with Locations((0, 0.25*Xiao.usb.d.Z)):
-                    Rectangle(Xiao.usb.d.X + 2*self.clearance, Xiao.usb.d.Z/2+2*self.clearance)
+                    Rectangle(Xiao.usb.d.X + 2*clearance, Xiao.usb.d.Z/2+2*clearance)
         return usb_sketch.sketch
     
     def _create_usb_cut_sketch_plane(self, model):
@@ -139,20 +138,21 @@ class Xiao:
         boardfront:Face = model.faces().sort_by(front_dir_axis).filter_by(Axis.Y)[1]
         return boardfront
     
-    def _usb_cutter(self, sketch: Sketch) -> Part:
+    def _usb_cutter(self, sketch: Sketch, clearance: float) -> Part:
         """The tunnel for the USB plug. It runs from the board front into the case and out to the wall."""
         with BuildPart() as cutter:
             with BuildSketch(self.usb_cut_sketch_plane) as cut_sketch:
                 insert(sketch)
             extrude(to_extrude=cut_sketch.sketch, amount=7)
-            extrude(to_extrude=cut_sketch.sketch, amount=-(self.usb.d.Y - self.usb.forward_y + self.clearance))
+            extrude(to_extrude=cut_sketch.sketch, amount=-(self.usb.d.Y - self.usb.forward_y + clearance))
         return cutter.part
 
-    def add_usb_cutouts(self, part: Part):
-        return part.cut(self._usb_cutter(self._create_usb_cut_sketch()))
+    def add_usb_cutouts(self, part: Part, clearance: float):
+        """Cut the USB tunnel. The clearance is per side: it widens the plug outline on every side."""
+        return part.cut(self._usb_cutter(self._create_usb_cut_sketch(clearance), clearance))
 
-    def add_large_usb_cutouts(self, part: Part):
-        return part.cut(self._usb_cutter(self._create_free_usb_space_sketch()))
+    def add_large_usb_cutouts(self, part: Part, clearance: float):
+        return part.cut(self._usb_cutter(self._create_free_usb_space_sketch(clearance), clearance))
 
     def add_reset_lever(self, part: Part, plane: Plane):
         dist = plane.origin.Z - self.plane.origin.Z + self.dims.d.Z + self.components.reset_button_d.d.Z
@@ -190,11 +190,11 @@ if __name__ == "__main__":
     model = xiao.model
     reset_button_lever_sketch = xiao._create_reset_button_lever_sketch()
     reset_button_bump = xiao.reset_button_bump
-    free_usb_space_sketch = xiao._create_free_usb_space_sketch()
+    free_usb_space_sketch = xiao._create_free_usb_space_sketch(clearance=0.02)
 
     with BuildPart(xiao_plane) as usb_cut_3d:
         with BuildSketch(xiao.usb_cut_sketch_plane) as cut_sketch:
-            cut = xiao._create_usb_cut_sketch()
+            cut = xiao._create_usb_cut_sketch(clearance=0.02)
             insert(cut)
         extrude(amount=7, mode=Mode.ADD)
     # usb_cut.part = xiao.plane * usb_cut.part

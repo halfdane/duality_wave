@@ -85,7 +85,7 @@ def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures
     fixtures are the accessories of the left half, or None when nobody wants to see them.
     """
     dims = ctx.dims
-    xiao = Xiao(side.xiao_plane, clearance=dims.clearance)
+    xiao = Xiao(side.xiao_plane)
 
     accessories = None
     if fixtures is not None:
@@ -94,14 +94,15 @@ def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures
         viewer.push(accessories.as_dict(side.suffix), name=f"accessories_{side.name}")
 
     keywell = engrave_emblem(side.mirrored(blanks.keywell), dims, side.emblem_spot, side.emblem)
-    keywell = xiao.add_usb_cutouts(keywell)
+    keywell = xiao.add_usb_cutouts(keywell, dims.clearance)
     viewer.push(keywell, name=f"keywell_{side.name}")
 
-    keyplate = xiao.add_large_usb_cutouts(side.mirrored(blanks.keyplate))
+    keyplate = xiao.add_large_usb_cutouts(side.mirrored(blanks.keyplate), dims.clearance)
     viewer.push(keyplate, name=f"keyplate_{side.name}")
 
-    bottom = add_switch_post_cutouts(side.mirrored(blanks.bottom), ctx.switch, dims.keyplate_z, side.switch_locations)
-    bottom = xiao.add_large_usb_cutouts(bottom)
+    bottom = add_switch_post_cutouts(
+        side.mirrored(blanks.bottom), ctx.switch, dims.keyplate_z, side.switch_locations, dims.print_profile.post_clearance)
+    bottom = xiao.add_large_usb_cutouts(bottom, dims.clearance)
     bottom = xiao.add_reset_lever(
         bottom, side.xiao_plane.offset(dims.keyplate_z + dims.bottom_plate_z + dims.xiao_position.Z))
     viewer.push(bottom, name=f"bottom_{side.name}")

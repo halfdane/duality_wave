@@ -12,16 +12,8 @@ class ScrewDimensions:
     head: RoundDimensions = RoundDimensions(2.25, 1)
 
 
-@dataclass
-class ScrewMountDimensions:
-    clearance: RoundDimensions = RoundDimensions(ScrewDimensions().shaft.radius+0.2, 0)
-    head_recess: RoundDimensions = RoundDimensions(radius=ScrewDimensions().head.radius+0.1, 
-                                                   z=ScrewDimensions().head.Z)
-
-
 class LowProfileScrew:
     dims = ScrewDimensions()
-    mount = ScrewMountDimensions()
 
     def __init__(self):
         with BuildPart() as model:
