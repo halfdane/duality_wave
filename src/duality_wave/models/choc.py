@@ -92,7 +92,7 @@ class Choc(Switch):
 
     clamp_clearance_z: float = BottomHousingDimensions.d.Z - ClampDimensions.d.Z
 
-    def __init__(self, show_model=False, pin_len: float = 2.0, side_post_len: float = 2.0):
+    def __init__(self, show_model=False, pin_len: float = 2.0, side_post_len: float = 0.0):
         """pin_len: length of the two contacts under the housing. side_post_len: length of the two small side posts."""
         self.posts = PostDimensions().with_lengths(pin_len, side_post_len)
         self.below = BelowDimensions(RectDimensions(
