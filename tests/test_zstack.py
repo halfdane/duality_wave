@@ -42,7 +42,7 @@ def test_a_post_of_length_zero_does_not_exist():  # R-19
 
 def test_the_centre_post_keeps_its_length_and_does_not_set_the_depth_below_the_housing():  # R-19
     for pin_len in (0.5, 2.0, 3.0):
-        switch = Choc(pin_len=pin_len)
+        switch = Choc(pin_len=pin_len, side_post_len=0)
         assert switch.posts.center.d.Z == pytest.approx(PostDimensions().center.d.Z)
         assert switch.below.d.Z == pytest.approx(switch.bottom_housing.d.Z + pin_len)
 
