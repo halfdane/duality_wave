@@ -38,6 +38,17 @@ tasks:
     cmds:
       - python -m duality_wave.cli.build
 
+  view:
+    desc: Show the case in a pose in the viewer. Run `task view -- transport`.
+    summary: |
+      Builds the full case and shows it in the viewer in the given pose
+      (duality_wave.cli.view). It replaces what the viewer shows and exports nothing.
+      Poses: assembled, transport (right half flipped onto the left half) and
+      exploded (left half, one layer after the other along Z).
+      Run `task viewer` in another shell first.
+    cmds:
+      - python -m duality_wave.cli.view {{.CLI_ARGS}}
+
   compact:
     desc: Build the compact case variant (duality_wave.cli.compact) and export STEP files to build/step.
     cmds:

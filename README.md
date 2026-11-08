@@ -150,6 +150,7 @@ The dev shell installs the Python dependencies with `uv`.
 | --- | --- |
 | `task viewer` | Starts the OCP CAD viewer on port 3939. |
 | `task build` | Builds the case with `duality_wave.cli.build` and exports STEP files. |
+| `task view -- <pose>` | Shows the case in the viewer in the pose `assembled`, `transport` or `exploded`. Exports nothing. |
 | `task compact` | Builds the compact variant with `duality_wave.cli.compact`. |
 | `task coupons` | Exports `build/coupons.stl` and previews the coupons in the viewer. |
 | `task coupons-engraving` | Exports `build/coupons_engraving.stl` and previews the emblem coupons in the viewer. |

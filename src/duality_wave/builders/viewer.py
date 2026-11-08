@@ -44,7 +44,22 @@ class NullViewer:
     def __init__(self):
         self.debug = NullScope()
 
-    def push(self, obj, name: str) -> None:
+    def push(self, obj, name: str, color: str | None = None) -> None:
+        pass
+
+    def push_debug(self) -> None:
+        pass
+
+
+class SilentViewer:
+    """Builds the accessories as well, but shows nothing. The caller takes the parts from the case."""
+
+    enabled = True
+
+    def __init__(self):
+        self.debug = NullScope()
+
+    def push(self, obj, name: str, color: str | None = None) -> None:
         pass
 
     def push_debug(self) -> None:
@@ -59,10 +74,19 @@ class OcpViewer:
     def __init__(self):
         self.debug = DebugScope()
 
-    def push(self, obj, name: str) -> None:
+    def push(self, obj, name: str, color: str | None = None) -> None:
         from ocp_vscode import push_object
 
-        push_object(obj, name=name)
+        if color is None:
+            push_object(obj, name=name)
+        else:
+            push_object(obj, name=name, color=color)
+
+    def clear(self) -> None:
+        """Remove everything the viewer shows."""
+        from ocp_vscode import show_clear
+
+        show_clear()
 
     def push_debug(self) -> None:
         """The debug group starts hidden. A mode overrides the visibility the user set in the viewer, so it is only
