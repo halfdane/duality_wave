@@ -82,6 +82,8 @@ The Python code is the package `duality_wave` in `src/duality_wave/`.
 - `builders/side.py` places the parts on the left or right half.
 - `builders/accessories.py` builds the models that are only shown in the viewer.
 - `builders/viewer.py` decides what is pushed to the viewer.
+- `builders/parts.py` lists the part groups with their colour, their metal flag and their layer in the exploded view.
+- `builders/poses.py` moves the finished parts into the transport position and the exploded view.
 - `geometry2d.py` holds the 2D helpers: `grow`, `close_concave`, `round_convex` and `bridge_gaps`.
 - `layout.py` reads the `*.points.yaml` files that ergogen writes.
 - `models/` holds the part models and the outline.
