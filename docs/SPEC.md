@@ -36,6 +36,8 @@ R-31: The screws, the magnets and the bumpers keep a wall of at least `min_wall`
 R-32: A magnet pocket opens into the cavity and ends under a skin. The skin is at least `magnet_skin` thick and the top face of the keywell has no hole over a magnet. The pocket holds two stacked magnets and the spacer disc.
 R-33: A spacer disc fills the pocket between the keyplate and the magnets. It leaves `magnet_spacer_gap` free and is narrower than the pocket, so that it falls out by itself. The keyplate carries the whole disc.
 
+R-34: Each half carries one emblem in the straight outer wall in front of the lowest key of the pinky column, left of the trackpad notch. The left half carries the symbol and the right half carries the invader. The emblem is a pocket in the wall, never in the top face or the bed face. It lies clear of the rim chamfers and ends its rows on layer boundaries, counted from the bed. The pocket is `engraving_lines` lines deep. The pixels of the invader are `engraving_gap` apart. The roof of every pocket slopes at 45 degrees when `engraving_roof_slope` is set, so no pocket needs a bridge or support. The wall behind a pocket keeps at least `min_wall`.
+
 ## Outline
 
 R-25: The cutout of the keywell has no gap narrower than `bridge_gap` between key cells. Such a gap is closed with straight edges. A wider gap stays open.

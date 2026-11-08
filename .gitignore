@@ -13,3 +13,4 @@ __pycache__
 /REVIEW.md
 .pytest_cache
 .ruff_cache
+docs/FLATBOARD_SALVAGE.md

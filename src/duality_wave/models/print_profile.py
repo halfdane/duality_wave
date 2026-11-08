@@ -35,6 +35,15 @@ class PrintProfile:
     # thinnest wall between two holes or between a hole and an edge: two perimeters of a 0.4 mm nozzle
     min_wall: float = 0.8
 
+    # width of one extruded line
+    line_width: float = 0.4
+    # depth of the emblems in the outer wall, in lines. A whole number of lines leaves the perimeters unsqueezed
+    engraving_lines: int = 1
+    # pitch of the pixels of the emblems. It rounds up to a whole number of layers, so the rows end on layer boundaries
+    engraving_pitch: float = 1.2
+    # roof of every engraved pocket slopes at 45 degrees, so the pocket needs no bridge and no support
+    engraving_roof_slope: bool = True
+
     # radius of the circles that relieve the corners of the switch cutouts (0 = no relief)
     switch_corner_relief: float = 0.3
 
@@ -44,6 +53,15 @@ class PrintProfile:
     plate_edge_chamfer: float = 0.1
     # chamfer where a hole opens towards the print bed (switch cutouts) and where the magnets enter their pockets
     mouth_chamfer: float = 0.2
+
+    @property
+    def engraving_depth(self) -> float:
+        return self.engraving_lines * self.line_width
+
+    @property
+    def engraving_gap(self) -> float:
+        """The pixels of an emblem are one line apart. A narrower ridge does not print."""
+        return self.line_width
 
     def snap_up(self, height: float) -> float:
         """Round a height up to a whole number of layers."""

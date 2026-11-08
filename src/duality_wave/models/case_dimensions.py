@@ -101,7 +101,7 @@ class CaseDimensions(WaveDimensions):
         return self.snap_z(self.above_z - self.print_profile.magnet_skin, up=False)
 
     def place_fixtures(self, switch: Switch, outline: Outline, keys: ErgoKeys) -> None:
-        """Set fastener_positions, magnet_positions, bumper_locations and space_invader."""
+        """Set fastener_positions, magnet_positions and bumper_locations."""
         magnet_z = self.magnet_z
         bumpers_radius = self.bumper_radius
 
@@ -145,10 +145,6 @@ class CaseDimensions(WaveDimensions):
             (keys.finger_clusters[0][2][0].p + keys.finger_clusters[0][2][1].p) / 2 + (7, -3),
         ]
 
-        self.space_invader: Location = Location(
-            outline.cirque_recess_position + (outline.cirque_recess_radius-2, outline.cirque_recess_radius),
-            (0, 0, -40))
-
 
 @dataclass
 class CompactCaseDimensions(CaseDimensions):
@@ -181,5 +177,3 @@ class CompactCaseDimensions(CaseDimensions):
             outline.bottom_left + Vector(bumpers_radius, bumpers_radius-3),
             outline.top_left + Vector(bumpers_radius + 1, -bumpers_radius - 20),
         ]
-
-        self.space_invader: Location = Location((24, -6), (0, 0, -50))

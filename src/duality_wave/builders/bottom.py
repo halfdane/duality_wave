@@ -4,7 +4,6 @@ from build123d import Shape
 from duality_wave.builders.common import CaseContext, circle_sketch, powerswitch_plane
 from duality_wave.builders.viewer import NullScope
 from duality_wave.models.power_switch import PowerSwitch
-from duality_wave.models.space_invader import SpaceInvader
 from duality_wave.models.switch import Switch
 from duality_wave.models.xiao import Xiao
 
@@ -38,7 +37,6 @@ def build_bottom(ctx: CaseContext, dbg=NullScope()) -> Part:
         _cut_xiao_support(ctx, dbg)
         _cut_bumpers(ctx)
         _cut_powerswitch(ctx, dbg)
-        _engrave_invader(ctx, dbg)
 
     return bottom.part
 
@@ -91,20 +89,6 @@ def _cut_powerswitch(ctx: CaseContext, dbg) -> None:
     powerswitch_lever_cut = extrude(to_extrude=powerswitch_lever_sketch.sketch, amount=dims.powerswitch_position.Z + dims.below_z, mode=Mode.SUBTRACT)
     dbg.note("powerswitch_lever_cut", powerswitch_lever_cut)
     chamfer(powerswitch_lever_cut.edges().group_by(Axis.Z)[0], length=1.5, length2=0.5)
-
-
-def _engrave_invader(ctx: CaseContext, dbg) -> None:
-    print("  space invader...")
-    dims = ctx.dims
-    if dims.space_invader is None:
-        return
-    # Build the invader outside Locations. build123d 0.13 would apply the location a second time.
-    invader = SpaceInvader(total_height=10).sketch
-    with BuildSketch(Plane.XY.offset(-dims.below_z)) as invader_sketch:
-        with Locations(dims.space_invader):
-            insert(invader)
-    extrude(to_extrude=invader_sketch.sketch, amount=0.5, mode=Mode.SUBTRACT)
-    dbg.note("invader_sketch", invader_sketch)
 
 
 def switch_post_cutter(switch: Switch, keyplate_z: float, placements: list[Location]) -> Part:

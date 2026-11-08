@@ -4,7 +4,6 @@ from duality_wave.builders.common import CaseContext, circle_sketch
 from duality_wave.builders.thumb_cut import ThumbCutSpec, chamfer_rim, thumb_cutter
 from duality_wave.builders.viewer import NullScope
 from duality_wave.models.features import magnet_recess_cutter
-from duality_wave.models.symbol import Symbol
 
 
 def build_keywell(ctx: CaseContext, dbg=NullScope(), thumb_spec: ThumbCutSpec = ThumbCutSpec()) -> Part:
@@ -25,7 +24,6 @@ def build_keywell(ctx: CaseContext, dbg=NullScope(), thumb_spec: ThumbCutSpec = 
         _cut_fastener_holes(ctx, dbg)
         _cut_battery(ctx, dbg)
         _cut_magnets(ctx, dbg)
-        _engrave_symbol(ctx, dbg)
 
     return keywell.part
 
@@ -80,14 +78,3 @@ def _cut_magnets(ctx: CaseContext, dbg) -> None:
     insert(magnet_recesses, mode=Mode.SUBTRACT)
     dbg.note("magnet_recesses", magnet_recesses)
 
-
-def _engrave_symbol(ctx: CaseContext, dbg) -> None:
-    print("  symbol...")
-    symbol_height = 20
-    # Build the symbol outside Locations. build123d 0.13 would apply the location a second time.
-    symbol = Symbol(total_height=symbol_height).sketch
-    with BuildSketch(Plane.XY.offset(ctx.dims.above_z)) as symbol_sketch:
-        with Locations(ctx.outline.top_left + Vector(0.65 * symbol_height, -0.6 * symbol_height)):
-            insert(symbol)
-    extrude(to_extrude=symbol_sketch.sketch, amount=-0.5, mode=Mode.SUBTRACT)
-    dbg.note("symbol_sketch", symbol_sketch)

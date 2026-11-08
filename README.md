@@ -125,6 +125,11 @@ The case counters elephant foot with chamfers on the side that faces the print b
 `mouth_chamfer` sets the chamfer where switch cutouts open towards the bed and where the magnets enter their pockets.
 Sanding the plate edges along the z axis removes the layer ridges that rub on insertion.
 
+The left half carries a symbol and the right half carries a space invader in the front wall of the keywell.
+Both are shallow pockets in the outer wall, so the slicer needs no support for them.
+The roof of each pocket slopes at 45 degrees.
+`engraving_lines` and `line_width` set the depth, `engraving_pitch` sets the size of a pixel and `engraving_roof_slope` turns the slope off.
+
 ## Build from source
 
 Run `direnv allow` or `nix develop`.

@@ -5,6 +5,7 @@ from build123d import *
 from duality_wave.builders.accessories import Accessories, Fixtures, build_switches
 from duality_wave.builders.bottom import add_switch_post_cutouts
 from duality_wave.builders.common import CaseContext
+from duality_wave.builders.wall_engraving import WallSpot, engrave_emblem, find_wall_spot
 from duality_wave.models.xiao import Xiao
 
 
@@ -19,12 +20,15 @@ class Blanks:
 
 @dataclass(frozen=True)
 class Side:
-    """What differs between the two halves: where the keys and the XIAO sit, and the mirror that maps the left half onto it."""
+    """What differs between the two halves: where the keys and the XIAO sit, the mirror that maps the left half onto it,
+    and the emblem in the front wall."""
 
     name: str
     mirror_plane: Plane | None
     switch_locations: list[Location]
     xiao_plane: Plane
+    emblem: str
+    emblem_spot: WallSpot
 
     @property
     def suffix(self) -> str:
@@ -44,6 +48,8 @@ class Side:
             mirror_plane=None,
             switch_locations=[Location(key.p, (0, 0, key.r)) for key in ctx.keys.keys],
             xiao_plane=Plane(ctx.dims.xiao_position, x_dir=rotated.x_dir, z_dir=rotated.z_dir),
+            emblem="symbol",
+            emblem_spot=find_wall_spot(ctx.outline.sketch),
         )
 
     @staticmethod
@@ -58,6 +64,8 @@ class Side:
                 for key in ctx.keys.keys
             ],
             xiao_plane=Plane((offset - origin.X, origin.Y, origin.Z), x_dir=left.xiao_plane.x_dir, z_dir=left.xiao_plane.z_dir),
+            emblem="invader",
+            emblem_spot=left.emblem_spot.mirrored(offset),
         )
 
 
@@ -85,7 +93,8 @@ def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures
         accessories = Accessories(build_switches(ctx, side.switch_locations), xiao.model, side_fixtures)
         viewer.push(accessories.as_dict(side.suffix), name=f"accessories_{side.name}")
 
-    keywell = xiao.add_usb_cutouts(side.mirrored(blanks.keywell))
+    keywell = engrave_emblem(side.mirrored(blanks.keywell), dims, side.emblem_spot, side.emblem)
+    keywell = xiao.add_usb_cutouts(keywell)
     viewer.push(keywell, name=f"keywell_{side.name}")
 
     keyplate = xiao.add_large_usb_cutouts(side.mirrored(blanks.keyplate))

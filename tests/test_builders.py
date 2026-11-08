@@ -7,7 +7,7 @@ from pathlib import Path
 from dataclasses import replace
 from types import SimpleNamespace
 
-from build123d import BuildSketch, Box, Circle, Plane, Sketch, Solid, Vector
+from build123d import BuildSketch, Box, Circle, Plane, Rectangle, Sketch, Solid, Vector
 
 from duality_wave.builders.accessories import build_fixtures
 from duality_wave.builders.export import export_steps
@@ -242,7 +242,9 @@ class SideTests(unittest.TestCase):
     def context(self):
         keys = SimpleNamespace(keys=[Point(p=Vector(10, 5, 0), r=15), Point(p=Vector(30, 12, 0), r=-20)])
         dims = SimpleNamespace(xiao_position=Vector(12, 60, -1.5), right_side_offset=200)
-        return SimpleNamespace(keys=keys, dims=dims)
+        with BuildSketch() as outline:
+            Rectangle(40, 30)
+        return SimpleNamespace(keys=keys, dims=dims, outline=SimpleNamespace(sketch=outline.sketch))
 
     def test_right_keys_are_the_left_keys_mirrored(self):
         ctx = self.context()
