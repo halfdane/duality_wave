@@ -113,6 +113,17 @@ The coupons fit on a 180 mm print bed.
 | E, skin and mate | How thick can the skin over the magnets be? The label is the skin in mm. Put a stack of two magnets in a pocket, then hold a loose magnet on the skin side. |
 
 Print the mate of the skin coupon too.
+
+The emblems in the front wall have their own plate.
+Run `task coupons-engraving` and print `build/coupons_engraving.stl`.
+It holds four wall slabs, one for each combination of pocket depth (0.4 and 0.8 mm) and roof (sloped and straight).
+Each slab carries three space invaders with a pixel gap of 0, 0.2 and 0.4 mm, and the symbol.
+The label under an invader is its gap.
+The label under the symbol is the depth in mm and the roof (`45` is sloped).
+The slabs stand on their rim, like the wall of the keywell.
+The emblems are upside down on the plate, because the keywell prints upside down.
+Choose the shallowest depth that you can still read, and the roof and gap that print without strings.
+Then set `engraving_lines`, `engraving_roof_slope` and `engraving_pitch` in the `PrintProfile`.
 Put magnets in the pockets of both skin coupons, with opposite polarity.
 Turn one coupon over about its long side and hold the skins together.
 The pull through two skins is the pull between the two halves.
@@ -141,6 +152,7 @@ The dev shell installs the Python dependencies with `uv`.
 | `task build` | Builds the case with `duality_wave.cli.build` and exports STEP files. |
 | `task compact` | Builds the compact variant with `duality_wave.cli.compact`. |
 | `task coupons` | Exports `build/coupons.stl` and previews the coupons in the viewer. |
+| `task coupons-engraving` | Exports `build/coupons_engraving.stl` and previews the emblem coupons in the viewer. |
 | `task render` | Renders the images in `docs/images` with Blender. |
 
 The STEP files go to `build/step` and `coupons.stl` to `build/`.

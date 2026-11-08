@@ -54,6 +54,17 @@ tasks:
     cmds:
       - python -m duality_wave.coupons
 
+  coupons-engraving:
+    desc: Export the coupons for the wall emblems (duality_wave.coupons_engraving) as one print plate.
+    summary: |
+      Writes build/coupons_engraving.stl with four wall slabs, one for each combination of
+      pocket depth (1 and 2 lines) and roof (sloped and straight). Each slab carries three space
+      invaders with different pixel gaps and the symbol. Print it with the settings of the final
+      case, then update engraving_lines, engraving_roof_slope and engraving_pitch in the PrintProfile.
+      With `task viewer` running, the coupons also show up in the browser.
+    cmds:
+      - python -m duality_wave.coupons_engraving
+
   layout:
     desc: Regenerate ergogen/*.points.yaml from ergogen/*.yml with ergogen.
     summary: |
