@@ -112,3 +112,42 @@ def test_the_exploded_pose_shows_only_the_left_half_with_the_bottom_below_the_ke
     assert all(name.endswith("_left") for name in scene)
     assert scene["keywell_left"].bounding_box().max.Z == pytest.approx(full.left.keywell.bounding_box().max.Z)
     assert scene["bottom_left"].bounding_box().max.Z < scene["keywell_left"].bounding_box().min.Z
+
+
+def overlap_volume(first, second, tolerance=1e-6) -> float:
+    """The volume that two shapes share. The bounding boxes decide first, so that shapes that cannot meet cost nothing."""
+    a, b = first.bounding_box(), second.bounding_box()
+    if any(
+        getattr(a.min, axis) >= getattr(b.max, axis) - tolerance or getattr(b.min, axis) >= getattr(a.max, axis) - tolerance
+        for axis in "XYZ"
+    ):
+        return 0.0
+    shared = first & second
+    return sum(solid.volume for solid in shared.solids()) if shared else 0.0
+
+
+def collisions(scene: dict) -> dict:
+    left = {name: shape for name, shape in scene.items() if name.endswith("_left")}
+    right = {name: shape for name, shape in scene.items() if name.endswith("_right")}
+    found = {}
+    for a, first in left.items():
+        for b, second in right.items():
+            volume = overlap_volume(first, second)
+            if volume >= 1e-6:
+                found[(a, b)] = volume
+    return found
+
+
+@pytest.mark.integration
+def test_no_part_of_one_half_overlaps_a_part_of_the_other_in_the_transport_position(full):  # R-35
+    scene = pose_scene(full, "transport")
+    assert len(scene) == 2 * len(GROUPS)
+    assert collisions(scene) == {}
+
+
+@pytest.mark.integration
+def test_the_collision_test_notices_a_half_that_sinks_into_the_other(full):  # R-35
+    scene = pose_scene(full, "transport")
+    # a sideways offset as well, because two identical shapes on top of each other confuse the boolean operation
+    scene["keywell_right"] = scene["keywell_right"].moved(Pos(0.3, 0, -0.5))
+    assert ("keywell_left", "keywell_right") in collisions(scene)
