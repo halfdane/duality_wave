@@ -3,11 +3,37 @@
 Run `task view -- transport`. This exports nothing and replaces what the viewer shows.
 """
 import argparse
+import copy
 
-from duality_wave.builders.parts import alpha, colour
+from build123d import Color, Shape
+
+from duality_wave.builders.parts import GROUPS, alpha, colour
 from duality_wave.builders.poses import POSES, pose_scene
 from duality_wave.builders.viewer import OcpViewer, SilentViewer, show_in_viewer
 from duality_wave.cli.common import COUPON_TARGETS, build_case, coupon_parts
+
+
+def styled(scene: dict[str, Shape], ghost: bool) -> dict[str, Shape]:
+    """Copies of the parts with their colour and opacity. The viewer reads the colour of every part in a group from the part."""
+    result = {}
+    for name, shape in scene.items():
+        group, side = name.rsplit("_", 1)
+        result[name] = copy.copy(shape)
+        result[name].color = Color(colour(group, side), alpha(group, ghost))
+    return result
+
+
+def grouped(scene: dict[str, Shape]) -> dict[str, dict]:
+    """One group for each half. It holds the case parts and an accessories group with all other parts."""
+    halves: dict[str, dict] = {}
+    for name, shape in scene.items():
+        group, side = name.rsplit("_", 1)
+        half = halves.setdefault(side, {})
+        if GROUPS[group].shell:
+            half[group] = shape
+        else:
+            half.setdefault("accessories", {})[group] = shape
+    return halves
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -31,14 +57,12 @@ def main(argv: list[str] | None = None) -> None:
     if is_pose:
         silent = SilentViewer(collect_debug=args.debug)
         scene = pose_scene(build_case(compact=args.compact, viewer=silent), args.what)
-        colours = {name: colour(*name.rsplit("_", 1)) for name in scene}
-        opacities = {name: alpha(name.rsplit("_", 1)[0], ghost=True) for name in scene} if args.ghost else {}
+        groups = grouped(styled(scene, args.ghost))
     else:
-        scene = coupon_parts(args.what)
-        colours = opacities = {}
+        groups = {"coupons": coupon_parts(args.what)}
     viewer.clear()
-    for name, shape in scene.items():
-        viewer.push(shape, name=name, color=colours.get(name), alpha=opacities.get(name))
+    for name, content in groups.items():
+        viewer.push(content, name=name)
     if args.debug:
         viewer.debug = silent.debug
         viewer.push_debug()

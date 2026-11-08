@@ -44,7 +44,7 @@ class NullViewer:
     def __init__(self):
         self.debug = NullScope()
 
-    def push(self, obj, name: str, color: str | None = None, alpha: float | None = None) -> None:
+    def push(self, obj, name: str) -> None:
         pass
 
     def push_debug(self) -> None:
@@ -62,11 +62,18 @@ class SilentViewer:
     def __init__(self, collect_debug: bool = False):
         self.debug = DebugScope() if collect_debug else NullScope()
 
-    def push(self, obj, name: str, color: str | None = None, alpha: float | None = None) -> None:
+    def push(self, obj, name: str) -> None:
         pass
 
     def push_debug(self) -> None:
         pass
+
+
+class ViewerGroup(dict):
+    """A group of parts for the viewer. Without an opacity the viewer would give the group opacity 1 and override the
+    opacity of the parts inside."""
+
+    alpha = None
 
 
 class OcpViewer:
@@ -77,11 +84,10 @@ class OcpViewer:
     def __init__(self):
         self.debug = DebugScope()
 
-    def push(self, obj, name: str, color: str | None = None, alpha: float | None = None) -> None:
+    def push(self, obj, name: str) -> None:
         from ocp_vscode import push_object
 
-        options = {key: value for key, value in (("color", color), ("alpha", alpha)) if value is not None}
-        push_object(obj, name=name, **options)
+        push_object(ViewerGroup(obj) if isinstance(obj, dict) else obj, name=name)
 
     def clear(self) -> None:
         """Remove everything the viewer shows."""
@@ -110,9 +116,9 @@ def _viewer_knows_debug_group() -> bool:
 
 def show_in_viewer(port: int = 3939) -> None:
     """Display everything that was pushed to the OCP CAD Viewer."""
-    from ocp_vscode import Camera, ColorMap, set_colormap, set_defaults, set_port, show_objects
+    from ocp_vscode import Camera, Collapse, set_defaults, set_port, show_objects
 
     set_port(port)
-    set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
-    set_colormap(ColorMap.seeded(colormap="rgb", alpha=1, seed_value="wave"))
+    # no colormap: it would give each group one colour and override the colour of the parts inside
+    set_defaults(ortho=True, collapse=Collapse.ROOT, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     show_objects()
