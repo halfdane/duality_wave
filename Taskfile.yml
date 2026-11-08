@@ -112,8 +112,9 @@ tasks:
   render:
     desc: Render the README images into docs/images.
     summary: |
-      Exports the assembled case as meshes (duality_wave.cli.render) and renders them with
-      Blender, which `nix shell` fetches on demand (scripts/render_blender.py).
+      Exports the assembled, transport and exploded poses of the case as meshes
+      (duality_wave.cli.render) and renders them with Blender, which `nix shell` fetches on
+      demand (scripts/render_blender.py).
     cmds:
       - python -m duality_wave.cli.render build/render
       - nix shell nixpkgs#blender --command blender -b -P scripts/render_blender.py -- build/render docs/images

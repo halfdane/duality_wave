@@ -75,8 +75,8 @@ The Python code is the package `duality_wave` in `src/duality_wave/`.
 - `cli/build.py` runs the main build.
 - `cli/compact.py` builds a compact variant for test prints.
 - `cli/view.py` shows the case in a pose in the viewer. `cli/common.py` builds the full case for the commands.
-- `cli/render.py` exports the meshes for the images.
-- `scripts/render_blender.py` renders the images inside Blender.
+- `cli/render.py` exports the meshes of each pose and a `scene.json` with the colours for the images.
+- `scripts/render_blender.py` renders the images inside Blender. It reads the meshes and the colours and does not move anything.
 - `case.py` has `WaveCase`, which builds the three parts for each half.
 - `builders/` holds one builder per part (`keywell.py`, `keyplate.py`, `bottom.py`).
 - `builders/thumb_cut.py` builds the sculpted thumb slope of the keywell and chamfers its rim.

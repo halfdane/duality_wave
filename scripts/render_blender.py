@@ -1,8 +1,10 @@
 """Render the README images from the meshes written by render.py.
 
+Each pose has a folder in the mesh dir with its meshes and a scene.json that holds the colour of every mesh.
 Run with: blender -b -P render_blender.py -- <mesh dir> <image dir>
 `task render` does this for you.
 """
+import json
 import math
 import os
 import sys
@@ -12,17 +14,6 @@ from mathutils import Vector
 
 MESH_DIR, IMAGE_DIR = sys.argv[sys.argv.index("--") + 1:][:2]
 
-COLORS = {
-    "keywell": (0.03, 0.17, 0.28, 1),
-    "keyplate": (0.75, 0.5, 0.1, 1),
-    "bottom": (0.1, 0.11, 0.12, 1),
-    "switches": (0.03, 0.03, 0.035, 1),
-    "caps": (0.5, 0.51, 0.54, 1),
-    "xiao": (0.02, 0.1, 0.06, 1),
-    "usb": (0.85, 0.85, 0.88, 1),
-    "magnets": (0.85, 0.85, 0.88, 1),
-}
-METALS = ("usb", "magnets")
 SIZE = (1800, 1100)
 SAMPLES = 64
 
@@ -78,15 +69,21 @@ def material(name, color, roughness=0.45, metallic=0.0):
     return mat
 
 
-def load(kind, side, offset=(0, 0, 0)):
+def linear(hex_colour):
+    """The base colour of a material is linear. The manifest holds sRGB hex."""
+    channels = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    return tuple(c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels) + (1,)
+
+
+def load(pose, entry):
     before = set(bpy.data.objects)
-    bpy.ops.wm.stl_import(filepath=os.path.join(MESH_DIR, f"{kind}_{side}.stl"))
+    bpy.ops.wm.stl_import(filepath=os.path.join(MESH_DIR, pose, f"{entry['stem']}.stl"))
     obj = (set(bpy.data.objects) - before).pop()
-    obj.location = Vector(offset)
-    if kind in METALS:
-        obj.data.materials.append(material(f"{kind}_{side}", COLORS[kind], roughness=0.25, metallic=1.0))
+    if entry["metallic"]:
+        mat = material(entry["stem"], linear(entry["color"]), roughness=0.25, metallic=1.0)
     else:
-        obj.data.materials.append(material(f"{kind}_{side}", COLORS[kind], roughness=0.6 if kind == "caps" else 0.4))
+        mat = material(entry["stem"], linear(entry["color"]), roughness=0.6 if entry["group"] == "keycaps" else 0.4)
+    obj.data.materials.append(mat)
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
     bpy.ops.object.shade_smooth_by_angle(angle=math.radians(35))
@@ -169,30 +166,28 @@ def render(name, objects, direction, ortho=False, flip=False, zoom=1.0):
     print("rendered", path)
 
 
-def assembled(sides=("left", "right"), kinds=("keywell", "keyplate", "bottom", "switches", "caps", "xiao", "usb", "magnets")):
-    return [load(kind, side) for side in sides for kind in kinds]
+def scene(pose, groups=None):
+    """The meshes of a pose. Without groups every part is loaded."""
+    with open(os.path.join(MESH_DIR, pose, "scene.json")) as manifest:
+        entries = json.load(manifest)
+    return [load(pose, entry) for entry in entries if groups is None or entry["group"] in groups]
 
+
+OUTSIDE = ("keywell", "keyplate", "bottom", "switches", "keycaps", "xiao", "usb", "magnets")
 
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 reset_scene()
-render("hero", assembled(), direction=(0.25, -1.0, 0.85), zoom=1.3)
+render("hero", scene("assembled", OUTSIDE), direction=(0.25, -1.0, 0.85), zoom=1.3)
 
 reset_scene()
-render("top", assembled(), direction=(0, 0, 1), ortho=True, zoom=1.2)
+render("top", scene("assembled", OUTSIDE), direction=(0, 0, 1), ortho=True, zoom=1.2)
 
 reset_scene()
-render("bottom", assembled(kinds=("keywell", "bottom", "xiao", "usb")), direction=(0.25, -1.0, 0.85), flip=True, zoom=1.3)
+render("bottom", scene("assembled", ("keywell", "bottom", "xiao", "usb")), direction=(0.25, -1.0, 0.85), flip=True, zoom=1.3)
 
 reset_scene()
-exploded = [
-    load("keywell", "left", (0, 0, 0)),
-    load("magnets", "left", (0, 0, 0)),
-    load("keyplate", "left", (0, 0, -26)),
-    load("switches", "left", (0, 0, -26)),
-    load("caps", "left", (0, 0, -26)),
-    load("xiao", "left", (0, 0, -26)),
-    load("usb", "left", (0, 0, -26)),
-    load("bottom", "left", (0, 0, -52)),
-]
-render("exploded", exploded, direction=(0.9, -1.0, 0.75), zoom=0.95)
+render("exploded", scene("exploded"), direction=(0.9, -1.0, 0.75), zoom=0.95)
+
+reset_scene()
+render("transport", scene("transport"), direction=(0.25, -1.0, 0.45), zoom=1.2)
