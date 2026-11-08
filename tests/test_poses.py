@@ -154,9 +154,10 @@ def test_the_collision_test_notices_a_half_that_sinks_into_the_other(full):  # R
     assert ("keywell_left", "keywell_right") in collisions(scene)
 
 
-def test_only_the_printed_case_parts_are_see_through_and_only_in_the_ghost_style():
+def test_only_the_see_through_groups_change_in_the_ghost_style():
     assert {name for name, group in GROUPS.items() if group.shell} == set(PARTS)
+    assert set(PARTS) <= {name for name, group in GROUPS.items() if group.see_through}
     for name, group in GROUPS.items():
         assert alpha(name) == 1.0
-        assert alpha(name, ghost=True) == (GHOST_ALPHA if group.shell else 1.0)
+        assert alpha(name, ghost=True) == (GHOST_ALPHA if group.see_through else 1.0)
     assert 0 < GHOST_ALPHA < 1

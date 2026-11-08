@@ -81,12 +81,13 @@ def test_the_view_command_clears_the_viewer_then_pushes_every_part_in_its_colour
     assert scene["keywell_left"].color is None
 
 
-def test_the_ghost_style_makes_only_the_case_parts_see_through():
-    scene = {"keywell_left": Box(1, 1, 1), "bottom_right": Box(1, 1, 1), "battery_left": Box(1, 1, 1)}
+def test_the_ghost_style_makes_only_the_see_through_groups_see_through():
+    scene = {"keywell_left": Box(1, 1, 1), "bottom_right": Box(1, 1, 1), "battery_left": Box(1, 1, 1), "switches_left": Box(1, 1, 1)}
     calls, _, pose_scene, _ = run_view(["exploded", "--ghost"], scene)
     pose_scene.assert_called_once_with("case", "exploded")
     alphas = {name: tuple(part.color)[3] for name, part in pushed_parts(calls).items()}
-    assert alphas == {"keywell": GHOST_ALPHA, "bottom": GHOST_ALPHA, "battery": 1.0}
+    # a colour keeps its opacity in steps of 1/255
+    assert alphas == pytest.approx({"keywell": GHOST_ALPHA, "bottom": GHOST_ALPHA, "battery": GHOST_ALPHA, "switches": 1.0}, abs=1 / 255)
 
 
 def test_without_the_ghost_style_every_part_is_opaque():

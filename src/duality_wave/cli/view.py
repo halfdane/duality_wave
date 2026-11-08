@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("what", nargs="?", default="assembled", choices=[*POSES, *COUPON_TARGETS],
                         help="a pose of the case or a coupon plate (default: assembled)")
     parser.add_argument("--compact", action="store_true", help="the compact variant of the case")
-    parser.add_argument("--ghost", action="store_true", help="make the case parts see-through, so the parts inside stand out")
+    parser.add_argument("--ghost", action="store_true", help="make the case parts and the battery see-through, so the parts inside stand out")
     parser.add_argument("--debug", action="store_true", help="add the intermediate shapes in a hidden group (assembled only)")
     args = parser.parse_args(argv)
 
