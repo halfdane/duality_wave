@@ -142,6 +142,16 @@ class Choc(Switch):
             from ocp_vscode import show_all
             show_all()
 
+    @property
+    def cap_start_z(self) -> float:
+        """The keycap stand-in starts where the stem ends. Everything above this level is cap."""
+        return self.base.d.Z + self.upper_housing.d.Z + self.stem.d.Z - self.cap.overlap
+
+    def split_cap(self) -> tuple[Part, Part]:
+        """The switch without its keycap, and the keycap alone. Both keep the position of the whole switch."""
+        part = self.model.part
+        above = Box(40, 40, 20, align=(Align.CENTER, Align.CENTER, Align.MIN)).translate((0, 0, self.cap_start_z))
+        return part - above, part & above
 
 
 # main method

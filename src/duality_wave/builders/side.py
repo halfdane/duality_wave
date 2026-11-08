@@ -90,7 +90,8 @@ def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures
     accessories = None
     if fixtures is not None:
         side_fixtures = fixtures if side.mirror_plane is None else fixtures.mirrored(side.mirror_plane)
-        accessories = Accessories(build_switches(ctx, side.switch_locations), xiao.model, side_fixtures)
+        switches, keycaps = build_switches(ctx, side.switch_locations)
+        accessories = Accessories(switches, keycaps, xiao.model, side_fixtures)
         viewer.push(accessories.as_dict(side.suffix), name=f"accessories_{side.name}")
 
     keywell = engrave_emblem(side.mirrored(blanks.keywell), dims, side.emblem_spot, side.emblem)

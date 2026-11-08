@@ -70,6 +70,17 @@ def test_the_switch_model_has_the_trimmed_posts_where_the_cutouts_are():  # R-19
         assert not part.is_inside(Vector(post.p.X, -post.p.Y, tip - 0.05))
 
 
+def test_the_switch_splits_into_body_and_keycap_without_losing_volume():
+    switch = Choc()
+    body, cap = switch.split_cap()
+    whole = switch.model.part
+    assert body.volume + cap.volume == pytest.approx(whole.volume, rel=1e-6)
+    assert body.bounding_box().max.Z == pytest.approx(switch.cap_start_z)
+    assert cap.bounding_box().min.Z == pytest.approx(switch.cap_start_z)
+    assert cap.bounding_box().max.Z == pytest.approx(whole.bounding_box().max.Z)
+    assert body.bounding_box().min.Z == pytest.approx(whole.bounding_box().min.Z)
+
+
 def test_the_top_of_the_keywell_stands_a_little_over_the_caps():  # R-18
     switch, _, dims, _ = make_inputs()
     cap_top = switch.base.d.Z + switch.upper_housing.d.Z + switch.stem.d.Z + switch.cap.d.Z - switch.cap.overlap
@@ -115,6 +126,7 @@ def test_no_fixture_collides_with_a_part(variant, request):  # R-22
     fixtures = built.accessories.fixtures
     items = {
         "switches": built.accessories.switches,
+        "keycaps": built.accessories.keycaps,
         "xiao": built.accessories.xiao,
         "power_switch": fixtures.power_switch,
         "battery": fixtures.battery,
@@ -130,6 +142,7 @@ def test_no_fixture_collides_with_a_part(variant, request):  # R-22
     pairs = [(a, b) for a in loose for b in parts] + [
         ("power_switch", "battery"), ("power_switch", "xiao"), ("xiao", "battery"), ("xiao", "bumpers"),
         ("switches", "xiao"), ("screws", "xiao"), ("screws", "switches"), ("bumpers", "screws"),
+        ("keycaps", "xiao"), ("screws", "keycaps"),
     ]
     for a, b in pairs:
         first, second = loose.get(a) or parts.get(a), loose.get(b) or parts.get(b)

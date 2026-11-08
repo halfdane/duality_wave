@@ -28,16 +28,18 @@ class Fixtures:
 
 @dataclass(frozen=True)
 class Accessories:
-    """The fixtures plus the switches and the XIAO of one half."""
+    """The fixtures plus the switches, the keycaps and the XIAO of one half."""
 
     switches: Part
+    keycaps: Part
     xiao: Part
     fixtures: Fixtures
 
     def as_dict(self, suffix: str = "") -> dict:
         """The parts by name for the viewer. Parts that do not exist are left out."""
         named = {
-            "chocs": self.switches,
+            "switches": self.switches,
+            "keycaps": self.keycaps,
             "xiao": self.xiao,
             "bumpers": self.fixtures.bumpers,
             "power_switch": self.fixtures.power_switch,
@@ -104,8 +106,13 @@ def build_fixtures(ctx: CaseContext) -> Fixtures:
     )
 
 
-def build_switches(ctx: CaseContext, placements: list[Location]) -> Part:
-    with BuildPart() as switches:
-        with Locations(placements):
-            insert(ctx.switch.model.part)
-    return switches.part
+def build_switches(ctx: CaseContext, placements: list[Location]) -> tuple[Part, Part]:
+    """The switch bodies and the keycaps of one half, as two parts."""
+    bodies, caps = ctx.switch.split_cap()
+    placed = []
+    for part in (bodies, caps):
+        with BuildPart() as all_of_them:
+            with Locations(placements):
+                insert(part)
+        placed.append(all_of_them.part)
+    return placed[0], placed[1]
