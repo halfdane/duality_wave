@@ -40,6 +40,7 @@ tasks:
         exploded (left half, one layer after the other along Z)
       - coupons or coupons-engraving: the calibration plates
       - --compact: the compact variant of the case
+      - --ghost: make the keywell, keyplate and bottom see-through, so the parts inside stand out
       - --debug: also push the intermediate shapes in a hidden group (assembled only)
     cmds:
       - python -m duality_wave.cli view {{.CLI_ARGS}}

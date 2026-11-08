@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from build123d import Box
 
-from duality_wave.builders.parts import GROUPS, colour
+from duality_wave.builders.parts import GROUPS, alpha, colour
 from duality_wave.cli import render
 
 
@@ -14,7 +14,9 @@ def test_a_manifest_entry_carries_the_colour_of_the_group_and_the_side():
     assert entry == {
         "stem": "power_switch_right", "group": "power_switch", "side": "right",
         "color": colour("power_switch", "right"), "metallic": GROUPS["power_switch"].metallic,
+        "ghost_alpha": 1.0,
     }
+    assert render.manifest_entry("keywell_left")["ghost_alpha"] == alpha("keywell", ghost=True) < 1
 
 
 def test_every_part_of_a_pose_gets_a_mesh_and_a_manifest_entry(tmp_path):

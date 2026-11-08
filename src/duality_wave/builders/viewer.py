@@ -44,7 +44,7 @@ class NullViewer:
     def __init__(self):
         self.debug = NullScope()
 
-    def push(self, obj, name: str, color: str | None = None) -> None:
+    def push(self, obj, name: str, color: str | None = None, alpha: float | None = None) -> None:
         pass
 
     def push_debug(self) -> None:
@@ -62,7 +62,7 @@ class SilentViewer:
     def __init__(self, collect_debug: bool = False):
         self.debug = DebugScope() if collect_debug else NullScope()
 
-    def push(self, obj, name: str, color: str | None = None) -> None:
+    def push(self, obj, name: str, color: str | None = None, alpha: float | None = None) -> None:
         pass
 
     def push_debug(self) -> None:
@@ -77,13 +77,11 @@ class OcpViewer:
     def __init__(self):
         self.debug = DebugScope()
 
-    def push(self, obj, name: str, color: str | None = None) -> None:
+    def push(self, obj, name: str, color: str | None = None, alpha: float | None = None) -> None:
         from ocp_vscode import push_object
 
-        if color is None:
-            push_object(obj, name=name)
-        else:
-            push_object(obj, name=name, color=color)
+        options = {key: value for key, value in (("color", color), ("alpha", alpha)) if value is not None}
+        push_object(obj, name=name, **options)
 
     def clear(self) -> None:
         """Remove everything the viewer shows."""

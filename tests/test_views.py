@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from build123d import Box
 
-from duality_wave.builders.parts import colour
+from duality_wave.builders.parts import GHOST_ALPHA, colour
 from duality_wave.builders.viewer import DebugScope, OcpViewer, SilentViewer
 from duality_wave.cli import view
 
@@ -27,6 +27,9 @@ def test_the_ocp_viewer_passes_a_colour_only_when_it_gets_one():
         OcpViewer().push(Box(1, 1, 1), name="coloured", color="#123456")
     assert "color" not in push_object.call_args_list[0].kwargs
     assert push_object.call_args_list[1].kwargs["color"] == "#123456"
+    with patch("ocp_vscode.push_object") as push_object:
+        OcpViewer().push(Box(1, 1, 1), name="glass", alpha=0.2)
+    assert push_object.call_args.kwargs["alpha"] == 0.2
 
 
 def test_the_ocp_viewer_clears_the_viewer():
@@ -62,6 +65,19 @@ def test_the_view_command_clears_the_viewer_then_pushes_every_part_in_its_colour
     assert pushed == {"keywell_left": colour("keywell", "left"), "power_switch_right": colour("power_switch", "right")}
 
 
+def test_the_ghost_style_makes_only_the_case_parts_see_through():
+    scene = {"keywell_left": Box(1, 1, 1), "bottom_right": Box(1, 1, 1), "battery_left": Box(1, 1, 1)}
+    calls, _, pose_scene, _ = run_view(["exploded", "--ghost"], scene)
+    pose_scene.assert_called_once_with("case", "exploded")
+    alphas = {c.kwargs["name"]: c.kwargs.get("alpha") for c in calls.push.call_args_list}
+    assert alphas == {"keywell_left": GHOST_ALPHA, "bottom_right": GHOST_ALPHA, "battery_left": 1.0}
+
+
+def test_without_the_ghost_style_no_opacity_is_passed():
+    calls, _, _, _ = run_view(["assembled"], {"keywell_left": Box(1, 1, 1)})
+    assert "alpha" not in calls.push.call_args.kwargs
+
+
 def test_the_assembled_pose_is_the_default_and_the_compact_variant_is_a_flag():
     _, build, pose_scene, _ = run_view(["--compact"], {"keywell_left": Box(1, 1, 1)})
     assert build.call_args.kwargs["compact"] is True
@@ -89,7 +105,7 @@ def test_the_debug_group_arrives_last_and_only_when_asked():
 
 
 @pytest.mark.parametrize("argv", [
-    ["sideways"], ["transport", "--debug"], ["coupons", "--compact"], ["coupons-engraving", "--debug"]])
+    ["sideways"], ["transport", "--debug"], ["coupons", "--ghost"], ["coupons", "--compact"], ["coupons-engraving", "--debug"]])
 def test_the_view_command_refuses_arguments_that_do_not_fit_together(argv):
     with pytest.raises(SystemExit):
         run_view(argv, {})

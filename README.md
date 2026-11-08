@@ -149,7 +149,7 @@ The dev shell installs the Python dependencies with `uv`.
 | Command | What it does |
 | --- | --- |
 | `task viewer` | Starts the OCP CAD viewer on port 3939. |
-| `task view -- <what>` | Shows `assembled`, `transport` or `exploded` in the viewer, or a coupon plate. Add `--compact` for the compact variant. Writes no files. |
+| `task view -- <what>` | Shows `assembled`, `transport` or `exploded` in the viewer, or a coupon plate. Add `--compact` for the compact variant or `--ghost` to see through the case parts. Writes no files. |
 | `task export` | Writes the STEP files of the case to `build/step`. Run `task export -- --compact` for the compact variant. |
 | `task export -- coupons` | Writes `build/coupons.stl`. |
 | `task export -- coupons-engraving` | Writes `build/coupons_engraving.stl`. |

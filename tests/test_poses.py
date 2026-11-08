@@ -6,8 +6,9 @@ from types import SimpleNamespace
 import pytest
 from build123d import Box, Plane, Pos, mirror
 
-from duality_wave.builders.parts import GROUPS, SIDE_TINT, colour, side_parts
+from duality_wave.builders.parts import GHOST_ALPHA, GROUPS, SIDE_TINT, alpha, colour, side_parts
 from duality_wave.builders.poses import EXPLODE_STEP, exploded, pose_scene, transported
+from tests.builds import PARTS
 
 DIMS = SimpleNamespace(right_side_offset=200.0, above_z=9.0)
 
@@ -151,3 +152,11 @@ def test_the_collision_test_notices_a_half_that_sinks_into_the_other(full):  # R
     # a sideways offset as well, because two identical shapes on top of each other confuse the boolean operation
     scene["keywell_right"] = scene["keywell_right"].moved(Pos(0.3, 0, -0.5))
     assert ("keywell_left", "keywell_right") in collisions(scene)
+
+
+def test_only_the_printed_case_parts_are_see_through_and_only_in_the_ghost_style():
+    assert {name for name, group in GROUPS.items() if group.shell} == set(PARTS)
+    for name, group in GROUPS.items():
+        assert alpha(name) == 1.0
+        assert alpha(name, ghost=True) == (GHOST_ALPHA if group.shell else 1.0)
+    assert 0 < GHOST_ALPHA < 1

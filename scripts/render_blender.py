@@ -59,13 +59,14 @@ def reset_scene():
     return scene
 
 
-def material(name, color, roughness=0.45, metallic=0.0):
+def material(name, color, roughness=0.45, metallic=0.0, alpha=1.0):
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes["Principled BSDF"]
     bsdf.inputs["Base Color"].default_value = color
     bsdf.inputs["Roughness"].default_value = roughness
     bsdf.inputs["Metallic"].default_value = metallic
+    bsdf.inputs["Alpha"].default_value = alpha
     return mat
 
 
@@ -75,14 +76,15 @@ def linear(hex_colour):
     return tuple(c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels) + (1,)
 
 
-def load(pose, entry):
+def load(pose, entry, ghost=False):
     before = set(bpy.data.objects)
     bpy.ops.wm.stl_import(filepath=os.path.join(MESH_DIR, pose, f"{entry['stem']}.stl"))
     obj = (set(bpy.data.objects) - before).pop()
+    alpha = entry["ghost_alpha"] if ghost else 1.0
     if entry["metallic"]:
-        mat = material(entry["stem"], linear(entry["color"]), roughness=0.25, metallic=1.0)
+        mat = material(entry["stem"], linear(entry["color"]), roughness=0.25, metallic=1.0, alpha=alpha)
     else:
-        mat = material(entry["stem"], linear(entry["color"]), roughness=0.6 if entry["group"] == "keycaps" else 0.4)
+        mat = material(entry["stem"], linear(entry["color"]), roughness=0.6 if entry["group"] == "keycaps" else 0.4, alpha=alpha)
     obj.data.materials.append(mat)
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
@@ -166,11 +168,11 @@ def render(name, objects, direction, ortho=False, flip=False, zoom=1.0):
     print("rendered", path)
 
 
-def scene(pose, groups=None):
-    """The meshes of a pose. Without groups every part is loaded."""
+def scene(pose, groups=None, ghost=False):
+    """The meshes of a pose. Without groups every part is loaded. In the ghost style the case parts are see-through."""
     with open(os.path.join(MESH_DIR, pose, "scene.json")) as manifest:
         entries = json.load(manifest)
-    return [load(pose, entry) for entry in entries if groups is None or entry["group"] in groups]
+    return [load(pose, entry, ghost) for entry in entries if groups is None or entry["group"] in groups]
 
 
 OUTSIDE = ("keywell", "keyplate", "bottom", "switches", "keycaps", "xiao", "usb", "magnets")
@@ -191,3 +193,6 @@ render("exploded", scene("exploded"), direction=(0.9, -1.0, 0.75), zoom=0.95)
 
 reset_scene()
 render("transport", scene("transport"), direction=(0.25, -1.0, 0.45), zoom=1.2)
+
+reset_scene()
+render("ghost", scene("assembled", ghost=True), direction=(0.25, -1.0, 0.85), zoom=1.3)

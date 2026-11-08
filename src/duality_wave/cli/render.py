@@ -10,7 +10,7 @@ from pathlib import Path
 
 from build123d import export_stl
 
-from duality_wave.builders.parts import GROUPS, colour
+from duality_wave.builders.parts import GROUPS, alpha, colour
 from duality_wave.builders.poses import POSES, pose_scene
 from duality_wave.builders.viewer import SilentViewer
 from duality_wave.cli.common import build_case
@@ -19,7 +19,10 @@ from duality_wave.paths import BUILD_DIR
 
 def manifest_entry(name: str) -> dict:
     group, side = name.rsplit("_", 1)
-    return {"stem": name, "group": group, "side": side, "color": colour(group, side), "metallic": GROUPS[group].metallic}
+    return {
+        "stem": name, "group": group, "side": side, "color": colour(group, side), "metallic": GROUPS[group].metallic,
+        "ghost_alpha": alpha(group, ghost=True),
+    }
 
 
 def export_pose(case, pose: str, out_dir: Path) -> None:

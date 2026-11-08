@@ -14,24 +14,29 @@ class PartGroup:
     metallic: bool = False
     # the layer in the exploded view, in steps. Layer 0 stays in place and each step moves a layer down.
     level: float = 0.0
+    # a printed part of the case. The ghost style makes these parts see-through.
+    shell: bool = False
 
 
 GROUPS: dict[str, PartGroup] = {group.name: group for group in (
-    PartGroup("keywell", "#307390", level=0),
+    PartGroup("keywell", "#307390", level=0, shell=True),
     PartGroup("magnets", "#ededf1", metallic=True, level=0.5),
     PartGroup("spacers", "#7d9bb0", level=0.5),
     PartGroup("inserts", "#b08d57", metallic=True, level=0.5),
     PartGroup("battery", "#8e6fb0", level=0.5),
-    PartGroup("keyplate", "#e1bc59", level=1),
+    PartGroup("keyplate", "#e1bc59", level=1, shell=True),
     PartGroup("switches", "#303035", level=1),
     PartGroup("keycaps", "#bcbdc2", level=1),
     PartGroup("xiao", "#275945", level=1),
     PartGroup("usb", "#ededf1", metallic=True, level=1),
     PartGroup("power_switch", "#b9b9bd", level=1.5),
-    PartGroup("bottom", "#595d61", level=2),
+    PartGroup("bottom", "#595d61", level=2, shell=True),
     PartGroup("screws", "#9aa0a6", metallic=True, level=3),
     PartGroup("bumpers", "#202020", level=3),
 )}
+
+# the opacity of the shell parts in the ghost style
+GHOST_ALPHA = 0.2
 
 # how far the lightness of the right half differs from the left half
 SIDE_TINT = 0.07
@@ -46,6 +51,11 @@ def colour(group: str, side: str) -> str:
     hue, lightness, saturation = colorsys.rgb_to_hls(red, green, blue)
     lightness += -SIDE_TINT if lightness > 0.5 else SIDE_TINT
     return "#" + "".join(f"{round(c * 255):02x}" for c in colorsys.hls_to_rgb(hue, lightness, saturation))
+
+
+def alpha(group: str, ghost: bool = False) -> float:
+    """The opacity of a group. Only the shell parts of the case are see-through, and only in the ghost style."""
+    return GHOST_ALPHA if ghost and GROUPS[group].shell else 1.0
 
 
 def side_parts(built: BuiltSide) -> dict[str, Shape]:
