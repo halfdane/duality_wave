@@ -28,7 +28,7 @@ The images are renders, not photos.
 - Five rubber bumpers in each half.
 - No snap fits. Heat-set inserts and M2 screws hold the case together.
 
-![Top view of both halves](docs/images/top.jpg)
+![The halves snap together for safe transport](docs/images/transport.jpg)
 
 ## Bill of materials
 
@@ -48,6 +48,7 @@ Quantities are for both halves.
 
 The Hattara keycaps are designed for SLS and MJF printing.
 Check the repository of the keycaps for the files and the license.
+![See-through shell shows how all features are crammed into a tiny case](docs/images/ghost.jpg)
 
 ## Printing
 
@@ -149,7 +150,7 @@ The dev shell installs the Python dependencies with `uv`.
 | Command | What it does |
 | --- | --- |
 | `task viewer` | Starts the OCP CAD viewer on port 3939. |
-| `task view -- <what>` | Shows `assembled`, `transport` or `exploded` in the viewer, or a coupon plate. Add `--compact` for the compact variant or `--ghost` to see through the case parts. Writes no files. |
+| `task view -- <what>` | Shows `assembled`, `transport` or `exploded` in the viewer, or a coupon plate. Add `--compact` for the compact variant or `--ghost` to see through some parts. Writes no files. |
 | `task export` | Writes the STEP files of the case to `build/step`. Run `task export -- --compact` for the compact variant. |
 | `task export -- coupons` | Writes `build/coupons.stl`. |
 | `task export -- coupons-engraving` | Writes `build/coupons_engraving.stl`. |

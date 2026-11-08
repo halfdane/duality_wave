@@ -169,24 +169,19 @@ def render(name, objects, direction, ortho=False, flip=False, zoom=1.0):
 
 
 def scene(pose, groups=None, ghost=False):
-    """The meshes of a pose. Without groups every part is loaded. In the ghost style the case parts are see-through."""
+    """The meshes of a pose. In the ghost style the case parts are see-through."""
     with open(os.path.join(MESH_DIR, pose, "scene.json")) as manifest:
         entries = json.load(manifest)
     return [load(pose, entry, ghost) for entry in entries if groups is None or entry["group"] in groups]
 
 
-OUTSIDE = ("keywell", "keyplate", "bottom", "switches", "keycaps", "xiao", "usb", "magnets")
-
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 reset_scene()
-render("hero", scene("assembled", OUTSIDE), direction=(0.25, -1.0, 0.85), zoom=1.3)
+render("hero", scene("assembled"), direction=(0.25, -1.0, 0.85), zoom=1.3)
 
 reset_scene()
-render("top", scene("assembled", OUTSIDE), direction=(0, 0, 1), ortho=True, zoom=1.2)
-
-reset_scene()
-render("bottom", scene("assembled", ("keywell", "bottom", "xiao", "usb")), direction=(0.25, -1.0, 0.85), flip=True, zoom=1.3)
+render("bottom", scene("assembled"), direction=(0.25, -1.0, 0.85), flip=True, zoom=1.3)
 
 reset_scene()
 render("exploded", scene("exploded"), direction=(0.9, -1.0, 0.75), zoom=0.95)
@@ -195,4 +190,4 @@ reset_scene()
 render("transport", scene("transport"), direction=(0.25, -1.0, 0.45), zoom=1.2)
 
 reset_scene()
-render("ghost", scene("assembled", ghost=True), direction=(0.25, -1.0, 0.85), zoom=1.3)
+render("ghost", scene("transport", ghost=True), direction=(0.25, -1.0, 0.85), zoom=1.3)
