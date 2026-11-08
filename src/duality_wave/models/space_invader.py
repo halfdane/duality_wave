@@ -43,7 +43,7 @@ class SpaceInvader:
 
 # main method
 if __name__ == "__main__":
-    from ocp_vscode import show_object, set_defaults, Camera
+    from ocp_viewer import show_object, set_defaults, Camera
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     space_invader = SpaceInvader()
     show_object(space_invader.sketch, name="Space Invader")

@@ -131,7 +131,7 @@ class Choc(Switch):
                 Box(self.cap.leg.X, self.cap.leg.Y, self.stem.d.Z, mode=Mode.SUBTRACT)
 
         if show_model:
-            from ocp_vscode import show_all
+            from ocp_viewer import show_all
             show_all()
 
     @property
@@ -147,7 +147,7 @@ class Choc(Switch):
 
 # main method
 if __name__ == "__main__":
-    from ocp_vscode import set_defaults, Camera
+    from ocp_viewer import set_defaults, Camera
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     switch = Choc(show_model=True)
     # show_object(switch.model, name="Kailh Choc Switch")

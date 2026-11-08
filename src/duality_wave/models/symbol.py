@@ -29,7 +29,7 @@ class Symbol:
 
 # main method
 if __name__ == "__main__":
-    from ocp_vscode import show_object, set_defaults, Camera
+    from ocp_viewer import show_object, set_defaults, Camera
     set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
     total_height = 10
     symbol = Symbol(total_height=total_height)

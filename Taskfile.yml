@@ -7,7 +7,7 @@ tasks:
   viewer:
     desc: Start the OCP CAD Viewer in standalone (browser) mode on port 3939.
     summary: |
-      Runs `python -m ocp_vscode` WITHOUT --backend, which serves the
+      Runs `python -m ocp_viewer` WITHOUT --backend, which serves the
       three-cad-viewer at http://127.0.0.1:3939, then opens it in Firefox
       (a new tab in the existing window). Leave this running, then run
       `task view` in another shell.
@@ -28,7 +28,7 @@ tasks:
             done
           ) &
         fi
-        exec python -m ocp_vscode --port 3939
+        exec python -m ocp_viewer --port 3939
 
   view:
     desc: Show the case in a pose, or a coupon plate, in the viewer. Run `task view -- transport`.

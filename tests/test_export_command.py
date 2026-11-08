@@ -12,7 +12,7 @@ from duality_wave.cli import export
 def test_the_case_is_exported_without_a_viewer():
     with patch.object(export, "build_case", return_value="case") as build, \
             patch.object(export, "export_steps", return_value=[]) as steps, \
-            patch("ocp_vscode.push_object") as push_object:
+            patch("ocp_viewer.push_object") as push_object:
         export.main([])
     assert build.call_args.kwargs == {"compact": False}
     steps.assert_called_once_with("case", suffix="")

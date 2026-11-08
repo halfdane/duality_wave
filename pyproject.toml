@@ -9,8 +9,8 @@ dependencies = [
   # ship aarch64-linux wheels — so no dependency overrides are needed anymore.
   "build123d>=0.13",
   "numpy",
-  # Python package for the standalone (browser) viewer: `python -m ocp_vscode`.
-  "ocp_vscode",
+  # Python package for the standalone (browser) viewer: `python -m ocp_viewer`.
+  "ocp_viewer",
   # layout.py reads the points that ergogen writes.
   "pyyaml",
 ]

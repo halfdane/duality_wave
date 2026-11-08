@@ -4,7 +4,7 @@ import pytest
 from dataclasses import replace
 
 from build123d import Axis, Box, Location, Plane, Solid, Vector
-from ocp_vscode import Render
+from ocp_viewer import Render
 
 from duality_wave.builders.bottom import add_switch_post_cutouts
 
@@ -96,7 +96,7 @@ def test_a_debug_group_the_viewer_already_knows_keeps_the_visibility_of_the_user
     from duality_wave.builders.viewer import OcpViewer
 
     for states, mode in (({}, Render.NONE), ({"/wave/debug": [0, 0]}, None)):
-        with patch("ocp_vscode.push_object") as push_object, patch("ocp_vscode.status", return_value={"states": states}):
+        with patch("ocp_viewer.push_object") as push_object, patch("ocp_viewer.status", return_value={"states": states}):
             OcpViewer().push_debug()
         assert push_object.call_args.kwargs["mode"] == mode
 

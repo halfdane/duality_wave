@@ -178,7 +178,7 @@ class Xiao:
 
 # main method
 if __name__ == "__main__":
-    from ocp_vscode import *
+    from ocp_viewer import *
 
     xiao_plane = Plane.XY
     xiao_plane = xiao_plane.rotated((180,0,0)).move(Location((18.9, 71.7, -0.74)))

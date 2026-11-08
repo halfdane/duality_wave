@@ -47,7 +47,7 @@ def make_context(compact: bool = False, profile: PrintProfile | None = None) -> 
 def build_case(debug: bool, both_sides: bool = True, compact: bool = False):
     """Build a case once per test run. Returns the case and the mock that received its viewer pushes."""
     switch, keys, dims, outline = make_inputs(compact)
-    with patch("ocp_vscode.push_object") as push_object, patch("ocp_vscode.status", return_value={}):
+    with patch("ocp_viewer.push_object") as push_object, patch("ocp_viewer.status", return_value={}):
         case = WaveCase(switch, keys, dims, outline, debug=debug, both_sides=both_sides)
     return case, push_object
 

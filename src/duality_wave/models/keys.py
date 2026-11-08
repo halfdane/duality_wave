@@ -50,7 +50,7 @@ class ErgoKeys:
 
 # main method
 if __name__ == "__main__":
-    from ocp_vscode import *
+    from ocp_viewer import *
 
     set_port(3939)
     show_clear()

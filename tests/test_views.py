@@ -12,7 +12,7 @@ from duality_wave.cli import view
 
 def test_the_silent_viewer_builds_accessories_but_shows_nothing():
     viewer = SilentViewer()
-    with patch("ocp_vscode.push_object") as push_object:
+    with patch("ocp_viewer.push_object") as push_object:
         viewer.push(Box(1, 1, 1), name="x")
         viewer.push_debug()
         viewer.debug.note("a", Box(1, 1, 1))
@@ -22,19 +22,19 @@ def test_the_silent_viewer_builds_accessories_but_shows_nothing():
 
 
 def test_the_ocp_viewer_pushes_the_object_under_its_name():
-    with patch("ocp_vscode.push_object") as push_object:
+    with patch("ocp_viewer.push_object") as push_object:
         OcpViewer().push(Box(1, 1, 1), name="plain")
     assert push_object.call_args.kwargs == {"name": "plain"}
 
 
 def test_a_group_leaves_the_opacity_to_the_parts_inside():
-    with patch("ocp_vscode.push_object") as push_object:
+    with patch("ocp_viewer.push_object") as push_object:
         OcpViewer().push({"a": Box(1, 1, 1)}, name="group")
     assert push_object.call_args.args[0].alpha is None
 
 
 def test_the_ocp_viewer_clears_the_viewer():
-    with patch("ocp_vscode.show_clear") as show_clear:
+    with patch("ocp_viewer.show_clear") as show_clear:
         OcpViewer().clear()
     show_clear.assert_called_once()
 
@@ -46,10 +46,10 @@ def run_view(argv, scene, pose_scene_result=True):
         patch.object(view, "build_case", return_value="case") as build,
         patch.object(view, "pose_scene", return_value=scene) as pose_scene,
         patch.object(view, "coupon_parts", return_value=scene) as coupons,
-        patch("ocp_vscode.show_clear", calls.clear),
-        patch("ocp_vscode.push_object", calls.push),
+        patch("ocp_viewer.show_clear", calls.clear),
+        patch("ocp_viewer.push_object", calls.push),
         patch.object(view, "show_in_viewer", calls.show),
-        patch("ocp_vscode.status", return_value={}),
+        patch("ocp_viewer.status", return_value={}),
     ):
         view.main(argv)
     return calls, build, pose_scene, coupons

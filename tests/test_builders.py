@@ -335,11 +335,11 @@ class HeadlessImportTests(unittest.TestCase):
             "import sys\n"
             "class Block:\n"
             "    def find_spec(self, name, path=None, target=None):\n"
-            "        if name.split('.')[0] == 'ocp_vscode':\n"
+            "        if name.split('.')[0] == 'ocp_viewer':\n"
             "            raise ImportError('blocked ' + name)\n"
             "sys.meta_path.insert(0, Block())\n"
             "import duality_wave.case, duality_wave.cli.render, duality_wave.layout, duality_wave.models.case_dimensions, duality_wave.builders.export\n"
-            "assert 'ocp_vscode' not in sys.modules\n"
+            "assert 'ocp_viewer' not in sys.modules\n"
         )
         result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, cwd=ROOT)
         self.assertEqual(result.returncode, 0, result.stderr[-2000:])
