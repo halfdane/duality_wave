@@ -13,7 +13,7 @@ One slab for each combination of pocket depth and roof. On a slab:
 Print the plate with the settings of the final case. Choose the smallest depth that stays legible and the
 roof and gap that print cleanly. Then set engraving_lines, engraving_roof_slope and the pitch in the PrintProfile.
 
-Run `task coupons-engraving` to export build/coupons_engraving.stl and to preview the plate in the OCP viewer.
+Run `task export -- coupons-engraving` to write build/coupons_engraving.stl and `task view -- coupons-engraving` to look at the plate in the OCP viewer.
 """
 from dataclasses import replace
 
@@ -22,7 +22,7 @@ from build123d import Shape
 
 from duality_wave.builders.wall_engraving import (
     WallSpot, emblem_sketch, emblem_z, engrave_wall)
-from duality_wave.coupons import LABEL_DEPTH, arrange, preview, to_bed
+from duality_wave.coupons import LABEL_DEPTH, arrange, to_bed
 from duality_wave.models.print_profile import PrintProfile
 from duality_wave.models.space_invader import SpaceInvader
 
@@ -97,25 +97,3 @@ def create_engraving_coupon_parts(dims, profile: PrintProfile | None = None) -> 
 
 def create_engraving_coupons(dims, profile: PrintProfile | None = None) -> Compound:
     return Compound(list(create_engraving_coupon_parts(dims, profile).values()))
-
-
-if __name__ == "__main__":
-    from duality_wave.models.case_dimensions import CaseDimensions
-    from duality_wave.models.choc import Choc
-    from duality_wave.models.keys import ErgoKeys, get_points
-    from duality_wave.models.outline import Outline
-    from duality_wave.paths import BUILD_DIR, LAYOUT_DIR
-
-    switch = Choc()
-    keys = ErgoKeys(points=get_points(file_path=LAYOUT_DIR / "wave.points.yaml"))
-    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
-    dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
-
-    parts = create_engraving_coupon_parts(dims)
-    coupons = Compound(list(parts.values()))
-    size = coupons.bounding_box().size
-    out_path = BUILD_DIR / "coupons_engraving.stl"
-    out_path.parent.mkdir(exist_ok=True)
-    print(f"{out_path}: {len(coupons.solids())} parts, {size.X:.0f} x {size.Y:.0f} x {size.Z:.1f} mm")
-    export_stl(coupons, str(out_path))
-    preview(parts)

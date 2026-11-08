@@ -52,12 +52,15 @@ class NullViewer:
 
 
 class SilentViewer:
-    """Builds the accessories as well, but shows nothing. The caller takes the parts from the case."""
+    """Builds the accessories as well, but shows nothing. The caller takes the parts from the case.
+
+    With collect_debug it keeps the intermediate shapes in viewer.debug.
+    """
 
     enabled = True
 
-    def __init__(self):
-        self.debug = NullScope()
+    def __init__(self, collect_debug: bool = False):
+        self.debug = DebugScope() if collect_debug else NullScope()
 
     def push(self, obj, name: str, color: str | None = None) -> None:
         pass

@@ -75,8 +75,9 @@
             echo "  task check    fast checks (lock file, lint, fast tests)"
             echo "  task test     check, then all tests in parallel"
             echo "  task viewer   start the OCP viewer, then open http://127.0.0.1:3939"
-            echo "  task build    build the case and export STEP files to build/step"
-            echo "  task compact  build the compact variant"
+            echo "  task view -- transport   show a pose in the viewer (assembled, transport, exploded)"
+            echo "  task export              write the STEP files of the case to build/step"
+            echo "  task export -- coupons   write a coupon plate to build/"
             echo "  task update   upgrade the Python packages in uv.lock"
           '';
         };

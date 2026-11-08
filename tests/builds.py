@@ -53,7 +53,7 @@ def build_case(debug: bool, both_sides: bool = True, compact: bool = False):
 
 
 def full_case():
-    """The full variant, both halves, with debug. This is what `task build` builds."""
+    """The full variant, both halves, with debug. This is what `task view` shows."""
     return build_case(debug=True)[0]
 
 

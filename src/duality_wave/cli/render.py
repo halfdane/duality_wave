@@ -3,9 +3,9 @@
 Run `task render` to export the meshes and render the images in docs/images.
 Every pose gets a folder with one mesh per part and the file scene.json, which lists the meshes with their colours.
 """
+import argparse
 import json
 import os
-import sys
 from pathlib import Path
 
 from build123d import export_stl
@@ -13,10 +13,8 @@ from build123d import export_stl
 from duality_wave.builders.parts import GROUPS, colour
 from duality_wave.builders.poses import POSES, pose_scene
 from duality_wave.builders.viewer import SilentViewer
-from duality_wave.cli.common import build_full_case
+from duality_wave.cli.common import build_case
 from duality_wave.paths import BUILD_DIR
-
-OUT_DIR = sys.argv[1] if len(sys.argv) > 1 else str(BUILD_DIR / "render")
 
 
 def manifest_entry(name: str) -> dict:
@@ -33,12 +31,12 @@ def export_pose(case, pose: str, out_dir: Path) -> None:
     (pose_dir / "scene.json").write_text(json.dumps([manifest_entry(name) for name in scene], indent=2))
 
 
-def main():
-    case = build_full_case(viewer=SilentViewer())
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(prog="render", description=__doc__.splitlines()[0])
+    parser.add_argument("out_dir", nargs="?", default=str(BUILD_DIR / "render"), help="where the meshes go")
+    out_dir = Path(parser.parse_args(argv).out_dir)
+
+    case = build_case(viewer=SilentViewer())
     for pose in POSES:
-        export_pose(case, pose, Path(OUT_DIR))
-    print(f"Exported meshes to {OUT_DIR}")
-
-
-if __name__ == "__main__":
-    main()
+        export_pose(case, pose, out_dir)
+    print(f"Exported meshes to {out_dir}")

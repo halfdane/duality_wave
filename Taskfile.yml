@@ -10,7 +10,7 @@ tasks:
       Runs `python -m ocp_vscode` WITHOUT --backend, which serves the
       three-cad-viewer at http://127.0.0.1:3939, then opens it in Firefox
       (a new tab in the existing window). Leave this running, then run
-      `task build` in another shell.
+      `task view` in another shell.
     cmds:
       - |
         # Once the server is listening on 3939, open it in the existing
@@ -30,51 +30,30 @@ tasks:
         fi
         exec python -m ocp_vscode --port 3939
 
-  build:
-    desc: Build the main wave case (duality_wave.cli.build) and export STEP files to build/step.
-    summary: |
-      Runs the primary case generator. With `task viewer` running in another
-      shell, geometry is also pushed to the browser viewer.
-    cmds:
-      - python -m duality_wave.cli.build
-
   view:
-    desc: Show the case in a pose in the viewer. Run `task view -- transport`.
+    desc: Show the case in a pose, or a coupon plate, in the viewer. Run `task view -- transport`.
     summary: |
-      Builds the full case and shows it in the viewer in the given pose
-      (duality_wave.cli.view). It replaces what the viewer shows and exports nothing.
-      Poses: assembled, transport (right half flipped onto the left half) and
-      exploded (left half, one layer after the other along Z).
-      Run `task viewer` in another shell first.
+      Builds the case and shows it in the viewer (duality_wave.cli view). It replaces what
+      the viewer shows and writes no files. Run `task viewer` in another shell first.
+      Arguments after `--`:
+      - assembled (default), transport (right half flipped onto the left half) or
+        exploded (left half, one layer after the other along Z)
+      - coupons or coupons-engraving: the calibration plates
+      - --compact: the compact variant of the case
+      - --debug: also push the intermediate shapes in a hidden group (assembled only)
     cmds:
-      - python -m duality_wave.cli.view {{.CLI_ARGS}}
+      - python -m duality_wave.cli view {{.CLI_ARGS}}
 
-  compact:
-    desc: Build the compact case variant (duality_wave.cli.compact) and export STEP files to build/step.
-    cmds:
-      - python -m duality_wave.cli.compact
-
-  coupons:
-    desc: Export the fit calibration coupons (duality_wave.coupons) as one print plate.
+  export:
+    desc: Write the printable files to build/. Run `task export -- coupons` for a coupon plate.
     summary: |
-      Writes build/coupons.stl with a switch plate, a plate-in-cavity fit test, heat-set
-      insert pilots, pockets for the XIAO and the battery, and magnet pockets with
-      different skins and a mate to feel the pull. Print it
-      with the settings of the final case, then update the PrintProfile.
-      With `task viewer` running, the coupons also show up in the browser.
+      Writes files and shows nothing (duality_wave.cli export). Arguments after `--`:
+      - case (default): STEP files of the parts in build/step. Add --compact for the compact variant.
+      - coupons: build/coupons.stl, the plate for the fit constants.
+      - coupons-engraving: build/coupons_engraving.stl, the plate for the wall emblems.
+      Print a coupon plate with the settings of the final case, then update the PrintProfile.
     cmds:
-      - python -m duality_wave.coupons
-
-  coupons-engraving:
-    desc: Export the coupons for the wall emblems (duality_wave.coupons_engraving) as one print plate.
-    summary: |
-      Writes build/coupons_engraving.stl with four wall slabs, one for each combination of
-      pocket depth (1 and 2 lines) and roof (sloped and straight). Each slab carries three space
-      invaders with different pixel gaps and the symbol. Print it with the settings of the final
-      case, then update engraving_lines, engraving_roof_slope and engraving_pitch in the PrintProfile.
-      With `task viewer` running, the coupons also show up in the browser.
-    cmds:
-      - python -m duality_wave.coupons_engraving
+      - python -m duality_wave.cli export {{.CLI_ARGS}}
 
   layout:
     desc: Regenerate ergogen/*.points.yaml from ergogen/*.yml with ergogen.
@@ -116,5 +95,5 @@ tasks:
       (duality_wave.cli.render) and renders them with Blender, which `nix shell` fetches on
       demand (scripts/render_blender.py).
     cmds:
-      - python -m duality_wave.cli.render build/render
+      - python -m duality_wave.cli render build/render
       - nix shell nixpkgs#blender --command blender -b -P scripts/render_blender.py -- build/render docs/images

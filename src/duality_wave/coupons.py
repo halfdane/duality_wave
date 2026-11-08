@@ -15,14 +15,13 @@ The magnet coupons print with the skin on the bed and the pocket open upwards, l
 The mate of the skin coupon has its pockets on the centre line. Turn it over about the long axis and the
 pockets of both coupons face each other, skin against skin.
 
-Run `task coupons` to export build/coupons.stl and to preview the coupons in the OCP viewer.
+Run `task export -- coupons` to write build/coupons.stl and `task view -- coupons` to look at the plate in the OCP viewer.
 """
 from dataclasses import replace
 
 from build123d import *
 from build123d import Shape
 
-from duality_wave.models.choc import Choc
 from duality_wave.models.features import magnet_recess_cutter, switch_cutter, xiao_pocket_cutter
 from duality_wave.models.model_types import RectDimensions, RoundDimensions
 from duality_wave.models.print_profile import PrintProfile
@@ -348,38 +347,3 @@ def create_coupon_parts(switch: Switch, dims, profile: PrintProfile | None = Non
 
 def create_coupons(switch: Switch, dims, profile: PrintProfile | None = None) -> Compound:
     return Compound(list(create_coupon_parts(switch, dims, profile).values()))
-
-
-def preview(parts: dict[str, Shape]) -> None:
-    """Show the coupons in the OCP viewer (`task viewer`). Does nothing if no viewer is running."""
-    try:
-        from ocp_vscode import Camera, set_defaults, set_port, show_clear, show_object
-
-        set_port(3939)
-        show_clear()
-        set_defaults(ortho=True, default_edgecolor="#121212", reset_camera=Camera.KEEP)
-        show_object(parts, name="coupons")
-    except Exception as error:
-        print(f"No preview: could not reach the OCP viewer ({error}). Start it with `task viewer`.")
-
-
-if __name__ == "__main__":
-    from duality_wave.models.case_dimensions import CaseDimensions
-    from duality_wave.models.keys import ErgoKeys, get_points
-    from duality_wave.models.outline import Outline
-    from duality_wave.paths import BUILD_DIR, LAYOUT_DIR
-
-    switch = Choc()
-    config_path = LAYOUT_DIR / "wave.points.yaml"
-    keys = ErgoKeys(points=get_points(file_path=config_path))
-    outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
-    dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
-
-    parts = create_coupon_parts(switch, dims)
-    coupons = Compound(list(parts.values()))
-    size = coupons.bounding_box().size
-    out_path = BUILD_DIR / "coupons.stl"
-    out_path.parent.mkdir(exist_ok=True)
-    print(f"{out_path}: {len(coupons.solids())} parts, {size.X:.0f} x {size.Y:.0f} x {size.Z:.1f} mm")
-    export_stl(coupons, str(out_path))
-    preview(parts)

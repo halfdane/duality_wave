@@ -59,8 +59,8 @@ The magnet spacers are a fourth kind of part, and both halves share them.
 - `bottom` closes the case. Print it right side up.
 - `magnet_spacer` is a small disc. Print 8 of them, 4 for each half.
 
-Run `task build` to create the STEP files for all parts.
-Run `task coupons` to create the calibration coupons.
+Run `task export` to create the STEP files for all parts.
+Run `task export -- coupons` to create the calibration coupons.
 Print the coupons first.
 The fit depends on your printer, your material and your slicer.
 
@@ -93,7 +93,7 @@ All fit constants live in `PrintProfile` in `src/duality_wave/models/print_profi
 The defaults match a Bambu Lab printer with PLA.
 Change the profile for every new printer, material or slicer.
 
-1. Run `task coupons`.
+1. Run `task export -- coupons`.
 2. Print `build/coupons.stl` with the same settings as the final case.
 3. Find the tightest fit that still goes together by hand.
 4. Copy the winning values into a `PrintProfile`.
@@ -115,7 +115,7 @@ The coupons fit on a 180 mm print bed.
 Print the mate of the skin coupon too.
 
 The emblems in the front wall have their own plate.
-Run `task coupons-engraving` and print `build/coupons_engraving.stl`.
+Run `task export -- coupons-engraving` and print `build/coupons_engraving.stl`.
 It holds four wall slabs, one for each combination of pocket depth (0.4 and 0.8 mm) and roof (sloped and straight).
 Each slab carries three space invaders with a pixel gap of 0, 0.2 and 0.4 mm, and the symbol.
 The label under an invader is its gap.
@@ -149,14 +149,13 @@ The dev shell installs the Python dependencies with `uv`.
 | Command | What it does |
 | --- | --- |
 | `task viewer` | Starts the OCP CAD viewer on port 3939. |
-| `task build` | Builds the case with `duality_wave.cli.build` and exports STEP files. |
-| `task view -- <pose>` | Shows the case in the viewer in the pose `assembled`, `transport` or `exploded`. Exports nothing. |
-| `task compact` | Builds the compact variant with `duality_wave.cli.compact`. |
-| `task coupons` | Exports `build/coupons.stl` and previews the coupons in the viewer. |
-| `task coupons-engraving` | Exports `build/coupons_engraving.stl` and previews the emblem coupons in the viewer. |
+| `task view -- <what>` | Shows `assembled`, `transport` or `exploded` in the viewer, or a coupon plate. Add `--compact` for the compact variant. Writes no files. |
+| `task export` | Writes the STEP files of the case to `build/step`. Run `task export -- --compact` for the compact variant. |
+| `task export -- coupons` | Writes `build/coupons.stl`. |
+| `task export -- coupons-engraving` | Writes `build/coupons_engraving.stl`. |
 | `task render` | Renders the images in `docs/images` with Blender. |
 
-The STEP files go to `build/step` and `coupons.stl` to `build/`.
+The STEP files go to `build/step` and the coupon plates to `build/`.
 Git ignores the `build` directory.
 The key layout comes from `ergogen/wave.yml`.
 Run `task layout` after you change it. This runs ergogen and writes `ergogen/wave.points.yaml`. The build reads that file. Commit it.
