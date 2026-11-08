@@ -108,9 +108,8 @@ def build_fixtures(ctx: CaseContext) -> Fixtures:
 
 def build_switches(ctx: CaseContext, placements: list[Location]) -> tuple[Part, Part]:
     """The switch bodies and the keycaps of one half, as two parts."""
-    bodies, caps = ctx.switch.split_cap()
     placed = []
-    for part in (bodies, caps):
+    for part in (ctx.switch.model.part, ctx.switch.cap_model):
         with BuildPart() as all_of_them:
             with Locations(placements):
                 insert(part)

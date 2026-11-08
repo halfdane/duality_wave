@@ -16,6 +16,9 @@ class Switch:
     base: HasDimensions
     clamp_clearance_z: float
 
-    def split_cap(self) -> tuple[Part, Part]:
-        """The switch without its keycap, and the keycap alone."""
+    model: BuildPart
+
+    @property
+    def cap_model(self) -> Part:
+        """The keycap in its place on the switch. The model of the switch has no keycap."""
         raise NotImplementedError

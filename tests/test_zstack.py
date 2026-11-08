@@ -70,23 +70,47 @@ def test_the_switch_model_has_the_trimmed_posts_where_the_cutouts_are():  # R-19
         assert not part.is_inside(Vector(post.p.X, -post.p.Y, tip - 0.05))
 
 
-def test_the_switch_splits_into_body_and_keycap_without_losing_volume():
+def test_the_levels_of_the_switch_stack_up_from_the_flange():  # R-18
     switch = Choc()
-    body, cap = switch.split_cap()
-    whole = switch.model.part
-    assert body.volume + cap.volume == pytest.approx(whole.volume, rel=1e-6)
-    assert body.bounding_box().max.Z == pytest.approx(switch.cap_start_z)
-    assert cap.bounding_box().min.Z == pytest.approx(switch.cap_start_z)
-    assert cap.bounding_box().max.Z == pytest.approx(whole.bounding_box().max.Z)
-    assert body.bounding_box().min.Z == pytest.approx(whole.bounding_box().min.Z)
+    body = switch.model.part.bounding_box()
+    assert len(switch.model.part.solids()) == 1
+    assert body.min.Z == pytest.approx(-switch.bottom_housing.d.Z - switch.posts.center.d.Z)
+    assert body.max.Z == pytest.approx(switch.base.d.Z + switch.upper_housing.d.Z + switch.stem.d.Z)
+    assert switch.above.d.Z == pytest.approx(switch.cap_model.bounding_box().max.Z)
 
 
-def test_the_top_of_the_keywell_stands_a_little_over_the_caps():  # R-18
-    switch, _, dims, _ = make_inputs()
-    cap_top = switch.base.d.Z + switch.upper_housing.d.Z + switch.stem.d.Z + switch.cap.d.Z - switch.cap.overlap
-    assert switch.above.d.Z == pytest.approx(cap_top)
-    assert dims.above_z == pytest.approx(cap_top + dims.wall_over_cap)
-    assert switch.model.part.bounding_box().max.Z == pytest.approx(cap_top)
+def test_the_keycap_sits_on_the_stem_and_touches_nothing_of_the_switch():  # R-18
+    switch = Choc()
+    body, cap = switch.model.part, switch.cap_model
+    stem_top = body.bounding_box().max.Z
+    box = cap.bounding_box()
+    assert box.min.Z == pytest.approx(switch.cap_start_z) == pytest.approx(stem_top - switch.cap.overlap)
+    assert box.max.Z - box.min.Z == pytest.approx(switch.cap.d.Z)
+    assert (box.size.X, box.size.Y) == pytest.approx((switch.cap.d.X, switch.cap.d.Y))
+    assert (body & cap).volume == pytest.approx(0, abs=1e-6)
+
+
+def test_the_stem_top_meets_the_roof_of_the_keycap_and_the_legs_stand_in_the_holes():  # R-18
+    switch = Choc()
+    body, cap = switch.model.part, switch.cap_model
+    roof = switch.cap_start_z + switch.cap.overlap
+    leg_x = switch.cap.leg_pitch / 2
+    assert cap.is_inside(Vector(0, 0, roof + 0.05)) and not cap.is_inside(Vector(0, 0, roof - 0.05))
+    assert cap.is_inside(Vector(leg_x, 0, roof - 0.05)) and not cap.is_inside(Vector(leg_x, 0, roof + 0.05 - switch.cap.overlap * 2))
+    assert not body.is_inside(Vector(leg_x, 0, roof - 0.05)) and body.is_inside(Vector(0, 0, roof - 0.05))
+
+
+def test_the_top_of_the_keycap_is_a_dish_that_is_highest_at_the_corners():  # R-18
+    switch = Choc()
+    cap = switch.cap_model
+
+    def top(x, y):
+        return max(z / 100 for z in range(300, 900) if cap.is_inside(Vector(x, y, z / 100)))
+
+    centre = top(0, 0)
+    assert centre == pytest.approx(switch.cap_start_z + switch.cap.dish_low)
+    assert top(6.5, 0) > centre and top(0, 6.5) > centre
+    assert top(6.5, 5.5) == pytest.approx(switch.above.d.Z, abs=0.15)
 
 
 @pytest.mark.parametrize("compact", [False, True])
