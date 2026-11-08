@@ -30,7 +30,7 @@ class PrintProfile:
     battery_clearance: float = 0.02
     bumper_clearance: float = 0.1
     # holes in the bottom plate: around a switch post, around the screw shaft, around the screw head
-    post_clearance: float = 0.1
+    post_clearance: float = 0.2
     screw_clearance: float = 0.2
     screw_head_clearance: float = 0.1
 
