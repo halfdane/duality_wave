@@ -38,7 +38,7 @@ tasks:
       Arguments after `--`:
       - assembled (default), transport (right half flipped onto the left half) or
         exploded (left half, one layer after the other along Z)
-      - coupons or coupons-engraving: the calibration plates
+      - coupons, coupons-engraving or coupons-wiring: the calibration plates
       - --compact: the compact variant of the case
       - --ghost: make the keywell, keyplate and bottom see-through, so the parts inside stand out
       - --debug: also push the intermediate shapes in a hidden group (assembled only)
@@ -52,6 +52,7 @@ tasks:
       - case (default): STEP files of the parts in build/step. Add --compact for the compact variant.
       - coupons: build/coupons.stl, the plate for the fit constants.
       - coupons-engraving: build/coupons_engraving.stl, the plate for the wall emblems.
+      - coupons-wiring: build/coupons_wiring.stl, the plate for the trenches and the diode pockets.
       Print a coupon plate with the settings of the final case, then update the PrintProfile.
     cmds:
       - python -m duality_wave.cli export {{.CLI_ARGS}}
@@ -64,6 +65,14 @@ tasks:
     cmds:
       - for: [wave, compact]
         cmd: ergogen ergogen/{{.ITEM}}.yml -o build/ergogen/{{.ITEM}} && cp build/ergogen/{{.ITEM}}/points/points.yaml ergogen/{{.ITEM}}.points.yaml
+
+  wiring-editor:
+    desc: Edit ergogen/wave.wiring.yaml in the browser.
+    summary: |
+      Starts a server on 127.0.0.1:8765 and opens the visual wiring editor. It shows the checks live and writes the file on Save.
+      Add `-- --port 9000`, `-- --no-browser` or `-- --file path.yaml` to change the defaults.
+    cmds:
+      - python scripts/wiring_editor.py {{.CLI_ARGS}}
 
   check:
     desc: Fast checks. Verifies uv.lock, lints, and runs the fast tests (no case is built).

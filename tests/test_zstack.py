@@ -174,7 +174,7 @@ def test_no_fixture_collides_with_a_part(variant, request):  # R-22
             continue
         overlap = first & second
         volume = sum(solid.volume for solid in overlap.solids()) if overlap else 0
-        assert volume < 1e-6, f"{a} collides with {b}: {volume:.3f} mm3"
+        assert volume < 1e-6, f"{a} collides with {b}: {volume:.3f} mm3 (variant: {variant})"
 
 
 @pytest.mark.parametrize("compact", [False, True])

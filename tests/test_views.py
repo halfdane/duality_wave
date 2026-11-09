@@ -122,7 +122,7 @@ def test_the_debug_group_arrives_last_and_only_when_asked():
 
 
 @pytest.mark.parametrize("argv", [
-    ["sideways"], ["transport", "--debug"], ["coupons", "--ghost"], ["coupons", "--compact"], ["coupons-engraving", "--debug"]])
+    ["sideways"], ["transport", "--debug"], ["coupons", "--ghost"], ["coupons", "--compact"], ["coupons-engraving", "--debug"], ["coupons-wiring", "--debug"]])
 def test_the_view_command_refuses_arguments_that_do_not_fit_together(argv):
     with pytest.raises(SystemExit):
         run_view(argv, {})

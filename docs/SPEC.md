@@ -53,6 +53,22 @@ R-08: The key positions come from ergogen. Each `ergogen/<name>.points.yaml` equ
 R-09: The loader reads x, y and r of every point in file order. It drops points that the layout marks as skip.
 R-15: The cutout of the keywell does not change when a key position moves by 1e-7 mm or less. ergogen rounds the positions to 8 digits.
 
+## Wiring
+
+The full variant has a hand-wired matrix: one through-hole diode per key, enamelled wire in trenches.
+The wiring is in `ergogen/wave.wiring.yaml`. A person edits this file with the visual editor (`task wiring-editor`) or by hand. The build reads it. The syntax is in `docs/WIRING.md`.
+`task check` tests the file.
+The compact variant has no wiring.
+
+R-36: `ergogen/wave.wiring.yaml` passes every check of `duality_wave.wiring.check` for the current layout, dimensions, diode and print profile. Open the editor after a change of the layout, the dimensions, the diode or the print profile. The file holds plain coordinates of the blank: a vertex is `[x, y]` or `[x, y, r]`, the channel is two corners, a notch is `{side, y}`. The coordinates do not follow the layout. The check reports each trench end that misses its terminal. A mistake in the file stops the build with a message that names the half, the net and the trench. The check lists the diodes whose anode lead crosses the cutout of the switch (they need a sleeve).
+R-37: Every key has a diode pocket. The pocket opens from the underside of the keyplate into the cutout of its key and continues in the top face of the bottom plate. The two plates share the depth of the diode body. A wall of at least `MIN_WALL` surrounds the pocket.
+R-38: The matrix has one net per column and one per row. The thumb keys form the last row. Each thumb belongs to its own column. The file has trenches for every net.
+R-39: The trenches of a net join every terminal of the net, and the net ends in the channel. A terminal is the contact p1 of a column or the cathode end of a diode. The trenches lie in the underside of the keyplate. A trench keeps a wall of at least `MIN_WALL` to the outline, the screws, the pockets and the power switch. Near its own terminal, a trench ends inside the pocket that holds the terminal, so only the wall to that one pocket does not count there.
+R-40: No wire comes closer to a contact, a centre post or a lead tip of another net than its keep-out radius. Wires of different nets do not run side by side closer than 0.5 mm.
+R-41: Two trenches in the top face of the keyplate lead from two pins of the power switch to the XIAO window. The pins reach the top face through the pin zone, which is a cut through the keyplate. The trenches keep clear of the key cutouts, the pockets and the body of the switch.
+R-42: The underside of the keyplate has one channel. It is a shallow recess as deep as a trench. It runs along the top edge of the keyplate from the inner column to the XIAO pocket and opens into the pocket. The wires of all nets end in the channel. The channel keeps a wall of at least `MIN_WALL` to the outline, the screws, the diode pockets and the power switch.
+R-43: The visual wiring editor (`task wiring-editor`) shows both halves of `ergogen/wave.wiring.yaml` in the browser. It moves, adds and deletes vertices and whole trenches, moves the channel and moves the diode notches within the range that keeps the pocket along the wall of the cutout. A button removes the vertices that do nothing, only when pressed. The editor marks the diodes that need a sleeve. It runs the checks of R-36 to R-42 on every change. It writes the file only if the text it writes reads back as the same vertices and the same channel as the editor shows. It keeps the old file in `build/`. The editor serves only the local computer and refuses requests from other pages.
+
 ## Debug mode
 
 R-07: A build without debug builds no accessories and pushes nothing to the viewer. It builds the same parts as a build with debug.
@@ -62,6 +78,6 @@ R-07: A build without debug builds no accessories and pushes nothing to the view
 The limits below are for the development machine. Set `WAVE_PERF_FACTOR` to scale all of them.
 The limits are about 2.5 times the measured time. Tighten them after a speed-up step.
 
-R-10: A build of the full variant (both halves) takes at most 6 s.
+R-10: A build of the full variant (both halves) takes at most 12 s.
 R-11: A build of the compact variant takes at most 3 s.
-R-12: A stage of the build stays under its limit: keywell 1.2 s, keyplate 1.6 s, bottom 0.7 s, each finish stage 1.4 s. An outline with one inner outline takes at most 0.4 s.
+R-12: A stage of the build stays under its limit: keywell 1.2 s, keyplate 1.6 s, bottom 0.7 s, each finish stage 5 s. A finish stage cuts the pockets and the trenches of the wiring. An outline with one inner outline takes at most 0.4 s.

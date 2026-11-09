@@ -16,6 +16,8 @@ from duality_wave.models.outline import Outline, OutlineSpec
 from duality_wave.models.print_profile import PrintProfile
 from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
+from duality_wave.paths import WIRING_FILE
+from duality_wave.wiring.plan import WiringPlan
 from tests import COMPACT_LAYOUT, WAVE_LAYOUT
 
 PARTS = ("keywell", "keyplate", "bottom")
@@ -48,7 +50,7 @@ def build_case(debug: bool, both_sides: bool = True, compact: bool = False):
     """Build a case once per test run. Returns the case and the mock that received its viewer pushes."""
     switch, keys, dims, outline = make_inputs(compact)
     with patch("ocp_viewer.push_object") as push_object, patch("ocp_viewer.status", return_value={}):
-        case = WaveCase(switch, keys, dims, outline, debug=debug, both_sides=both_sides)
+        case = WaveCase(switch, keys, dims, outline, debug=debug, both_sides=both_sides, wiring=None if compact else WiringPlan.load(WIRING_FILE))
     return case, push_object
 
 

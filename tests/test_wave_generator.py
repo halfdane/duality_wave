@@ -129,7 +129,8 @@ def test_right_half_mirrors_the_left_half(full):  # R-02
     offset = full.ctx.dims.right_side_offset
     for name in PARTS:
         left, right = getattr(full.left, name), getattr(full.right, name)
-        assert left.volume / right.volume == pytest.approx(1, abs=1e-3), name
+        # the trenches of the wiring differ between the halves
+        assert left.volume / right.volume == pytest.approx(1, abs=1e-2 if name == "keyplate" else 1e-3), name
         assert right.bounding_box().min.X == pytest.approx(offset - left.bounding_box().max.X, abs=1e-3), name
         assert right.bounding_box().max.X == pytest.approx(offset - left.bounding_box().min.X, abs=1e-3), name
         assert right.bounding_box().min.Y == pytest.approx(left.bounding_box().min.Y, abs=1e-3), name

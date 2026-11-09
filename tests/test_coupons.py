@@ -1,23 +1,28 @@
 import unittest
+from dataclasses import replace
 
 import pytest
 
-from build123d import Axis, Vector
+from build123d import Axis, Compound, Vector
 
 from tests import WAVE_LAYOUT
 
 from duality_wave.coupons import (
     create_coupon_parts,
     create_coupons,
+    create_wiring_coupon_parts,
+    diode_pocket_coupon,
     insert_pilot_coupon,
     magnet_pocket_coupon,
     magnet_skin_coupon,
     plate_fit_coupon,
     pocket_coupon,
     switch_plate_coupon,
+    trench_coupon,
 )
 from duality_wave.models.case_dimensions import CaseDimensions
 from duality_wave.models.choc import Choc
+from duality_wave.models.diode import Diode, DiodeNotchSpec
 from duality_wave.models.xiao import Xiao
 from duality_wave.models.keys import ErgoKeys, get_points
 from duality_wave.models.outline import Outline
@@ -161,6 +166,50 @@ class CouponTests(unittest.TestCase):
         gaps = [b - a for a, b in zip(opens, opens[1:]) if b - a > 1.0]
         self.assertEqual(len(gaps), len(clearances) - 1, "one pocket for every clearance")
         self.assertTrue(all(coupon.is_inside(Vector(x, y, top - 2.5)) for y in opens))
+
+    def test_trenches_have_the_requested_width_and_depth_and_open_upwards(self):
+        widths, depths, pitch_x, pitch_y, length, margin = (0.6, 0.9), (0.8, 1.2), 20.0, 9.0, 16.0, 8.0
+        z = self.dims.keyplate_z
+        coupon = trench_coupon(self.profile, z, widths=widths, depths=depths, length=length, pitch_x=pitch_x, pitch_y=pitch_y, margin=margin)
+        self.assertSingleSolid(coupon)
+        for column, depth in enumerate(depths):
+            for row, width in enumerate(widths):
+                x = margin + column * pitch_x + (pitch_x - length) / 2 + length / 4
+                y = margin + pitch_y * (row + 0.5) - 2.5
+                self.assertFalse(coupon.is_inside(Vector(x, y, z - depth + 0.05)))
+                self.assertTrue(coupon.is_inside(Vector(x, y, z - depth - 0.05)))
+                for side in (-1, 1):
+                    self.assertFalse(coupon.is_inside(Vector(x, y + side * (width / 2 - 0.03), z - depth / 2)))
+                    self.assertTrue(coupon.is_inside(Vector(x, y + side * (width / 2 + 0.03), z - depth / 2)))
+
+    def test_diode_pockets_are_as_wide_and_deep_as_the_diode_plus_the_slack(self):
+        diode, slacks, margin = Diode(), (0.0, 0.2), 5.0
+        z = self.dims.keyplate_z
+        coupon = diode_pocket_coupon(self.profile, diode, z, self.dims.bottom_plate_z, slacks=slacks, margin=margin)
+        self.assertSingleSolid(coupon)
+        specs = [DiodeNotchSpec.of(diode, replace(self.profile, diode_width_slack=s, diode_length_slack=2 * s, diode_depth_slack=s), z, self.dims.bottom_plate_z)
+                 for s in slacks]
+        pitch = max(spec.width for spec in specs) + 5.0
+        top = coupon.bounding_box().max.Y - margin
+        for index, spec in enumerate(specs):
+            x = margin + spec.width / 2 + index * pitch
+            y = top - spec.total_length / 2
+            self.assertFalse(coupon.is_inside(Vector(x, y, z - spec.depth + 0.05)))
+            self.assertTrue(coupon.is_inside(Vector(x, y, z - spec.depth - 0.05)))
+            for side in (-1, 1):
+                self.assertFalse(coupon.is_inside(Vector(x + side * (spec.width / 2 - 0.03), y, z - 0.5)))
+                self.assertTrue(coupon.is_inside(Vector(x + side * (spec.width / 2 + 0.03), y, z - 0.5)))
+            self.assertFalse(coupon.is_inside(Vector(x, top - 0.03, z - 0.5)))
+            self.assertTrue(coupon.is_inside(Vector(x, top + 0.03, z - 0.5)))
+        self.assertGreater(specs[1].width, specs[0].width)
+
+    def test_the_wiring_coupons_fit_on_a_small_print_bed_as_separate_solids(self):
+        parts = create_wiring_coupon_parts(self.dims)
+        self.assertEqual(set(parts), {"F trenches", "G diode pockets"})
+        coupons = Compound(list(parts.values()))
+        self.assertEqual(len(coupons.solids()), 2)
+        size = coupons.bounding_box().size
+        self.assertLessEqual(max(size.X, size.Y), SMALL_PRINT_BED)
 
     def test_all_coupons_fit_on_a_small_print_bed(self):
         coupons = create_coupons(self.switch, self.dims)

@@ -19,6 +19,13 @@ class LeverDimensions:
         """How far the lever tip is from the face of the body that carries the lever."""
         return self.d.Y / 2 + self.d.Z / 2
 
+# the cut in the keyplate, in the frame of powerswitch_plane: the slot for the body and the zone around the pins, as (x, y, width, height)
+def keyplate_cut(clearance: float) -> tuple[tuple[float, float, float, float], tuple[float, float, float, float]]:
+    body = PowerSwitchDimensions.d
+    pins_y = body.Y + PowerSwitchDimensions.pin_length
+    return (0, 0, body.X + 2 * clearance, body.Y + 2 * clearance), (0, pins_y / 2, body.X - 3, pins_y)
+
+
 class PowerSwitch:
     dims = PowerSwitchDimensions()
     lever = LeverDimensions()
@@ -39,7 +46,13 @@ class PowerSwitch:
                     with GridLocations(3.5, 2.5, 2, 3):
                         Cylinder(0.1, self.dims.pin_length)
         self.model = self.model.part.translate((0, 0, -self.dims.d.Z/2))
-            
+
+    @property
+    def pin_tips(self) -> list[Vector]:
+        """The centres of the pin tips in the coordinates of the model."""
+        tip_y = self.model.bounding_box().min.Y
+        return [face.center() for face in self.model.faces() if face.geom_type == GeomType.PLANE and abs(face.center().Y - tip_y) < 1e-6]
+
 
 # main method
 if __name__ == "__main__":

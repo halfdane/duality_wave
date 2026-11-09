@@ -81,6 +81,8 @@ The Python code is the package `duality_wave` in `src/duality_wave/`.
 - `case.py` has `WaveCase`, which builds the three parts for each half.
 - `builders/` holds one builder per part (`keywell.py`, `keyplate.py`, `bottom.py`).
 - `builders/thumb_cut.py` builds the sculpted thumb slope of the keywell and chamfers its rim.
+- `builders/wiring_cuts.py` cuts the diode pockets, the trenches and the channel of the wiring file into the keyplate and the bottom plate.
+- `wiring/` holds the diode pockets, the nets and the checks for `ergogen/wave.wiring.yaml` (`plate.py`, `nets.py`, `anchors.py`, `rounded.py`, `plan.py`, `check.py`, `export.py`, `editor.py`). The file holds plain coordinates. It is edited with the visual editor (`task wiring-editor`, `scripts/wiring_editor.py` and `scripts/wiring_editor.html`). The coordinates do not follow the layout, so open the editor after you change the layout, the dimensions, the diode or the print profile, and move the vertices that it reports.
 - `builders/side.py` places the parts on the left or right half.
 - `builders/accessories.py` builds the models that are only shown in the viewer.
 - `builders/viewer.py` decides what is pushed to the viewer.

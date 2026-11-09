@@ -58,6 +58,18 @@ class PrintProfile:
     # chamfer where a hole opens towards the print bed (switch cutouts) and where the magnets enter their pockets
     mouth_chamfer: float = 0.2
 
+    # the pocket of a diode is this much wider, longer and deeper than the body (in total, not per side)
+    diode_width_slack: float = 0.2
+    diode_length_slack: float = 0.4
+    diode_depth_slack: float = 0.2
+    # the pocket is this much longer at the anode end, so the anode lead can bend towards the contact inside it,
+    # and the lead leaves the body straight for diode_lead_straight
+    diode_lead_room: float = 0.8
+    diode_lead_straight: float = 0.6
+    # a trench for one enamelled wire of 0.3 mm in the plate: width and depth
+    trench_width: float = 0.8
+    trench_depth: float = 1.2
+
     @property
     def engraving_depth(self) -> float:
         return self.engraving_lines * self.line_width

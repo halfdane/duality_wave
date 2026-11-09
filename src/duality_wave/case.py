@@ -13,6 +13,7 @@ from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
 from duality_wave.models.switch import Switch
 from duality_wave.timing import StageTimings
+from duality_wave.wiring.plan import WiringPlan
 
 
 class WaveCase:
@@ -23,9 +24,11 @@ class WaveCase:
     shapes last in a group that starts hidden. Pass a viewer to show the parts somewhere else.
     case.magnet_spacer is the one disc to print for every magnet pocket, or None without magnets.
     case.timings holds the seconds spent in each build stage.
+    A wiring plan adds the diode pockets and the trenches of the matrix. Without one the plates have none.
     """
 
-    def __init__(self, switch: Switch, keys: ErgoKeys, caseDimensions: WaveDimensions, outline, debug=False, both_sides=False, viewer=None):
+    def __init__(self, switch: Switch, keys: ErgoKeys, caseDimensions: WaveDimensions, outline, debug=False, both_sides=False, viewer=None,
+                 wiring: WiringPlan | None = None):
         self.viewer = viewer if viewer is not None else (OcpViewer() if debug else NullViewer())
         self.ctx = ctx = CaseContext(
             switch, keys, caseDimensions, outline,
@@ -47,11 +50,11 @@ class WaveCase:
 
         left = Side.left(ctx)
         with self.timings.stage("finish_left"):
-            self.left: BuiltSide = finish_side(ctx, left, blanks, fixtures, self.viewer)
+            self.left: BuiltSide = finish_side(ctx, left, blanks, fixtures, self.viewer, wiring)
         self.right: BuiltSide | None = None
         if both_sides:
             with self.timings.stage("finish_right"):
-                self.right = finish_side(ctx, Side.right(ctx, left), blanks, fixtures, self.viewer)
+                self.right = finish_side(ctx, Side.right(ctx, left), blanks, fixtures, self.viewer, wiring)
 
         self.viewer.push_debug()
         print("Done creating case.")

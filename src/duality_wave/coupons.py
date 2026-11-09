@@ -11,6 +11,11 @@ settings as the final case, then copy the winning values into the PrintProfile.
   E  magnet pockets   magnet pocket size, and the skin that closes the pocket
   E  skin, mate       a second copy of the skin coupon, to feel the pull through two skins
 
+The wiring has its own plate, because the first plate is nearly full:
+
+  F  trenches         trench width and depth for the enamelled wire
+  G  diode pockets    how much slack the pocket of a through-hole diode needs
+
 The magnet coupons print with the skin on the bed and the pocket open upwards, like the keywell.
 The mate of the skin coupon has its pockets on the centre line. Turn it over about the long axis and the
 pockets of both coupons face each other, skin against skin.
@@ -22,6 +27,8 @@ from dataclasses import replace
 from build123d import *
 from build123d import Shape
 
+from duality_wave.builders.wiring_cuts import OVERSHOOT, trench_cutter
+from duality_wave.models.diode import Diode, DiodeNotchSpec
 from duality_wave.models.features import magnet_recess_cutter, switch_cutter, xiao_pocket_cutter
 from duality_wave.models.model_types import RectDimensions, RoundDimensions
 from duality_wave.models.print_profile import PrintProfile
@@ -277,6 +284,84 @@ def pocket_coupon(
     return engrave(coupon.part, plate_z, labels, size=1.8)
 
 
+def trench_coupon(
+    profile: PrintProfile,
+    plate_z: float,
+    widths: tuple[float, ...] = (0.6, 0.7, 0.8, 0.9, 1.0),
+    depths: tuple[float, ...] = (0.8, 1.2, 1.6),
+    length: float = 16.0,
+    pitch_x: float = 20.0,
+    pitch_y: float = 9.0,
+    margin: float = 8.0,
+) -> Part:
+    """F: trenches of different widths (rows) and depths (columns), cut like the trenches in the underside of the keyplate.
+
+    A trench runs straight, turns at a sharp corner and then at a rounded corner, like the wires of the matrix.
+    Press an enamelled wire into each trench. The rows are labelled with the width, the columns with the depth.
+    """
+    width = len(depths) * pitch_x + margin
+    height = len(widths) * pitch_y + margin + 3.0
+    straight = length / 2
+
+    with BuildPart() as coupon:
+        insert(chamfered_plate(width, height, plate_z, profile))
+        for column, depth in enumerate(depths):
+            for row, trench_width in enumerate(widths):
+                x = margin + column * pitch_x + (pitch_x - length) / 2
+                y = margin + pitch_y * (row + 0.5) - 2.5
+                path = [(x, y, 0.0), (x + straight, y, 0.0), (x + straight, y + 5, 1.5), (x + length, y + 5, 0.0)]
+                cutter = trench_cutter({"w": [path]}, trench_width, plate_z + OVERSHOOT, plate_z - depth)
+                insert(cutter, mode=Mode.SUBTRACT)
+
+    labels = [(f"{trench_width:.1f}", margin / 2, margin + pitch_y * (row + 0.5)) for row, trench_width in enumerate(widths)]
+    labels += [(f"D{depth:g}", margin + pitch_x * (column + 0.5), margin / 2) for column, depth in enumerate(depths)]
+    return engrave(coupon.part, plate_z, labels, size=2.0)
+
+
+def diode_pocket_coupon(
+    profile: PrintProfile,
+    diode: Diode,
+    keyplate_z: float,
+    bottom_plate_z: float,
+    slacks: tuple[float, ...] = (0.0, 0.1, 0.2, 0.3),
+    margin: float = 5.0,
+    label_room: float = 2.5,
+) -> Part:
+    """G: pockets for a through-hole diode with different slack, each with a trench that leaves at the anode end.
+
+    The pocket holds the whole body here, while the case splits it between the keyplate and the bottom plate.
+    A slack s makes the pocket s wider and 2 s longer than the body, and s deeper. Put a real diode into each pocket.
+    The label is the slack.
+    """
+    specs = [
+        DiodeNotchSpec.of(diode, replace(profile, diode_width_slack=s, diode_length_slack=2 * s, diode_depth_slack=s), keyplate_z, bottom_plate_z)
+        for s in slacks]
+    tail = 5.0
+    pitch = max(spec.width for spec in specs) + tail
+    longest = max(spec.total_length for spec in specs)
+    width = len(slacks) * pitch + 2 * margin - tail + 3.5
+    height = longest + tail + 2 * margin + label_room
+
+    with BuildPart() as coupon:
+        with BuildSketch():
+            with Locations((width / 2, height / 2)):
+                RectangleRounded(width, height, CORNER_RADIUS)
+        extrude(amount=keyplate_z)
+        for index, spec in enumerate(specs):
+            x = margin + spec.width / 2 + index * pitch
+            top = height - margin
+            with BuildSketch(Plane.XY.offset(keyplate_z)):
+                with Locations((x, top - spec.total_length / 2)):
+                    Rectangle(spec.width, spec.total_length)
+            extrude(amount=-spec.depth, mode=Mode.SUBTRACT)
+            end = top - spec.total_length
+            path = [(x, end + 1.0, 0.0), (x, end - tail + 1.0, 0.0), (x + 3.5, end - tail + 1.0, 0.0)]
+            insert(trench_cutter({"w": [path]}, profile.trench_width, keyplate_z + OVERSHOOT, keyplate_z - profile.trench_depth), mode=Mode.SUBTRACT)
+
+    labels = [(f"{s:g}", margin + specs[i].width / 2 + i * pitch, margin / 2 + 1) for i, s in enumerate(slacks)]
+    return engrave(coupon.part, keyplate_z, labels, size=2.0)
+
+
 def arrange(parts: dict[str, Shape], max_width: float = 172.0, gap: float = 6.0) -> dict[str, Shape]:
     """Pack the parts onto one print bed, turning a part by 90 degrees where that helps.
 
@@ -341,6 +426,16 @@ def create_coupon_parts(switch: Switch, dims, profile: PrintProfile | None = Non
         "E magnet pockets": magnet_pocket_coupon(profile, dims.magnet_d),
         "E skin": skin,
         "E skin, mate": skin,
+    }
+    return arrange(parts)
+
+
+def create_wiring_coupon_parts(dims, diode: Diode | None = None, profile: PrintProfile | None = None) -> dict[str, Shape]:
+    """The coupons for the wiring by name, arranged on one print bed."""
+    profile = profile or dims.print_profile
+    parts = {
+        "F trenches": trench_coupon(profile, dims.keyplate_z),
+        "G diode pockets": diode_pocket_coupon(profile, diode or Diode(), dims.keyplate_z, dims.bottom_plate_z),
     }
     return arrange(parts)
 

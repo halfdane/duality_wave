@@ -40,7 +40,7 @@ class CaseDimensions(WaveDimensions):
     # The USB-C connector reaches 4.46 mm below the board back and may stand out of the bed face.
     xiao_ledge: float = 0.6
     # how far the lever of the power switch stands out of the bed face. The bumpers stand out further.
-    lever_protrusion: float = 0.8
+    lever_protrusion: float = 0.9
 
     def __post_init__(self, switch: Switch, outline: Outline, keys: ErgoKeys):
         # Z chain, top to bottom. All levels are measured from the keyplate top (z = 0).
@@ -64,8 +64,8 @@ class CaseDimensions(WaveDimensions):
         self.powerswitch_rotation: Vector = Vector(0, 180, -90)
         # down, so the body keeps clear of the battery
         self.powerswitch_position: Vector = Vector(
-                xiao_pos_x + Xiao.dims.d.X/2 + xiao_to_power_switch,
-                xiao_pos_y - 1,
+                outline.top_right.X - 1.5*switch.cap.d.X,
+                outline.top_left.Y - PowerSwitch.dims.d.X - self.wall_thickness,
                 self.snap_z(-(self.below_z - PowerSwitch.lever.reach + self.lever_protrusion), up=False))
 
         battery_d: RectDimensions = RectDimensions(31, 17, 6)
@@ -88,7 +88,7 @@ class CaseDimensions(WaveDimensions):
         return round(snap(z + self.below_z) - self.below_z, 6)
 
     def _xiao_pos_x_additional(self) -> float:
-        return 11
+        return 10
 
 
     @property
@@ -177,3 +177,5 @@ class CompactCaseDimensions(CaseDimensions):
             outline.bottom_left + Vector(bumpers_radius, bumpers_radius-3),
             outline.top_left + Vector(bumpers_radius + 1, -bumpers_radius - 20),
         ]
+
+        self.powerswitch_position += Vector(12.5, 0, 0)

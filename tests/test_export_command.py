@@ -27,7 +27,7 @@ def test_the_compact_case_gets_its_own_file_names():
     steps.assert_called_once_with("case", suffix="_compact")
 
 
-@pytest.mark.parametrize("target, name", [("coupons", "coupons.stl"), ("coupons-engraving", "coupons_engraving.stl")])
+@pytest.mark.parametrize("target, name", [("coupons", "coupons.stl"), ("coupons-engraving", "coupons_engraving.stl"), ("coupons-wiring", "coupons_wiring.stl")])
 def test_a_coupon_plate_is_one_stl(target, name, tmp_path):
     with patch.object(export, "coupon_parts", return_value={"a": Box(1, 1, 1)}) as parts:
         path = export.export_coupons(target, tmp_path)

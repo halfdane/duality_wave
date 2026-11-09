@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wiring editor</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 13px/1.35 system-ui, sans-serif; background: #2b2b2b; color: #ddd; display: flex; flex-direction: column; height: 100vh; }
+  #bar { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 6px 10px; background: #1e1e1e; border-bottom: 1px solid #000; }
+  #bar .group { display: flex; gap: 2px; align-items: center; }
+  button { background: #3c3c3c; color: #ddd; border: 1px solid #555; padding: 4px 9px; border-radius: 3px; cursor: pointer; font: inherit; }
+  button:hover { background: #4a4a4a; }
+  button.on { background: #2f6fb5; border-color: #5aa0e8; color: #fff; }
+  button:disabled { opacity: .4; cursor: default; }
+  button.save { background: #2e7d32; border-color: #5cb860; color: #fff; }
+  #coords { margin-left: auto; min-width: 11ch; font-family: monospace; color: #bbb; white-space: pre; }
+  #status { padding: 2px 8px; border-radius: 3px; background: #333; max-width: 45vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #status.bad { background: #8a2b2b; color: #fff; }
+  #status.good { background: #2b6a2f; color: #fff; }
+  #main { flex: 1; display: flex; min-height: 0; }
+  #view { flex: 1; background: #404040; touch-action: none; cursor: default; user-select: none; }
+  #view.add { cursor: crosshair; }
+  #view.pan { cursor: grabbing; }
+  #side { width: 320px; overflow-y: auto; background: #252525; border-left: 1px solid #000; padding: 8px 10px; }
+  h3 { margin: 10px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #9ab; }
+  .net { display: flex; align-items: center; gap: 6px; padding: 1px 0; cursor: pointer; }
+  .net.active { background: #3a3a3a; }
+  .swatch { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #000; }
+  .problem { padding: 3px 5px; margin: 2px 0; background: #4a2323; border-left: 3px solid #e55; cursor: pointer; word-break: break-word; }
+  .problem.top { border-left-color: #e8a33c; }
+  .wall { display: flex; justify-content: space-between; padding: 1px 4px; cursor: pointer; }
+  .wall.low { color: #f88; }
+  .row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+  .row input[type=number] { width: 80px; background: #1b1b1b; color: #eee; border: 1px solid #555; padding: 2px 4px; }
+  code { color: #cdb; word-break: break-all; }
+  .hint { color: #999; font-size: 12px; }
+  svg text { font: 11px system-ui, sans-serif; paint-order: stroke; stroke: #000; stroke-width: 2.5px; fill: #fff; pointer-events: none; }
+  label { cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <div class="group"><button id="b-left">Left</button><button id="b-right">Right</button></div>
+  <div class="group"><button id="b-underside">Underside</button><button id="b-top">Top</button></div>
+  <div class="group">
+    <button id="t-select" title="1">Edit</button>
+    <button id="t-add" title="2">Add trench</button>
+    <button id="t-notch" title="3">Move diodes</button>
+  </div>
+  <div class="group"><button id="b-undo" title="Ctrl+Z">Undo</button><button id="b-redo" title="Ctrl+Shift+Z">Redo</button></div>
+  <div class="group"><button id="b-tidy" title="Remove vertices that do nothing, in this half">Tidy</button></div>
+  <div class="group"><button id="b-fit">Fit</button><label><input type="checkbox" id="c-keep" checked> keep-outs</label></div>
+  <div class="group"><button id="b-save" class="save" title="Ctrl+S">Save</button><button id="b-reload">Reload file</button></div>
+  <div id="coords" title="Position of the mouse in mm, in the frame of the blank, as in the messages"></div>
+  <div id="status">loading</div>
+</div>
+<div id="main">
+  <svg id="view">
+    <g id="g-world"><g id="g-static"></g><g id="g-dyn"></g></g>
+    <g id="g-over"></g>
+  </svg>
+  <div id="side">
+    <div id="hint" class="hint"></div>
+    <h3>Selection</h3><div id="sel">nothing selected</div>
+    <h3>Nets</h3><div id="nets"></div>
+    <h3>Problems</h3><div id="problems"></div>
+    <h3 id="sleeve-title">Sleeves</h3><div id="sleeves"></div>
+    <h3>Thinnest walls</h3><div id="walls"></div>
+  </div>
+</div>
+<script>
+"use strict";
+const HEADERS = {"X-Wiring-Editor": "1", "Content-Type": "application/json"};
+const GRID = 0.25, SNAP_PX = 7, HIT_PX = 12, DRAG_PX = 3, MAX_HISTORY = 200;
+const NS = "http://www.w3.org/2000/svg";
+const $ = (id) => document.getElementById(id);
+const svg = $("view");
+
+let geo = null;          // per half: the parts that do not change
+let S = null;            // the document: {channel: {low, high}, sides: {left: {notches, underside, top}, right: ...}}. A vertex is [x, y, r or null]
+let savedJson = "";
+let info = {left: null, right: null};   // the last answer of the checks per half
+const ui = {side: "left", layer: "underside", tool: "select", sel: null, view: {s: 8, ox: 0, oy: 0}, hidden: new Set(), active: null,
+            keepouts: true, note: "", guides: [], marker: null, adding: null, hover: null};
+let history = [], future = [];
+let drag = null;
+
+// ---------- small helpers
+const hyp = Math.hypot, clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const snapGrid = (v) => Math.round(v / GRID) * GRID;
+const fmt = (v) => (Math.round(v * 100) / 100).toString();
+const half = () => S.sides[ui.side];
+const layerPaths = () => half()[ui.layer];
+const netsOfLayer = () => (info[ui.side] ? info[ui.side].nets.filter((n) => n.layer === ui.layer) : []);
+const netInfo = (name) => netsOfLayer().find((n) => n.name === name);
+// the right half is the blank mirrored in X, and the underside is seen from below: each flips the picture
+const flip = () => (ui.layer === "underside" ? -1 : 1) * (ui.side === "right" ? -1 : 1);
+
+function w2s(x, y) { const v = ui.view; return [flip() * x * v.s + v.ox, -y * v.s + v.oy]; }
+function s2w(px, py) { const v = ui.view; return [(px - v.ox) / (flip() * v.s), -(py - v.oy) / v.s]; }
+function mouse(e) { const r = svg.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+
+function showCursor(w) { $("coords").textContent = w ? `x ${w[0].toFixed(2)}  y ${w[1].toFixed(2)}` : ""; }
+svg.addEventListener("pointerleave", () => showCursor(null));
+
+function status(text, kind = "") { const el = $("status"); el.textContent = text; el.className = kind; el.title = text; }
+
+async function api(path, body) {
+  const res = await fetch(path, body === undefined ? {headers: HEADERS} : {method: "POST", headers: HEADERS, body: JSON.stringify(body)});
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+
+// ---------- the rounded corners, as in duality_wave.wiring.rounded
+function normalized(path) {
+  return path.map((v, i) => {
+    if (v[2] !== null && v[2] !== undefined) return [v[0], v[1], v[2]];
+    let r = 0;
+    if (i > 0 && i < path.length - 1) {
+      const a = path[i - 1], c = path[i + 1];
+      const lu = hyp(a[0] - v[0], a[1] - v[1]), lv = hyp(c[0] - v[0], c[1] - v[1]);
+      if (lu > 1e-9 && lv > 1e-9) {
+        const dot = ((a[0] - v[0]) * (c[0] - v[0]) + (a[1] - v[1]) * (c[1] - v[1])) / (lu * lv);
+        const angle = Math.acos(clamp(dot, -1, 1));
+        if (Math.PI - angle >= 0.02) r = Math.min(1.5, 0.5 * Math.min(lu, lv) * Math.tan(angle / 2));
+      }
+    }
+    return [v[0], v[1], r];
+  });
+}
+
+function pathD(path) {
+  const p = normalized(path);
+  let d = `M${p[0][0]} ${p[0][1]}`;
+  for (let i = 1; i < p.length - 1; i++) {
+    const [x, y, r] = p[i], a = p[i - 1], c = p[i + 1];
+    const lu = hyp(a[0] - x, a[1] - y), lv = hyp(c[0] - x, c[1] - y);
+    let drawn = false;
+    if (r > 0 && lu > 1e-9 && lv > 1e-9) {
+      const u = [(a[0] - x) / lu, (a[1] - y) / lu], v = [(c[0] - x) / lv, (c[1] - y) / lv];
+      const half_ = Math.acos(clamp(u[0] * v[0] + u[1] * v[1], -1, 1)) / 2;
+      const t = r / Math.tan(half_);
+      if (isFinite(t) && t > 0) {
+        const cross = (x - a[0]) * (c[1] - y) - (y - a[1]) * (c[0] - x);
+        d += `L${x + u[0] * t} ${y + u[1] * t}A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${x + v[0] * t} ${y + v[1] * t}`;
+        drawn = true;
+      }
+    }
+    if (!drawn) d += `L${x} ${y}`;
+  }
+  const last = p[p.length - 1];
+  return d + `L${last[0]} ${last[1]}`;
+}
+
+// ---------- history
+const snapshot = () => JSON.stringify(S);
+function commit() {
+  history.push(snapshot());
+  if (history.length > MAX_HISTORY) history.shift();
+  future = [];
+  ui.note = "";
+}
+function restore(json) { S = JSON.parse(json); ui.sel = null; ui.adding = null; changed(); }
+function undo() { if (!history.length) return; future.push(snapshot()); restore(history.pop()); }
+function redo() { if (!future.length) return; history.push(snapshot()); restore(future.pop()); }
+
+// ---------- checks
+let checking = false, again = false;
+function changed() {
+  render();
+  scheduleCheck();
+}
+let timer = null;
+function scheduleCheck() {
+  clearTimeout(timer);
+  const other = ui.side === "left" ? "right" : "left";
+  if (info[other]) info[other].stale = true;
+  timer = setTimeout(runCheck, 120);
+  updateTitle();
+}
+function stateFor(side) {
+  const h = S.sides[side];
+  return {notches: h.notches, underside: h.underside, top: h.top, channel: S.channel};
+}
+async function runCheck(fast = false) {
+  if (checking) { again = true; return; }
+  checking = true;
+  const side = ui.side;
+  try {
+    status("checking...");
+    const answer = await api("/api/analyze", {side, state: stateFor(side), fast});
+    if (side === ui.side) info[side] = {...(info[side] || {}), ...answer, stale: false};
+    if (!fast) summary();
+    render();
+  } catch (error) {
+    status(error.message, "bad");
+  } finally {
+    checking = false;
+    if (again) { again = false; runCheck(); }
+  }
+}
+function summary() {
+  const i = info[ui.side];
+  if (!i || !i.problems) return;
+  const n = i.problems.length;
+  status(n ? `${ui.side}: ${n} problem${n > 1 ? "s" : ""}` : `${ui.side}: no problems, ${i.trench_length} mm of trench`, n ? "bad" : "good");
+  if (ui.note) status($("status").textContent + `. ${ui.note}`, n ? "bad" : "good");
+}
+function updateTitle() { document.title = (S && snapshot() !== savedJson ? "* " : "") + "Wiring editor"; }
+window.addEventListener("beforeunload", (e) => { if (S && snapshot() !== savedJson) { e.preventDefault(); e.returnValue = ""; } });
+
+// ---------- drawing
+const poly = (pts) => pts.map((p) => p.join(",")).join(" ");
+let staticKey = "";
+function drawStatic() {
+  const g = geo[ui.side];
+  const key = ui.side + ui.layer;
+  if (key === staticKey) return;
+  staticKey = key;
+  let h = `<polygon points="${poly(g.outline)}" fill="#ffe678" stroke="#000" stroke-width="0.15"/>`;
+  for (const s of g.screws) h += `<polygon points="${poly(s)}" fill="#464646" stroke="#000" stroke-width="0.1"/>`;
+  const pocket = ui.layer === "underside" ? g.xiao.pocket : g.xiao.window;
+  h += `<polygon points="${poly(pocket)}" fill="#464646" stroke="#000" stroke-width="0.1"/>`;
+  h += `<polygon points="${poly(g.power.body)}" fill="none" stroke="#5ae" stroke-width="0.2"/><polygon points="${poly(g.power.pins)}" fill="none" stroke="#5ae" stroke-width="0.2"/>`;
+  if (ui.layer === "underside") {
+    for (const p of Object.values(g.bottom)) h += `<polygon points="${poly(p)}" fill="none" stroke="#f7d" stroke-width="0.1"/>`;
+    for (const k of g.keys) h += `<polygon points="${poly(k.cutout)}" fill="#5f5f69" stroke="#000" stroke-width="0.1"/><polygon points="${poly(k.top)}" fill="#4b4b52"/>`;
+    for (const k of g.keys) {
+      h += `<circle cx="${k.p1[0]}" cy="${k.p1[1]}" r="${g.posts.p1}" fill="#5a96ff" stroke="#000" stroke-width="0.08"/>`;
+      h += `<circle cx="${k.p2[0]}" cy="${k.p2[1]}" r="${g.posts.p2}" fill="#78e68c" stroke="#000" stroke-width="0.08"/>`;
+      h += `<circle cx="${k.post[0]}" cy="${k.post[1]}" r="${g.posts.post}" fill="#a0a0a0" stroke="#000" stroke-width="0.08"/>`;
+    }
+  } else {
+    for (const k of g.keys) h += `<polygon points="${poly(k.top)}" fill="#4b4b52" stroke="#000" stroke-width="0.1"/>`;
+  }
+  $("g-static").innerHTML = h;
+}
+
+function drawDynamic() {
+  const g = geo[ui.side], i = info[ui.side], hp = half();
+  let h = "";
+  const under = ui.layer === "underside";
+  if (under) {
+    const c = S.channel;
+    h += `<rect x="${c.low[0]}" y="${c.low[1]}" width="${c.high[0] - c.low[0]}" height="${c.high[1] - c.low[1]}" fill="#96783a" fill-opacity="0.85" stroke="#6b5420" stroke-width="0.15"/>`;
+  }
+  if (i) {
+    for (const [name, n] of Object.entries(i.notches)) {
+      const bad = n.wall < g.min_wall - 1e-6;
+      h += `<polygon points="${poly(n.poly)}" fill="${under ? (bad ? "#eb5a5a" : "#ffaa5a") : "none"}" ${under ? "" : 'stroke="#f84" stroke-dasharray="0.3 0.3"'} stroke-width="0.1" ${under ? 'stroke="#000"' : ""}/>`;
+    }
+  }
+  const paths = hp[ui.layer];
+  const visible = Object.entries(paths).filter(([net]) => !ui.hidden.has(net));
+  for (const [, ps] of visible) for (const p of ps) h += `<path d="${pathD(p)}" fill="none" stroke="#cdaa3c" stroke-width="${g.trench_width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if (under && i) {
+    for (const n of Object.values(i.notches)) {
+      if (n.sleeve) h += `<polyline points="${poly(n.lead)}" fill="none" stroke="#4df" stroke-opacity="0.55" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>`;
+      h += `<polyline points="${poly(n.lead)}" fill="none" stroke="#96ffbe" stroke-width="0.3"/>`;
+      h += `<polygon points="${poly(n.body)}" fill="#c83c32" stroke="#000" stroke-width="0.08"/><polygon points="${poly(n.band)}" fill="#0f0f0f"/>`;
+    }
+  }
+  const sel = ui.sel;
+  for (const [net, ps] of visible) {
+    const color = (netInfo(net) || {color: "#fff"}).color;
+    ps.forEach((p, k) => {
+      if (sel && sel.net === net && sel.path === k) h += `<path d="${pathD(p)}" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>`;
+      h += `<path d="${pathD(p)}" fill="none" stroke="${color}" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>`;
+    });
+  }
+  if (i && ui.keepouts && under) {
+    for (const d of i.discs) h += `<circle cx="${d.x}" cy="${d.y}" r="${d.r}" fill="none" stroke="#f44" stroke-opacity="0.5" stroke-width="0.06" stroke-dasharray="0.2 0.2"/>`;
+  }
+  $("g-dyn").innerHTML = h;
+}
+
+function text(x, y, label, extra = "") {
+  const [px, py] = w2s(x, y);
+  return `<text x="${px}" y="${py}" text-anchor="middle" ${extra}>${label}</text>`;
+}
+
+function handle(kind, x, y, attrs, r, fill, stroke = "#fff", shape = "circle") {
+  const [px, py] = w2s(x, y);
+  const data = Object.entries({kind, ...attrs}).map(([k, v]) => `data-${k}="${v}"`).join(" ");
+  if (shape === "square") return `<rect ${data} x="${px - r}" y="${py - r}" width="${2 * r}" height="${2 * r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
+  return `<circle ${data} cx="${px}" cy="${py}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
+}
+
+function segmentHit(kind, a, b, attrs) {
+  const [x1, y1] = w2s(a[0], a[1]), [x2, y2] = w2s(b[0], b[1]);
+  const data = Object.entries({kind, ...attrs}).map(([k, v]) => `data-${k}="${v}"`).join(" ");
+  return `<line ${data} x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#000" stroke-opacity="0" stroke-width="${HIT_PX}" stroke-linecap="round"/>`;
+}
+
+function isLocked(net, path, i) {
+  if (i !== 0 && i !== path.length - 1) return false;
+  const n = netInfo(net);
+  return !!n && n.terminals.some((t) => hyp(t[0] - path[i][0], t[1] - path[i][1]) < 0.03);
+}
+
+function drawOverlay() {
+  const g = geo[ui.side], i = info[ui.side], hp = half();
+  let h = "";
+  const g0 = geo[ui.side];
+  if (ui.layer === "underside") {
+    for (const k of g0.keys) h += text(k.x, k.y + 1.2, k.name.replace("matrix_", "").replace("thumb_", "t_"), 'fill-opacity="0.8"');
+  }
+  h += text(g.xiao.x, g.xiao.y + 6, ui.layer === "underside" ? "XIAO pocket" : "XIAO window", 'fill="#ccc"');
+  if (i) {
+    for (const n of i.nets.filter((n) => n.layer === ui.layer)) {
+      if (ui.hidden.has(n.name)) continue;
+      for (const t of n.terminals) {
+        const [px, py] = w2s(t[0], t[1]);
+        h += `<circle cx="${px}" cy="${py}" r="6" fill="none" stroke="${n.color}" stroke-width="2" pointer-events="none"/>`;
+      }
+    }
+    if (ui.layer === "underside" && ui.tool === "notch") {
+      for (const [name, n] of Object.entries(i.notches)) {
+        const pts = n.poly.map((p) => w2s(p[0], p[1]).join(",")).join(" ");
+        h += `<polygon data-kind="notch" data-key="${name}" points="${pts}" fill="#fff" fill-opacity="0.12" stroke="#fff" stroke-width="1.5" style="cursor:move"/>`;
+        h += text(n.center[0], n.center[1] + 3.3, `${n.wall.toFixed(2)}`, n.wall < g.min_wall ? 'fill="#f66"' : "");
+      }
+    }
+  }
+  const sel = ui.sel;
+  if (ui.tool !== "notch") {
+    if (ui.tool === "select" && ui.layer === "underside") {
+      const lo = S.channel.low, hi = S.channel.high;
+      const edges = [[[lo[0], lo[1]], [hi[0], lo[1]], "-", "low"], [[hi[0], lo[1]], [hi[0], hi[1]], "high", "-"],
+                     [[hi[0], hi[1]], [lo[0], hi[1]], "-", "high"], [[lo[0], hi[1]], [lo[0], lo[1]], "low", "-"]];
+      for (const [a, b, ex, ey] of edges) h += segmentHit("chan", a, b, {ex, ey});
+    }
+    const nets = Object.entries(hp[ui.layer]).filter(([net]) => !ui.hidden.has(net));
+    for (const [net, ps] of nets) {
+      ps.forEach((p, k) => {
+        for (let j = 0; j < p.length - 1; j++) h += segmentHit("seg", p[j], p[j + 1], {net, path: k, i: j});
+      });
+    }
+    if (ui.tool === "select") {
+      for (const [net, ps] of nets) {
+        const color = (netInfo(net) || {color: "#fff"}).color;
+        ps.forEach((p, k) => {
+          const picked = sel && sel.net === net && sel.path === k;
+          p.forEach((v, j) => {
+            const locked = isLocked(net, p, j);
+            const isSel = picked && sel.idx === j;
+            const r = isSel ? 6 : picked ? 5 : 3.5;
+            h += handle("v", v[0], v[1], {net, path: k, i: j}, r, isSel ? "#ff0" : color, picked ? "#fff" : "#000", locked ? "square" : "circle");
+          });
+        });
+      }
+      if (ui.layer === "underside") {
+        const c = S.channel, lo = c.low, hi = c.high;
+        for (const [x, y, ex, ey] of [[lo[0], lo[1], "low", "low"], [hi[0], lo[1], "high", "low"], [hi[0], hi[1], "high", "high"], [lo[0], hi[1], "low", "high"]]) {
+          h += handle("chan", x, y, {ex, ey}, 5, "#96783a", "#fff", "square");
+        }
+        h += text((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2 - 0.3, "channel", 'fill="#fff"');
+      }
+    }
+  }
+  if (ui.adding) {
+    const pts = ui.adding.pts.map((p) => w2s(p[0], p[1]));
+    if (ui.hover) pts.push(w2s(ui.hover[0], ui.hover[1]));
+    h += `<polyline points="${pts.map((p) => p.join(",")).join(" ")}" fill="none" stroke="${ui.adding.color}" stroke-width="2" stroke-dasharray="5 4" pointer-events="none"/>`;
+    for (const p of ui.adding.pts) { const [px, py] = w2s(p[0], p[1]); h += `<circle cx="${px}" cy="${py}" r="4" fill="${ui.adding.color}" stroke="#fff" pointer-events="none"/>`; }
+  }
+  for (const guide of ui.guides) {
+    const [px, py] = w2s(guide.x ?? 0, guide.y ?? 0), r = svg.getBoundingClientRect();
+    h += guide.x !== undefined ? `<line x1="${px}" y1="0" x2="${px}" y2="${r.height}" stroke="#0ff" stroke-width="1" stroke-dasharray="3 3" pointer-events="none"/>`
+                               : `<line x1="0" y1="${py}" x2="${r.width}" y2="${py}" stroke="#0ff" stroke-width="1" stroke-dasharray="3 3" pointer-events="none"/>`;
+  }
+  if (i && i.problems) {
+    for (const p of i.problems) {
+      if (!p.at || p.layer !== ui.layer) continue;
+      const [px, py] = w2s(p.at[0], p.at[1]);
+      h += `<circle cx="${px}" cy="${py}" r="11" fill="none" stroke="#f33" stroke-width="3" pointer-events="none"/>`;
+    }
+  }
+  if (ui.marker) {
+    const [px, py] = w2s(ui.marker[0], ui.marker[1]);
+    h += `<circle cx="${px}" cy="${py}" r="14" fill="none" stroke="#ff0" stroke-width="3" pointer-events="none"/>`;
+  }
+  $("g-over").innerHTML = h;
+}
+
+function applyView() {
+  const v = ui.view, f = flip();
+  $("g-world").setAttribute("transform", `matrix(${f * v.s} 0 0 ${-v.s} ${v.ox} ${v.oy})`);
+}
+
+function render() {
+  if (!S || !geo) return;
+  applyView();
+  drawStatic();
+  drawDynamic();
+  drawOverlay();
+  panels();
+  for (const id of ["left", "right"]) $("b-" + id).classList.toggle("on", ui.side === id);
+  for (const id of ["underside", "top"]) $("b-" + id).classList.toggle("on", ui.layer === id);
+  for (const id of ["select", "add", "notch"]) $("t-" + id).classList.toggle("on", ui.tool === id);
+  $("b-undo").disabled = !history.length;
+  $("b-redo").disabled = !future.length;
+  svg.classList.toggle("add", ui.tool === "add");
+  updateTitle();
+}
+
+function panels() {
+  const i = info[ui.side];
+  const hints = {select: "Drag a vertex or a line. Double-click a line to add a vertex. Delete removes the selected vertex or trench. Squares are fixed to a terminal. Shift keeps a line straight, Alt turns the grid off.",
+                 add: "Click a terminal or a trench of the net to start. Click to add vertices. Double-click or Enter ends the trench. Esc cancels.",
+                 notch: "Drag a diode body along its key. It jumps to the other side of the key when you cross the middle."};
+  $("hint").textContent = hints[ui.tool];
+  let h = "";
+  for (const n of netsOfLayer()) {
+    const count = (layerPaths()[n.name] || []).length;
+    h += `<div class="net ${ui.active === n.name ? "active" : ""}" data-net="${n.name}"><input type="checkbox" data-eye="${n.name}" ${ui.hidden.has(n.name) ? "" : "checked"}>
+          <span class="swatch" style="background:${n.color}"></span><span>${n.name}</span><span class="hint">${count} trench${count === 1 ? "" : "es"}</span></div>`;
+  }
+  $("nets").innerHTML = h;
+  h = "";
+  if (i && i.stale) h += '<div class="hint">checking again...</div>';
+  (i && i.problems ? i.problems : []).forEach((p, k) => { h += `<div class="problem ${p.layer}" data-problem="${k}">${p.text}</div>`; });
+  $("problems").innerHTML = h || '<div class="hint">none</div>';
+  const sleeves = i ? Object.entries(i.notches).filter(([, n]) => n.sleeve).map(([name]) => name) : [];
+  $("sleeve-title").textContent = `Sleeves (${sleeves.length})`;
+  $("sleeves").innerHTML = (sleeves.length ? "" : '<div class="hint">none</div>')
+    + sleeves.map((name) => `<div class="wall" data-sleeve="${name}"><span>${name}</span></div>`).join("")
+    + (sleeves.length ? '<div class="hint">The anode lead of these diodes crosses the key cutout. Put a sleeve on it.</div>' : "");
+  h = "";
+  if (i && i.walls) {
+    for (const [label, w] of Object.entries(i.walls).sort((a, b) => a[1].value - b[1].value)) {
+      h += `<div class="wall ${w.value < geo[ui.side].min_wall - 1e-6 ? "low" : ""}" data-wall="${label}"><span>${label}</span><span>${w.value.toFixed(2)}</span></div>`;
+    }
+  }
+  $("walls").innerHTML = h;
+  selectionPanel();
+}
+
+function selectionPanel() {
+  const el = $("sel"), sel = ui.sel;
+  if (!sel || !layerPaths()[sel.net] || !layerPaths()[sel.net][sel.path]) { el.innerHTML = '<span class="hint">nothing selected</span>'; return; }
+  const path = layerPaths()[sel.net][sel.path];
+  let h = `<div><b>${sel.net}</b>, trench ${sel.path + 1} of ${layerPaths()[sel.net].length}, ${path.length} vertices</div>`;
+  if (sel.idx !== null && path[sel.idx]) {
+    const v = path[sel.idx], end = sel.idx === 0 || sel.idx === path.length - 1, locked = isLocked(sel.net, path, sel.idx);
+    const auto = normalized(path)[sel.idx][2];
+    h += `<div class="row">vertex ${sel.idx + 1}${locked ? " (fixed to a terminal)" : ""}</div>
+      <div class="row">x <input type="number" step="0.05" id="f-x" value="${fmt(v[0])}" ${locked ? "disabled" : ""}> y <input type="number" step="0.05" id="f-y" value="${fmt(v[1])}" ${locked ? "disabled" : ""}></div>`;
+    if (!end) h += `<div class="row">radius <input type="number" step="0.25" min="0" id="f-r" value="${v[2] === null ? "" : v[2]}" placeholder="auto ${fmt(auto)}"> <button id="f-auto">auto</button></div>`;
+    h += `<div class="row"><button id="f-delv" ${path.length <= 2 || locked ? "disabled" : ""}>Delete vertex</button></div>`;
+  }
+  h += `<div class="row"><button id="f-delp">Delete trench</button></div>`;
+  el.innerHTML = h;
+  const edit = (apply) => () => { commit(); apply(); changed(); };
+  if ($("f-x")) {
+    const move = () => { const v = path[sel.idx], x = parseFloat($("f-x").value), y = parseFloat($("f-y").value); if (isFinite(x) && isFinite(y)) { v[0] = x; v[1] = y; } };
+    $("f-x").onchange = edit(move); $("f-y").onchange = edit(move);
+  }
+  if ($("f-r")) {
+    $("f-r").onchange = edit(() => { const t = $("f-r").value; const r = parseFloat(t); path[sel.idx][2] = t === "" || !isFinite(r) ? null : Math.max(0, r); });
+    $("f-auto").onclick = edit(() => { path[sel.idx][2] = null; });
+  }
+  if ($("f-delv")) $("f-delv").onclick = deleteSelection;
+  $("f-delp").onclick = () => deleteSelection(true);
+}
+
+// ---------- snapping
+function otherVertices(except) {
+  const out = [];
+  for (const ps of Object.values(layerPaths())) for (const p of ps) for (const v of p) if (v !== except) out.push(v);
+  return out;
+}
+
+function nearestOnSegments(net, x, y, skip) {
+  let best = null;
+  (layerPaths()[net] || []).forEach((p, k) => {
+    for (let j = 0; j < p.length - 1; j++) {
+      if (skip && skip(k, j)) continue;
+      const a = p[j], b = p[j + 1], dx = b[0] - a[0], dy = b[1] - a[1], len2 = dx * dx + dy * dy;
+      if (len2 < 1e-12) continue;
+      const t = clamp(((x - a[0]) * dx + (y - a[1]) * dy) / len2, 0, 1);
+      const q = [a[0] + t * dx, a[1] + t * dy], d = hyp(q[0] - x, q[1] - y);
+      if (!best || d < best.d) best = {d, q};
+    }
+  });
+  return best;
+}
+
+// where a point at the mouse lands.
+// `o`: {net, except (vertex being moved), terminals (may join a terminal), junction (may join a trench of the net), ref (neighbour for Shift), skip}
+function snap(wx, wy, e, o) {
+  const tol = SNAP_PX / ui.view.s;
+  ui.guides = [];
+  let x = wx, y = wy;
+  if (o.net && !e.altKey) {
+    const n = netInfo(o.net);
+    if (o.terminals && n) for (const t of n.terminals) if (hyp(t[0] - wx, t[1] - wy) < tol * 1.6) return [t[0], t[1]];
+    if (o.junction) {
+      const hit = nearestOnSegments(o.net, wx, wy, o.skip);
+      if (hit && hit.d < tol) return hit.q;
+    }
+  }
+  if (e.shiftKey && o.ref) {
+    if (Math.abs(wx - o.ref[0]) > Math.abs(wy - o.ref[1])) y = o.ref[1]; else x = o.ref[0];
+  }
+  const vs = otherVertices(o.except);
+  let sx = false, sy = false;
+  if (!e.altKey) {
+    for (const v of vs) {
+      if (!sx && !(e.shiftKey && o.ref && x === o.ref[0]) && Math.abs(x - v[0]) < tol) { x = v[0]; sx = true; ui.guides.push({x}); }
+      if (!sy && Math.abs(y - v[1]) < tol) { y = v[1]; sy = true; ui.guides.push({y}); }
+    }
+    if (!sx && !(e.shiftKey && o.ref && x === o.ref[0])) x = snapGrid(x);
+    if (!sy && !(e.shiftKey && o.ref && y === o.ref[1])) y = snapGrid(y);
+  }
+  return [x, y];
+}
+
+// ---------- editing
+function select(net, path, idx = null) { ui.sel = net === null ? null : {net, path, idx}; ui.active = net; }
+
+function deleteSelection(wholeTrench = false) {
+  const sel = ui.sel;
+  if (!sel) return;
+  const paths = layerPaths()[sel.net];
+  const path = paths && paths[sel.path];
+  if (!path) return;
+  if (sel.idx !== null && !wholeTrench) {
+    if (path.length <= 2) { status("A trench needs two vertices. Delete the trench instead.", "bad"); return; }
+    if (isLocked(sel.net, path, sel.idx)) { status("This end is fixed to a terminal.", "bad"); return; }
+    commit();
+    path.splice(sel.idx, 1);
+    ui.sel = {net: sel.net, path: sel.path, idx: null};
+  } else {
+    commit();
+    paths.splice(sel.path, 1);
+    ui.sel = null;
+  }
+  changed();
+}
+
+function startAdd(e, w) {
+  const tol = HIT_PX / ui.view.s;
+  let net = null, start = null;
+  for (const n of netsOfLayer()) {
+    for (const t of n.terminals) if (hyp(t[0] - w[0], t[1] - w[1]) < tol) { net = n.name; start = t; }
+  }
+  if (!net) {
+    const target = e.target.dataset;
+    if (target.kind === "seg") { net = target.net; start = nearestOnSegments(net, w[0], w[1]).q; }
+  }
+  if (!net && ui.active && netInfo(ui.active)) { net = ui.active; start = snap(w[0], w[1], e, {net}); }
+  if (!net) { status("Start on a terminal or on a trench, or pick a net in the list first.", "bad"); return; }
+  ui.adding = {net, color: netInfo(net).color, pts: [start]};
+  ui.active = net;
+  status(`Adding a trench to ${net}. Double-click or Enter ends it.`);
+}
+
+function finishAdd() {
+  const a = ui.adding;
+  if (!a) return;
+  const pts = a.pts.filter((p, k) => k === 0 || hyp(p[0] - a.pts[k - 1][0], p[1] - a.pts[k - 1][1]) > 0.01);
+  ui.adding = null;
+  if (pts.length < 2) { render(); return; }
+  const last = pts[pts.length - 1], hit = nearestOnSegments(a.net, last[0], last[1]);
+  if (hit && hit.d < 2 * SNAP_PX / ui.view.s) pts[pts.length - 1] = hit.q;
+  commit();
+  const paths = layerPaths();
+  (paths[a.net] = paths[a.net] || []).push(pts.map((p) => [p[0], p[1], null]));
+  ui.tool = "select";
+  select(a.net, paths[a.net].length - 1, null);
+  changed();
+}
+
+function notchFrom(w, key) {
+  const k = geo[ui.side].keys.find((q) => q.name === key);
+  const a = k.r * Math.PI / 180, dx = w[0] - k.x, dy = w[1] - k.y;
+  const lx = Math.cos(a) * dx + Math.sin(a) * dy, ly = -Math.sin(a) * dx + Math.cos(a) * dy;
+  return [lx, ly];
+}
+
+// ---------- pointer
+svg.addEventListener("pointerdown", (e) => {
+  if (!S) return;
+  svg.setPointerCapture(e.pointerId);
+  const m = mouse(e), w = s2w(m[0], m[1]), t = e.target.dataset || {};
+  if (e.button === 1 || e.button === 2 && !t.kind) { drag = {type: "pan", m, view: {...ui.view}}; svg.classList.add("pan"); return; }
+  if (e.button === 2) return;
+  if (ui.tool === "add") {
+    if (ui.adding) {
+      const p = snap(w[0], w[1], e, {net: ui.adding.net, terminals: true, ref: ui.adding.pts[ui.adding.pts.length - 1]});
+      ui.adding.pts.push(p);
+      render();
+    } else startAdd(e, w);
+    return;
+  }
+  if (ui.tool === "notch") {
+    if (t.kind === "notch") {
+      commit();
+      const tip = info[ui.side].anchors[t.key + ".cathode"];
+      drag = {type: "notch", key: t.key, m, moved: false};
+      follow = {key: t.key, tip: tip.slice()};
+    } else drag = {type: "pan", m, view: {...ui.view}};
+    return;
+  }
+  if (t.kind === "v") {
+    const net = t.net, p = +t.path, i = +t.i;
+    select(net, p, i);
+    const path = layerPaths()[net][p];
+    drag = {type: "vertex", net, p, i, m, moved: false, locked: isLocked(net, path, i)};
+    render();
+  } else if (t.kind === "seg") {
+    const net = t.net, p = +t.path, i = +t.i;
+    select(net, p, null);
+    const path = layerPaths()[net][p];
+    const lockedEnd = isLocked(net, path, i) || isLocked(net, path, i + 1);
+    drag = {type: "seg", net, p, i, m, w, moved: false, locked: lockedEnd, orig: [path[i].slice(), path[i + 1].slice()]};
+    render();
+  } else if (t.kind === "chan") {
+    drag = {type: "chan", ex: t.ex, ey: t.ey, m, moved: false, orig: JSON.stringify(S.channel)};
+  } else {
+    select(null);
+    drag = {type: "pan", m, view: {...ui.view}, click: true};
+    render();
+  }
+});
+
+svg.addEventListener("pointermove", (e) => {
+  if (!S) return;
+  const m = mouse(e), w = s2w(m[0], m[1]);
+  showCursor(w);
+  if (!drag) {
+    if (ui.adding) {
+      const a = ui.adding;
+      ui.hover = snap(w[0], w[1], e, {net: a.net, terminals: true, ref: a.pts[a.pts.length - 1]});
+      drawOverlay();
+    }
+    return;
+  }
+  if (drag.type === "pan") {
+    ui.view.ox = drag.view.ox + m[0] - drag.m[0]; ui.view.oy = drag.view.oy + m[1] - drag.m[1];
+    render();
+    showCursor(s2w(m[0], m[1]));
+    return;
+  }
+  if (!drag.moved && hyp(m[0] - drag.m[0], m[1] - drag.m[1]) < DRAG_PX && drag.type !== "notch") return;
+  if (drag.type === "vertex") {
+    if (drag.locked) return;
+    const path = layerPaths()[drag.net][drag.p], v = path[drag.i];
+    if (!drag.moved) { commit(); drag.moved = true; }
+    const last = path.length - 1;
+    const ref = path[drag.i > 0 ? drag.i - 1 : drag.i + 1];
+    const [x, y] = snap(w[0], w[1], e, {net: drag.net, except: v, terminals: drag.i === 0 || drag.i === last, junction: drag.i === 0 || drag.i === last, ref,
+                                         skip: (k, j) => k === drag.p && (j === drag.i || j === drag.i - 1)});
+    v[0] = x; v[1] = y;
+    render();
+  } else if (drag.type === "seg") {
+    if (drag.locked) return;
+    const path = layerPaths()[drag.net][drag.p], a = path[drag.i], b = path[drag.i + 1];
+    if (!drag.moved) { commit(); drag.moved = true; }
+    const [oa, ob] = drag.orig, dx = ob[0] - oa[0], dy = ob[1] - oa[1], len = hyp(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    let d = (w[0] - drag.w[0]) * nx + (w[1] - drag.w[1]) * ny;
+    ui.guides = [];
+    if (Math.abs(dy) < 1e-6 && !e.altKey) { d = snapAxis("y", oa[1] + d, oa) - oa[1]; }
+    else if (Math.abs(dx) < 1e-6 && !e.altKey) { d = snapAxis("x", oa[0] + d, oa) - oa[0]; }
+    a[0] = oa[0] + nx * d; a[1] = oa[1] + ny * d;
+    b[0] = ob[0] + nx * d; b[1] = ob[1] + ny * d;
+    render();
+  } else if (drag.type === "chan") {
+    if (!drag.moved) { commit(); drag.moved = true; }
+    const [x, y] = snap(w[0], w[1], e, {});
+    const c = S.channel;
+    if (drag.ex !== "-") c[drag.ex][0] = x;
+    if (drag.ey !== "-") c[drag.ey][1] = y;
+    if (c.low[0] > c.high[0] - 1) { c.low[0] = Math.min(c.low[0], c.high[0] - 1); }
+    if (c.low[1] > c.high[1] - 1) { c.low[1] = Math.min(c.low[1], c.high[1] - 1); }
+    render();
+  } else if (drag.type === "notch") {
+    const [lx, ly] = notchFrom(w, drag.key);
+    const cur = half().notches[drag.key];
+    const side = Math.abs(lx) < 0.5 ? cur[0] : (lx > 0 ? 1 : -1);
+    const [lo, hi] = geo[ui.side].diode_y;
+    const y = clamp(snapGrid(ly), Math.ceil(lo / GRID) * GRID, Math.floor(hi / GRID) * GRID);
+    if (side === cur[0] && y === cur[1]) return;
+    drag.moved = true;
+    half().notches[drag.key] = [side, y];
+    requestNotch();
+  }
+});
+
+function snapAxis(axis, value, orig) {
+  const tol = SNAP_PX / ui.view.s;
+  const i = axis === "x" ? 0 : 1;
+  for (const v of otherVertices(null)) {
+    if (v[0] === orig[0] && v[1] === orig[1]) continue;
+    if (Math.abs(v[i] - value) < tol) { ui.guides.push({[axis]: v[i]}); return v[i]; }
+  }
+  return snapGrid(value);
+}
+
+let notchBusy = false, notchAgain = false, follow = null;
+async function requestNotch() {
+  if (notchBusy) { notchAgain = true; return; }
+  notchBusy = true;
+  try {
+    const side = ui.side;
+    const answer = await api("/api/analyze", {side, state: stateFor(side), fast: true});
+    info[side] = {...info[side], ...answer, stale: true};
+    if (follow) {
+      const tip = answer.anchors[follow.key + ".cathode"];
+      for (const ps of Object.values(half().underside)) for (const p of ps) for (const v of p) {
+        if (hyp(v[0] - follow.tip[0], v[1] - follow.tip[1]) < 0.03) { v[0] = tip[0]; v[1] = tip[1]; }
+      }
+      follow.tip = tip.slice();
+    }
+    render();
+  } catch (error) {
+    status(error.message, "bad");
+  } finally {
+    notchBusy = false;
+    if (notchAgain) { notchAgain = false; requestNotch(); }
+    else if (!drag) { follow = null; changed(); }
+  }
+}
+
+function endDrag() {
+  const d = drag;
+  drag = null;
+  ui.guides = [];
+  svg.classList.remove("pan");
+  if (!d) return;
+  if (d.type === "pan") { render(); return; }
+  if (d.type === "notch" && !d.moved) { history.pop(); follow = null; render(); return; }
+  if (d.type === "notch" && !notchBusy) follow = null;
+  if (d.moved) changed(); else render();
+}
+svg.addEventListener("pointerup", endDrag);
+svg.addEventListener("pointercancel", endDrag);
+
+svg.addEventListener("dblclick", (e) => {
+  if (!S) return;
+  if (ui.tool === "add") { finishAdd(); return; }
+  if (ui.tool !== "select") return;
+  const t = (document.elementFromPoint(e.clientX, e.clientY) || {}).dataset || {};
+  if (t.kind !== "seg") return;
+  const m = mouse(e), w = s2w(m[0], m[1]), net = t.net, k = +t.path, j = +t.i;
+  const path = layerPaths()[net][k];
+  const a = path[j], b = path[j + 1], dx = b[0] - a[0], dy = b[1] - a[1], len2 = dx * dx + dy * dy;
+  const u = clamp(((w[0] - a[0]) * dx + (w[1] - a[1]) * dy) / len2, 0, 1);
+  commit();
+  path.splice(j + 1, 0, [a[0] + u * dx, a[1] + u * dy, null]);
+  select(net, k, j + 1);
+  changed();
+});
+
+svg.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  const t = e.target.dataset || {};
+  if (ui.tool === "select" && t.kind === "v") { select(t.net, +t.path, +t.i); deleteSelection(); }
+});
+
+svg.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const m = mouse(e), w = s2w(m[0], m[1]);
+  ui.view.s = clamp(ui.view.s * (e.deltaY < 0 ? 1.15 : 1 / 1.15), 2, 200);
+  const [px, py] = w2s(w[0], w[1]);
+  ui.view.ox += m[0] - px; ui.view.oy += m[1] - py;
+  render();
+}, {passive: false});
+
+// ---------- panels and buttons
+$("nets").addEventListener("click", (e) => {
+  const eye = e.target.dataset.eye;
+  if (eye) { if (e.target.checked) ui.hidden.delete(eye); else ui.hidden.add(eye); render(); return; }
+  const row = e.target.closest(".net");
+  if (row) { ui.active = row.dataset.net; render(); }
+});
+$("problems").addEventListener("click", (e) => {
+  const el = e.target.closest(".problem");
+  if (!el) return;
+  const p = info[ui.side].problems[+el.dataset.problem];
+  if (p.layer !== ui.layer) setLayer(p.layer);
+  if (p.at) { ui.marker = p.at; centerOn(p.at); }
+});
+$("sleeves").addEventListener("click", (e) => {
+  const el = e.target.closest("[data-sleeve]");
+  if (el) { ui.marker = info[ui.side].notches[el.dataset.sleeve].center; if (ui.layer !== "underside") setLayer("underside"); centerOn(ui.marker); }
+});
+$("walls").addEventListener("click", (e) => {
+  const el = e.target.closest(".wall");
+  if (el) { ui.marker = info[ui.side].walls[el.dataset.wall].at; if (ui.layer !== "underside") setLayer("underside"); centerOn(ui.marker); }
+});
+
+function centerOn(p) {
+  const r = svg.getBoundingClientRect();
+  const [px, py] = w2s(p[0], p[1]);
+  ui.view.ox += r.width / 2 - px; ui.view.oy += r.height / 2 - py;
+  render();
+}
+function fit() {
+  const g = geo[ui.side], r = svg.getBoundingClientRect();
+  const xs = g.outline.map((p) => p[0]), ys = g.outline.map((p) => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const s = Math.min((r.width - 40) / (x1 - x0), (r.height - 40) / (y1 - y0));
+  ui.view.s = s;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  ui.view.ox = r.width / 2 - flip() * cx * s;
+  ui.view.oy = r.height / 2 + cy * s;
+  render();
+}
+function keepCenter(change) {
+  const r = svg.getBoundingClientRect();
+  const c = s2w(r.width / 2, r.height / 2);
+  change();
+  const [px, py] = w2s(c[0], c[1]);
+  ui.view.ox += r.width / 2 - px; ui.view.oy += r.height / 2 - py;
+}
+function setLayer(layer) {
+  if (ui.layer === layer) return;
+  keepCenter(() => { ui.layer = layer; });
+  ui.sel = null; ui.adding = null; ui.active = null;
+  if (layer === "top" && ui.tool === "notch") ui.tool = "select";
+  render();
+}
+function setSide(side) {
+  if (ui.side === side) return;
+  keepCenter(() => { ui.side = side; });
+  ui.sel = null; ui.adding = null; ui.active = null;
+  render();
+  runCheck();
+}
+function setTool(tool) {
+  if (tool === "notch" && ui.layer !== "underside") setLayer("underside");
+  ui.tool = tool; ui.adding = null; ui.guides = [];
+  render();
+}
+
+$("b-left").onclick = () => setSide("left");
+$("b-right").onclick = () => setSide("right");
+$("b-underside").onclick = () => setLayer("underside");
+$("b-top").onclick = () => setLayer("top");
+$("t-select").onclick = () => setTool("select");
+$("t-add").onclick = () => setTool("add");
+$("t-notch").onclick = () => setTool("notch");
+$("b-undo").onclick = undo;
+$("b-redo").onclick = redo;
+$("b-tidy").onclick = tidy;
+$("b-fit").onclick = fit;
+$("c-keep").onchange = (e) => { ui.keepouts = e.target.checked; render(); };
+$("b-save").onclick = save;
+$("b-reload").onclick = () => { if (!S || snapshot() === savedJson || confirm("Throw away the changes that are not saved?")) load(); };
+
+async function tidy() {
+  try {
+    const answer = await api("/api/tidy", {state: {underside: half().underside, top: half().top}});
+    if (!answer.removed) { status(`${ui.side}: nothing to tidy`, "good"); return; }
+    commit();
+    half().underside = answer.paths.underside; half().top = answer.paths.top;
+    ui.sel = null; ui.adding = null;
+    changed();
+    ui.note = `tidy removed ${answer.removed} vertices`;
+    status(`${ui.side}: ${ui.note}`, "good");
+  } catch (error) {
+    status(error.message, "bad");
+  }
+}
+
+async function save() {
+  try {
+    status("saving...");
+    const answer = await api("/api/save", {state: S});
+    S = answer.document; savedJson = snapshot(); history = []; future = [];
+    ui.sel = null;
+    render();
+    await runCheck();
+    const n = (info[ui.side].problems || []).length;
+    status(`saved. ${n ? n + " problems in the " + ui.side + " half" : "no problems in the " + ui.side + " half"}. The old file is in build/.`, n ? "bad" : "good");
+  } catch (error) {
+    status(error.message, "bad");
+    alert("Not saved: " + error.message);
+  }
+}
+
+window.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" && e.key !== "Escape") return;
+  const key = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && key === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if ((e.ctrlKey || e.metaKey) && key === "y") { e.preventDefault(); redo(); }
+  else if ((e.ctrlKey || e.metaKey) && key === "s") { e.preventDefault(); save(); }
+  else if (key === "delete" || key === "backspace") { e.preventDefault(); deleteSelection(); }
+  else if (key === "escape") { ui.adding = null; ui.sel = null; ui.marker = null; if (document.activeElement) document.activeElement.blur(); render(); }
+  else if (key === "enter") { finishAdd(); }
+  else if (key === "1") setTool("select");
+  else if (key === "2") setTool("add");
+  else if (key === "3") setTool("notch");
+});
+
+async function load() {
+  try {
+    status("loading...");
+    const answer = await api("/api/document");
+    geo = answer.geometry; S = answer.document; savedJson = snapshot();
+    history = []; future = []; info = {left: null, right: null}; staticKey = "";
+    ui.sel = null; ui.adding = null;
+    fit();
+    await runCheck();
+  } catch (error) {
+    status(error.message, "bad");
+  }
+}
+window.addEventListener("resize", () => S && render());
+window.editor = {get S() { return S; }, ui, get info() { return info; }, load, save, fit, render, runCheck, setTool, setSide, setLayer, undo, redo, w2s, s2w, snapshot, deleteSelection, finishAdd, get geo() { return geo; }};
+load();
+</script>
+</body>
+</html>

@@ -28,6 +28,12 @@ def powerswitch_plane(dims: WaveDimensions) -> Plane:
     return Plane(dims.powerswitch_position).rotated(dims.powerswitch_rotation)
 
 
+def powerswitch_location(dims: WaveDimensions) -> Location:
+    """Where the model of the power switch stands in the case: the same turns and the same shift as the fixture."""
+    rotation = dims.powerswitch_rotation
+    return Pos(dims.powerswitch_position) * Rot(Z=rotation.Z) * Rot(Y=rotation.Y)
+
+
 def circle_sketch(positions: list[Vector], radius: float, plane: Plane = Plane.XY) -> BuildSketch:
     """Circles at positions on plane.
 

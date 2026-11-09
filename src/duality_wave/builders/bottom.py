@@ -8,10 +8,6 @@ from duality_wave.models.switch import Switch
 from duality_wave.models.xiao import Xiao
 
 
-# wiring channel under the terminals of each switch: size and offset from the switch center
-TERMINAL_CHANNEL = (12, 4)
-TERMINAL_CHANNEL_OFFSET_Y = -4.5
-TERMINAL_CHANNEL_DEPTH = 0.8
 # the XIAO processor pocket is this much larger than the processor, the board cutout this much smaller than the board
 XIAO_PROCESSOR_SLACK = 0.5
 XIAO_BOARD_INSET = 0.5
@@ -113,10 +109,6 @@ def switch_post_cutter(switch: Switch, keyplate_z: float, placements: list[Locat
                             with Locations((post.p.X, -post.p.Y)):
                                 Circle(post.d.radius + post_clearance)
             extrude(amount=-depth)
-        with BuildSketch(top):
-            with Locations([p.position + Vector(0, TERMINAL_CHANNEL_OFFSET_Y) for p in placements]):
-                Rectangle(*TERMINAL_CHANNEL)
-        extrude(amount=-TERMINAL_CHANNEL_DEPTH)
     return cutter.part
 
 

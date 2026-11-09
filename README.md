@@ -112,8 +112,14 @@ The coupons fit on a 180 mm print bed.
 | D, pockets | Which XIAO pocket clearance is right? Which battery pocket clearance is right? Test the real battery. |
 | E, magnet pockets | Which magnet pocket size is right? The label is the pocket diameter. Push a stack of two magnets into each pocket. |
 | E, skin and mate | How thick can the skin over the magnets be? The label is the skin in mm. Put a stack of two magnets in a pocket, then hold a loose magnet on the skin side. |
+| F, trenches (own plate) | Which trench width and depth is right for the enamelled wire? Rows are the width in mm, columns the depth. Press a wire into each trench. |
+| G, diode pockets (own plate) | How much slack does the diode pocket need? The label is the slack in mm (the pocket is that much wider, twice as much longer and that much deeper than the body). Lay a real diode into each pocket. |
 
 Print the mate of the skin coupon too.
+
+The trenches and the diode pockets of the wiring have their own plate.
+Run `task export -- coupons-wiring` and print `build/coupons_wiring.stl`.
+Coupons F and G are in the table above.
 
 The emblems in the front wall have their own plate.
 Run `task export -- coupons-engraving` and print `build/coupons_engraving.stl`.
@@ -154,6 +160,7 @@ The dev shell installs the Python dependencies with `uv`.
 | `task export` | Writes the STEP files of the case to `build/step`. Run `task export -- --compact` for the compact variant. |
 | `task export -- coupons` | Writes `build/coupons.stl`. |
 | `task export -- coupons-engraving` | Writes `build/coupons_engraving.stl`. |
+| `task export -- coupons-wiring` | Writes `build/coupons_wiring.stl`. |
 | `task render` | Renders the images in `docs/images` with Blender. |
 
 The STEP files go to `build/step` and the coupon plates to `build/`.

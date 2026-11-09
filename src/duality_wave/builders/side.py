@@ -6,7 +6,9 @@ from duality_wave.builders.accessories import Accessories, Fixtures, build_switc
 from duality_wave.builders.bottom import add_switch_post_cutouts
 from duality_wave.builders.common import CaseContext
 from duality_wave.builders.wall_engraving import WallSpot, engrave_emblem, find_wall_spot
+from duality_wave.builders.wiring_cuts import cut_bottom, cut_keyplate
 from duality_wave.models.xiao import Xiao
+from duality_wave.wiring.plan import WiringPlan
 
 
 @dataclass(frozen=True)
@@ -79,10 +81,12 @@ class BuiltSide:
     accessories: Accessories | None
 
 
-def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures | None, viewer) -> BuiltSide:
+def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures | None, viewer,
+                wiring: WiringPlan | None = None) -> BuiltSide:
     """Place the blanks on the side and cut everything that depends on where the keys and the XIAO are.
 
     fixtures are the accessories of the left half, or None when nobody wants to see them.
+    With a wiring plan the diode pockets and the trenches of the side are cut into the blanks first, in the frame of the blank.
     """
     dims = ctx.dims
     xiao = Xiao(side.xiao_plane)
@@ -98,11 +102,17 @@ def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures
     keywell = xiao.add_usb_cutouts(keywell, dims.clearance)
     viewer.push(keywell, name=f"keywell_{side.name}")
 
-    keyplate = xiao.add_large_usb_cutouts(side.mirrored(blanks.keyplate), dims.clearance)
+    keyplate_blank, bottom_blank = blanks.keyplate, blanks.bottom
+    if wiring is not None:
+        plan = wiring.side(side.name)
+        keyplate_blank = cut_keyplate(ctx, keyplate_blank, plan, wiring.diode)
+        bottom_blank = cut_bottom(ctx, bottom_blank, plan, wiring.diode)
+
+    keyplate = xiao.add_large_usb_cutouts(side.mirrored(keyplate_blank), dims.clearance)
     viewer.push(keyplate, name=f"keyplate_{side.name}")
 
     bottom = add_switch_post_cutouts(
-        side.mirrored(blanks.bottom), ctx.switch, dims.keyplate_z, side.switch_locations, dims.print_profile.post_clearance)
+        side.mirrored(bottom_blank), ctx.switch, dims.keyplate_z, side.switch_locations, dims.print_profile.post_clearance)
     bottom = xiao.add_large_usb_cutouts(bottom, dims.clearance)
     bottom = xiao.add_reset_lever(
         bottom, side.xiao_plane.offset(dims.keyplate_z + dims.bottom_plate_z + dims.xiao_position.Z))
