@@ -55,12 +55,14 @@ Check the repository of the keycaps for the files and the license.
 Each half has three printed parts.
 The magnet spacers are a fourth kind of part, and both halves share them.
 
-- `keywell` is the top shell. Print it upside down.
-- `keyplate` holds the switches. Print it upside down.
-- `bottom` closes the case. Print it right side up.
+- `keywell` is the top shell.
+- `keyplate` holds the switches.
+- `bottom` closes the case.
 - `magnet_spacer` is a small disc. Print 8 of them, 4 for each half.
 
 Run `task export` to create the STEP files for all parts.
+Each STEP file is in its print orientation, so you do not flip it in the slicer.
+The keywell and the keyplate print upside down compared to the assembled case.
 Run `task export -- coupons` to create the calibration coupons.
 Print the coupons first.
 The fit depends on your printer, your material and your slicer.

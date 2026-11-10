@@ -7,11 +7,11 @@ from pathlib import Path
 from dataclasses import replace
 from types import SimpleNamespace
 
-from build123d import BuildSketch, Box, Circle, Plane, Rectangle, Sketch, Solid, Vector
+from build123d import Axis, BuildSketch, Box, Circle, Plane, Rectangle, Sketch, Solid, Vector
 
 from duality_wave.builders.accessories import build_fixtures
 from duality_wave.builders.bottom import build_bottom
-from duality_wave.builders.export import export_steps
+from duality_wave.builders.export import export_steps, print_pose
 from duality_wave.builders.side import Side
 from duality_wave.builders.keywell import build_keywell
 from duality_wave.builders.thumb_cut import ThumbCutSpec, thumb_cutter, thumb_depth, thumb_floor_z, thumb_zone
@@ -304,6 +304,27 @@ class SideTests(unittest.TestCase):
         left = Side.left(ctx)
         self.assertEqual(left.suffix, "")
         self.assertEqual(Side.right(ctx, left).suffix, "_right")
+
+
+class PrintPoseTests(unittest.TestCase):
+    def stepped_block(self):
+        # a wide base (z -5..0) with a narrow stub on top (z 0..3)
+        return Box(20, 20, 5).translate((0, 0, -2.5)) + Box(4, 4, 3).translate((0, 0, 1.5))
+
+    def test_keywell_and_keyplate_are_flipped_onto_the_bed(self):
+        for name in ("keywell", "keyplate"):
+            posed = print_pose(name, self.stepped_block())
+            box = posed.bounding_box()
+            self.assertAlmostEqual(box.min.Z, 0, places=6)
+            self.assertAlmostEqual(box.max.Z, 8, places=6)
+            # the stub is now on the bed, the wide base on top
+            self.assertAlmostEqual(posed.faces().sort_by(Axis.Z)[0].bounding_box().size.X, 4, places=6)
+
+    def test_bottom_stays_upright_and_drops_to_the_bed(self):
+        posed = print_pose("bottom", self.stepped_block())
+        box = posed.bounding_box()
+        self.assertAlmostEqual(box.min.Z, 0, places=6)
+        self.assertAlmostEqual(posed.faces().sort_by(Axis.Z)[0].bounding_box().size.X, 20, places=6)
 
 
 class ExportTests(unittest.TestCase):
