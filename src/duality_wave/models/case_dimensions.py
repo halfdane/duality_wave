@@ -72,7 +72,7 @@ class CaseDimensions(WaveDimensions):
         self.battery_pd = PosAndDims(
             d=battery_d,
             p=outline.top_left \
-                + ((self.wall_thickness + 2), -(2*self.wall_thickness + self.clearance)) \
+                + (2*self.wall_thickness + 4*self.print_profile.line_width, -2*self.wall_thickness + self.print_profile.line_width) \
                 + (battery_d.X/2, - battery_d.Y/2, (self.snap_z(self.above_z - self.wall_thickness, up=False) - battery_d.Z/2)))
 
         self.magnet_d: RoundDimensions = RoundDimensions(5, 2)
@@ -105,9 +105,10 @@ class CaseDimensions(WaveDimensions):
         magnet_z = self.magnet_z
         bumpers_radius = self.bumper_radius
 
-        fastener_top = outline.top_right.Y - HeatSetInsert.dims.d.radius*2 -2
-        fastener_left = outline.top_left.X + HeatSetInsert.dims.d.radius*2 +2
-        fastener_bottom = outline.bottom_left.Y + HeatSetInsert.dims.d.radius*2 +2
+        fastener_distance_from_wall = self.print_profile.layer_height * 6
+        fastener_top = outline.top_right.Y - HeatSetInsert.dims.d.radius*2 -fastener_distance_from_wall
+        fastener_left = outline.top_left.X + HeatSetInsert.dims.d.radius*2 +fastener_distance_from_wall
+        fastener_bottom = outline.bottom_left.Y + HeatSetInsert.dims.d.radius*2 +fastener_distance_from_wall
         self.fastener_positions = [
             # bottom left
             Vector(fastener_left, fastener_bottom),
