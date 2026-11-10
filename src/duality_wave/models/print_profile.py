@@ -13,6 +13,8 @@ class PrintProfile:
 
     # height of one printed layer. The levels of the case snap to whole layers, counted from the print bed
     layer_height: float = 0.2
+    # width of one extruded line
+    line_width: float = 0.4
 
     # everything that is not listed below (xiao pocket, usb, power switch, pin, positions)
     clearance: float = 0.02
@@ -34,13 +36,12 @@ class PrintProfile:
     screw_clearance: float = 0.2
     screw_head_clearance: float = 0.1
 
+    # width of the heat set insert minus a bit, so the hole interferes and holds the insert firmly
     insert_pilot_radius: float = 1.6
 
     # thinnest wall between two holes or between a hole and an edge: two perimeters of a 0.4 mm nozzle
     min_wall: float = 0.8
 
-    # width of one extruded line
-    line_width: float = 0.4
     # depth of the emblems in the outer wall, in lines. A whole number of lines leaves the perimeters unsqueezed
     engraving_lines: int = 1
     # pitch of the pixels of the emblems. It rounds up to a whole number of layers, so the rows end on layer boundaries

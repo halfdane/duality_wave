@@ -24,8 +24,8 @@ class OutlineSpec:
     corner_radius: float = 5.0
     sweep_ratio: float = 0.5
     bridge_gap: float = 4.4
-    cutout_concave_radius: float = 0.5
-    cutout_convex_radius: float = 0.5
+    cutout_concave_radius: float = 1
+    cutout_convex_radius: float = 1
 
 
 class Outline:
