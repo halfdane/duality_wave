@@ -72,7 +72,7 @@ class CaseDimensions(WaveDimensions):
         self.battery_pd = PosAndDims(
             d=battery_d,
             p=outline.top_left \
-                + ((self.wall_thickness + 2), -(self.wall_thickness + self.clearance)) \
+                + ((self.wall_thickness + 2), -(2*self.wall_thickness + self.clearance)) \
                 + (battery_d.X/2, - battery_d.Y/2, (self.snap_z(self.above_z - self.wall_thickness, up=False) - battery_d.Z/2)))
 
         self.magnet_d: RoundDimensions = RoundDimensions(5, 2)
@@ -125,7 +125,7 @@ class CaseDimensions(WaveDimensions):
             # top right
             outline.top_right + (-self.wall_thickness - self.clearance - self.magnet_d.radius - 5, -self.wall_thickness - self.clearance - self.magnet_d.radius - 5, magnet_z),
             # pinkie top
-            keys.finger_clusters[0][0][2].p + Vector(4, switch.cap.d.Y/2 + self.magnet_d.radius + 3, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][0][2].r),
+            keys.finger_clusters[0][0][2].p + Vector(4, switch.cap.d.Y/2 + self.magnet_d.radius + 3.5, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][0][2].r),
             # top middle
             keys.finger_clusters[0][2][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 2, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][2].r),
             # bottom middle
