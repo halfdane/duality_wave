@@ -32,8 +32,10 @@ class ComponentDimensions:
 @dataclass
 class ResetButtonLeverDimensions:
     p: Vector = ComponentDimensions.reset_button_d.p
-    d: RectDimensions = RectDimensions(2.1, 5)
+    d: RectDimensions = RectDimensions(2.4, 6)
     gap: float = 0.5
+    # how far the slot reaches from the centre of the button towards the outer wall
+    head_length: float = 1.8
     # the bump stays this far inside the head of the arm. A bump edge that runs along the edge of the head leaves a sliver that cannot be meshed
     bump_margin: float = 0.1
 
@@ -103,7 +105,7 @@ class Xiao:
                           p+(-lever_width/2 -lever_gap, length))
                 g3 = Line(p+(lever_width/2 +lever_gap, 0),
                           p+(lever_width/2 +lever_gap, length))
-                h2 = EllipticalCenterArc((f3@0 + g3@0)/2, lever_width/2 + lever_gap, lever_width, start_angle=180, arc_size=180)
+                h2 = EllipticalCenterArc((f3@0 + g3@0)/2, lever_width/2 + lever_gap, self.reset_lever_dims.head_length, start_angle=180, arc_size=180)
                 i = Line(f3@1+(lever_gap/2, lever_gap/2), g3@1+(-lever_gap/2, lever_gap/2))
                 j = Line(f3@1, g3@1)
             make_face()
@@ -122,17 +124,16 @@ class Xiao:
             with BuildLine():
                 left = Line(p + (-width/2, 0), p + (-width/2, length))
                 right = Line(p + (width/2, 0), p + (width/2, length))
-                EllipticalCenterArc(p, width/2, width - self.reset_lever_dims.gap, start_angle=180, arc_size=180)
+                EllipticalCenterArc(p, width/2, self.reset_lever_dims.head_length - self.reset_lever_dims.gap, start_angle=180, arc_size=180)
                 Line(left@1, right@1)
             make_face()
         return arm.sketch
 
     def _create_reset_button_bump(self):
-        lever_width = self.reset_lever_dims.d.X
-        p = self.reset_lever_dims.p
+        lever = self.reset_lever_dims
         with BuildSketch() as reset_bump:
-            with Locations(p):
-                Ellipse(lever_width/2 - self.reset_lever_dims.bump_margin, 0.75*lever_width - self.reset_lever_dims.bump_margin)
+            with Locations(lever.p):
+                Ellipse(lever.d.X/2 - lever.bump_margin, lever.head_length - lever.gap - lever.bump_margin)
 
         return reset_bump.sketch
 
