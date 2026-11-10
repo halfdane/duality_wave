@@ -119,7 +119,8 @@ class CaseDimensions(WaveDimensions):
             # top right
             Vector(outline.top_right.X - HeatSetInsert.dims.d.radius*2 -2, fastener_top),
             Vector(86, 7), # above thumb cluster
-            Vector(45, 6), # bottom middle
+            # bottom middle
+            keys.finger_clusters[0][2][0].p + Vector(7, -switch.cap.d.Y - 5),
         ]
 
         self.magnet_positions: list[Vector] = (
@@ -130,7 +131,7 @@ class CaseDimensions(WaveDimensions):
             # top middle
             keys.finger_clusters[0][2][2].p + Vector(0, switch.cap.d.Y/2 + self.magnet_d.radius + 2, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][2].r),
             # bottom middle
-            keys.finger_clusters[0][2][0].p + Vector(0, -switch.cap.d.Y/2 - self.magnet_d.radius - 4, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][0].r),
+            keys.finger_clusters[0][2][0].p + Vector(0, -switch.cap.d.Y/2 - self.magnet_d.radius - 3, magnet_z).rotate(Axis.Z, keys.finger_clusters[0][2][0].r),
         )
 
         self.bumper_locations = [
