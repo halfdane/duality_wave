@@ -38,24 +38,30 @@ tasks:
       Arguments after `--`:
       - assembled (default), transport (right half flipped onto the left half) or
         exploded (left half, one layer after the other along Z)
-      - coupons, coupons-engraving or coupons-wiring: the calibration plates
+      - coupons-hardware or coupons-plate-wiring-engraving: the calibration plates
       - --compact: the compact variant of the case
       - --ghost: make the keywell, keyplate and bottom see-through, so the parts inside stand out
       - --debug: also push the intermediate shapes in a hidden group (assembled only)
     cmds:
       - python -m duality_wave.cli view {{.CLI_ARGS}}
 
-  export:
-    desc: Write the printable files to build/. Run `task export -- coupons` for a coupon plate.
+  export-case:
+    desc: Write the STEP files of the case to build/case and print their paths.
     summary: |
-      Writes files and shows nothing (duality_wave.cli export). Arguments after `--`:
-      - case (default): STEP files of the parts in build/step. Add --compact for the compact variant.
-      - coupons: build/coupons.stl, the plate for the fit constants.
-      - coupons-engraving: build/coupons_engraving.stl, the plate for the wall emblems.
-      - coupons-wiring: build/coupons_wiring.stl, the plate for the trenches and the diode pockets.
+      Writes files and shows nothing (duality_wave.cli export-case).
+      Each file is in its print orientation. Add `-- --compact` for the compact variant.
+    cmds:
+      - python -m duality_wave.cli export-case {{.CLI_ARGS}}
+
+  export-coupon:
+    desc: Write the STL of every coupon plate to build/coupons and print their paths.
+    summary: |
+      Writes files and shows nothing (duality_wave.cli export-coupon):
+      - build/coupons/coupons_hardware.stl: the first plate, for the switch cutouts, the insert pilots, the XIAO and battery pockets and the magnets.
+      - build/coupons/coupons_plate_wiring_engraving.stl: the second plate, for the plate fit, the trenches, the diode pockets and the wall emblems.
       Print a coupon plate with the settings of the final case, then update the PrintProfile.
     cmds:
-      - python -m duality_wave.cli export {{.CLI_ARGS}}
+      - python -m duality_wave.cli export-coupon {{.CLI_ARGS}}
 
   layout:
     desc: Regenerate ergogen/*.points.yaml from ergogen/*.yml with ergogen.

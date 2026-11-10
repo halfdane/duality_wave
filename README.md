@@ -60,10 +60,10 @@ The magnet spacers are a fourth kind of part, and both halves share them.
 - `bottom` closes the case.
 - `magnet_spacer` is a small disc. Print 8 of them, 4 for each half.
 
-Run `task export` to create the STEP files for all parts.
+Run `task export-case` to create the STEP files for all parts.
 Each STEP file is in its print orientation, so you do not flip it in the slicer.
 The keywell and the keyplate print upside down compared to the assembled case.
-Run `task export -- coupons` to create the calibration coupons.
+Run `task export-coupon` to create the calibration coupons.
 Print the coupons first.
 The fit depends on your printer, your material and your slicer.
 
@@ -96,36 +96,34 @@ All fit constants live in `PrintProfile` in `src/duality_wave/models/print_profi
 The defaults match a Bambu Lab printer with PLA.
 Change the profile for every new printer, material or slicer.
 
-1. Run `task export -- coupons`.
-2. Print `build/coupons.stl` with the same settings as the final case.
+1. Run `task export-coupon`.
+2. Print `build/coupons/coupons_hardware.stl` and `build/coupons/coupons_plate_wiring_engraving.stl` with the same settings as the final case.
 3. Find the tightest fit that still goes together by hand.
 4. Copy the winning values into a `PrintProfile`.
 
 The coupons are built in their real print orientation.
 The magnet coupons have the skin on the print bed, like the keywell.
 They reuse the cutters from `models/features.py`.
-The coupons fit on a 180 mm print bed.
+Each plate fits the usable area of a Bambu Lab A1 mini: 170 x 170 mm of the 180 x 180 mm bed.
 
 | Coupon | Question |
 | --- | --- |
 | A, switch plate | Which switch cutout size is right? Does corner relief help? |
-| B, plate in cavity | Which plate clearance is right? Try each plate both ways round. |
+| B, plate in cavity (second plate) | Which plate clearance is right? Try each plate both ways round. |
 | C, insert pilots | Which insert pilot size is right? Press an insert into each hole. |
 | D, pockets | Which XIAO pocket clearance is right? Which battery pocket clearance is right? Test the real battery. |
 | E, magnet pockets | Which magnet pocket size is right? The label is the pocket diameter. Push a stack of two magnets into each pocket. |
 | E, skin and mate | How thick can the skin over the magnets be? The label is the skin in mm. Put a stack of two magnets in a pocket, then hold a loose magnet on the skin side. |
-| F, trenches (own plate) | Which trench width and depth is right for the enamelled wire? Rows are the width in mm, columns the depth. Press a wire into each trench. |
-| G, diode pockets (own plate) | How much slack does the diode pocket need? The label is the slack in mm (the pocket is that much wider, twice as much longer and that much deeper than the body). Lay a real diode into each pocket. |
+| F, trenches (second plate) | Which trench width and depth is right for the enamelled wire? Rows are the width in mm, columns the depth. Press a wire into each trench. |
+| G, diode pockets (second plate) | How much slack does the diode pocket need? The label is the slack in mm (the pocket is that much wider, twice as much longer and that much deeper than the body). Lay a real diode into each pocket. |
 
 Print the mate of the skin coupon too.
 
-The trenches and the diode pockets of the wiring have their own plate.
-Run `task export -- coupons-wiring` and print `build/coupons_wiring.stl`.
-Coupons F and G are in the table above.
+The second plate holds the plate fit (B), the trenches (F), the diode pockets (G) and the wall slabs for the emblems.
+It is the file `build/coupons/coupons_plate_wiring_engraving.stl`.
+Coupons B, F and G are in the table above.
 
-The emblems in the front wall have their own plate.
-Run `task export -- coupons-engraving` and print `build/coupons_engraving.stl`.
-It holds four wall slabs, one for each combination of pocket depth (0.4 and 0.8 mm) and roof (sloped and straight).
+The emblems in the front wall are on four wall slabs of the second plate, one for each combination of pocket depth (0.4 and 0.8 mm) and roof (sloped and straight).
 Each slab carries three space invaders with a pixel gap of 0, 0.2 and 0.4 mm, and the symbol.
 The label under an invader is its gap.
 The label under the symbol is the depth in mm and the roof (`45` is sloped).
@@ -159,13 +157,11 @@ The dev shell installs the Python dependencies with `uv`.
 | --- | --- |
 | `task viewer` | Starts the OCP CAD viewer on port 3939. |
 | `task view -- <what>` | Shows `assembled`, `transport` or `exploded` in the viewer, or a coupon plate. Add `--compact` for the compact variant or `--ghost` to see through some parts. Writes no files. |
-| `task export` | Writes the STEP files of the case to `build/step`. Run `task export -- --compact` for the compact variant. |
-| `task export -- coupons` | Writes `build/coupons.stl`. |
-| `task export -- coupons-engraving` | Writes `build/coupons_engraving.stl`. |
-| `task export -- coupons-wiring` | Writes `build/coupons_wiring.stl`. |
+| `task export-case` | Writes the STEP files of the case to `build/case` and prints their paths. Run `task export-case -- --compact` for the compact variant. |
+| `task export-coupon` | Writes `build/coupons/coupons_hardware.stl` and `build/coupons/coupons_plate_wiring_engraving.stl` and prints their paths. |
 | `task render` | Renders the images in `docs/images` with Blender. |
 
-The STEP files go to `build/step` and the coupon plates to `build/`.
+The STEP files go to `build/case` and the coupon plates to `build/coupons`.
 Git ignores the `build` directory.
 The key layout comes from `ergogen/wave.yml`.
 Run `task layout` after you change it. This runs ergogen and writes `ergogen/wave.points.yaml`. The build reads that file. Commit it.

@@ -2,9 +2,7 @@ from pathlib import Path
 
 from build123d import Axis, Shape, export_step
 
-from duality_wave.paths import BUILD_DIR
-
-STEP_DIR = BUILD_DIR / "step"
+from duality_wave.paths import CASE_DIR
 
 # These parts have their bed face on top in the assembled frame.
 UPSIDE_DOWN_PARTS = ("keywell", "keyplate")
@@ -17,7 +15,7 @@ def print_pose(name: str, shape: Shape) -> Shape:
     return shape.translate((0, 0, -shape.bounding_box().min.Z))
 
 
-def export_steps(case, suffix: str = "", out_dir: Path = STEP_DIR) -> list[Path]:
+def export_steps(case, suffix: str = "", out_dir: Path = CASE_DIR) -> list[Path]:
     """Write a STEP file for every printable part of every built half, for example keywell_left.step.
 
     Every file is in its print orientation, so the slicer needs no flip.

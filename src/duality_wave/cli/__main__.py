@@ -1,14 +1,15 @@
 """The commands of duality_wave. Run `python -m duality_wave.cli <command>`; the tasks in Taskfile.yml do this for you.
 
-  view     show the case in a pose, or a coupon plate, in the OCP viewer
-  export   write the printable files to build/
-  render   write the meshes and render the README images
+  view           show the case in a pose, or a coupon plate, in the OCP viewer
+  export-case    write the STEP files of the case to build/case
+  export-coupon  write the STL of every coupon plate to build/coupons
+  render         write the meshes and render the README images
 """
 import sys
 
-from duality_wave.cli import export, render, view
+from duality_wave.cli import export_case, export_coupon, render, view
 
-COMMANDS = {"view": view.main, "export": export.main, "render": render.main}
+COMMANDS = {"view": view.main, "export-case": export_case.main, "export-coupon": export_coupon.main, "render": render.main}
 
 
 def main(argv: list[str] | None = None) -> None:

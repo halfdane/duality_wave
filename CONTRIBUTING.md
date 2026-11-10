@@ -74,7 +74,7 @@ The Python code is the package `duality_wave` in `src/duality_wave/`.
 
 - `cli/__main__.py` selects the command: `view`, `export` or `render`. The tasks in `Taskfile.yml` call it.
 - `cli/view.py` shows a pose of the case, or a coupon plate, in the viewer. It writes no files.
-- `cli/export.py` writes the STEP files of the case and the STL of the coupon plates. It shows nothing.
+- `cli/export_case.py` writes the STEP files of the case and `cli/export_coupon.py` writes the STL of every coupon plate. Both print the paths they wrote and show nothing.
 - `cli/common.py` builds the case and the coupon plates for the commands.
 - `cli/render.py` exports the meshes of each pose and a `scene.json` with the colours for the images.
 - `scripts/render_blender.py` renders the images inside Blender. It reads the meshes and the colours and does not move anything.

@@ -76,8 +76,8 @@
             echo "  task test     check, then all tests in parallel"
             echo "  task viewer   start the OCP viewer, then open http://127.0.0.1:3939"
             echo "  task view -- transport   show a pose in the viewer (assembled, transport, exploded)"
-            echo "  task export              write the STEP files of the case to build/step"
-            echo "  task export -- coupons   write a coupon plate to build/"
+            echo "  task export-case         write the STEP files of the case to build/case"
+            echo "  task export-coupon       write the coupon plates to build/coupons"
             echo "  task update   upgrade the Python packages in uv.lock"
           '';
         };
