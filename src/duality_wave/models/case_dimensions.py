@@ -105,9 +105,10 @@ class CaseDimensions(WaveDimensions):
         magnet_z = self.magnet_z
         bumpers_radius = self.bumper_radius
 
-        fastener_distance_from_wall = self.print_profile.layer_height * 6
+        fastener_distance_from_wall = self.print_profile.layer_height * 10
         fastener_top = outline.top_right.Y - HeatSetInsert.dims.d.radius*2 -fastener_distance_from_wall
         fastener_left = outline.top_left.X + HeatSetInsert.dims.d.radius*2 +fastener_distance_from_wall
+        fastener_right = outline.top_right.X - HeatSetInsert.dims.d.radius*2 - fastener_distance_from_wall
         fastener_bottom = outline.bottom_left.Y + HeatSetInsert.dims.d.radius*2 +fastener_distance_from_wall
         self.fastener_positions = [
             # bottom left
@@ -117,10 +118,10 @@ class CaseDimensions(WaveDimensions):
             # top left
             Vector(fastener_left, 50),
             # top right
-            Vector(outline.top_right.X - HeatSetInsert.dims.d.radius*2 -2, fastener_top),
-            Vector(86, 7), # above thumb cluster
+            Vector(fastener_right, fastener_top),
+            Vector(84, 7), # above thumb cluster
             # bottom middle
-            keys.finger_clusters[0][2][0].p + Vector(7, -switch.cap.d.Y - 5),
+            keys.finger_clusters[0][2][0].p + Vector(10, -switch.cap.d.Y - 5),
         ]
 
         self.magnet_positions: list[Vector] = (
