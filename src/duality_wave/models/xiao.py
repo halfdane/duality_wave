@@ -133,7 +133,8 @@ class Xiao:
         lever = self.reset_lever_dims
         with BuildSketch() as reset_bump:
             with Locations(lever.p):
-                Ellipse(lever.d.X/2 - lever.bump_margin, lever.head_length - lever.gap - lever.bump_margin)
+                Ellipse(lever.d.X/2 - lever.bump_margin, 
+                        lever.head_length - lever.gap - lever.bump_margin)
 
         return reset_bump.sketch
 
@@ -175,7 +176,11 @@ class Xiao:
         return part.cut(self._usb_cutter(self._create_free_usb_space_sketch(clearance), clearance))
 
     def add_reset_lever(self, part: Part, plane: Plane):
+        # from the current z, down to the bottom of the board
+        # plus the height of the board and the reset button
         dist = plane.origin.Z - self.plane.origin.Z + self.dims.d.Z + self.components.reset_button_d.d.Z
+        # make bump a bit higher, so the lever is preloaded
+        dist += 0.1 
         lever = self._create_reset_button_lever_sketch()
         with BuildPart() as removal:
             with BuildSketch(plane):
