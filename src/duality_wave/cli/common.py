@@ -6,7 +6,7 @@ from duality_wave.models.heat_set_insert import HeatSetInsert
 from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
 from duality_wave.coupons import create_coupon_parts, create_wiring_coupon_parts
-from duality_wave.coupons_engraving import create_engraving_coupon_parts
+from duality_wave.coupons_engraving import engraving_coupon_slabs
 from duality_wave.models.case_dimensions import CaseDimensions, CompactCaseDimensions
 from duality_wave.models.choc import Choc
 from duality_wave.models.keys import ErgoKeys, get_points
@@ -15,7 +15,7 @@ from duality_wave.models.outline import Outline
 from duality_wave.paths import LAYOUT_DIR, WIRING_FILE
 from duality_wave.wiring.plan import WiringPlan
 
-COUPON_TARGETS = ("coupons", "coupons-engraving", "coupons-wiring")
+COUPON_TARGETS = ("coupons-hardware", "coupons-plate-wiring-engraving")
 
 
 def case_inputs(compact: bool = False) -> tuple[Choc, ErgoKeys, Outline, WaveDimensions]:
@@ -52,10 +52,8 @@ def coupon_parts(target: str) -> dict[str, Shape]:
     keys = ErgoKeys(points=get_points(file_path=LAYOUT_DIR / "wave.points.yaml"))
     outline = Outline(switch=switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
     dims = CaseDimensions(switch=switch, outline=outline, keys=keys)
-    if target == "coupons":
+    if target == "coupons-hardware":
         return create_coupon_parts(switch, dims)
-    if target == "coupons-wiring":
-        return create_wiring_coupon_parts(dims, WiringPlan.load(WIRING_FILE).diode)
-    if target == "coupons-engraving":
-        return create_engraving_coupon_parts(dims)
+    if target == "coupons-plate-wiring-engraving":
+        return create_wiring_coupon_parts(dims, WiringPlan.load(WIRING_FILE).diode, extra=engraving_coupon_slabs(dims))
     raise ValueError(f"Unknown coupon target {target!r}. Use one of {COUPON_TARGETS}.")

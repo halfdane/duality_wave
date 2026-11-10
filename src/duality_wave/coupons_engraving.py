@@ -13,7 +13,8 @@ One slab for each combination of pocket depth and roof. On a slab:
 Print the plate with the settings of the final case. Choose the smallest depth that stays legible and the
 roof and gap that print cleanly. Then set engraving_lines, engraving_roof_slope and the pitch in the PrintProfile.
 
-Run `task export -- coupons-engraving` to write build/coupons_engraving.stl and `task view -- coupons-engraving` to look at the plate in the OCP viewer.
+The slabs share the plate of the wiring coupons (see coupons.create_wiring_coupon_parts).
+Run `task export-coupon` to write build/coupons/coupons_plate_wiring_engraving.stl and `task view -- coupons-plate-wiring-engraving` to look at the plate in the OCP viewer.
 """
 from dataclasses import replace
 
@@ -22,7 +23,7 @@ from build123d import Shape
 
 from duality_wave.builders.wall_engraving import (
     WallSpot, emblem_sketch, emblem_z, engrave_wall)
-from duality_wave.coupons import LABEL_DEPTH, arrange, to_bed
+from duality_wave.coupons import LABEL_DEPTH, to_bed
 from duality_wave.models.print_profile import PrintProfile
 from duality_wave.models.space_invader import SpaceInvader
 
@@ -84,16 +85,12 @@ def wall_engraving_coupon(
     return coupon.part
 
 
-def create_engraving_coupon_parts(dims, profile: PrintProfile | None = None) -> dict[str, Shape]:
-    """One slab for each depth (1 and 2 lines) and roof (sloped and straight), arranged on one print bed."""
+def engraving_coupon_slabs(dims, profile: PrintProfile | None = None) -> dict[str, Shape]:
+    """One slab for each depth (1 and 2 lines) and roof (sloped and straight), not yet arranged on a print bed."""
     profile = profile or dims.print_profile
     parts = {}
     for lines in (1, 2):
         for roof_slope in (True, False):
             name = f"{lines * profile.line_width:g} mm, {'sloped' if roof_slope else 'straight'} roof"
             parts[name] = wall_engraving_coupon(dims, profile, lines, roof_slope)
-    return arrange(parts)
-
-
-def create_engraving_coupons(dims, profile: PrintProfile | None = None) -> Compound:
-    return Compound(list(create_engraving_coupon_parts(dims, profile).values()))
+    return parts

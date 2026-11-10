@@ -103,8 +103,8 @@ def test_the_assembled_pose_is_the_default_and_the_compact_variant_is_a_flag():
 
 def test_a_coupon_plate_is_shown_as_one_group_without_building_a_case():
     scene = {"A switch plate": Box(1, 1, 1), "B cavity": Box(1, 1, 1)}
-    calls, build, pose_scene, coupons = run_view(["coupons"], scene)
-    coupons.assert_called_once_with("coupons")
+    calls, build, pose_scene, coupons = run_view(["coupons-hardware"], scene)
+    coupons.assert_called_once_with("coupons-hardware")
     build.assert_not_called()
     pose_scene.assert_not_called()
     assert [c.kwargs["name"] for c in calls.push.call_args_list] == ["coupons"]
@@ -122,7 +122,7 @@ def test_the_debug_group_arrives_last_and_only_when_asked():
 
 
 @pytest.mark.parametrize("argv", [
-    ["sideways"], ["transport", "--debug"], ["coupons", "--ghost"], ["coupons", "--compact"], ["coupons-engraving", "--debug"], ["coupons-wiring", "--debug"]])
+    ["sideways"], ["transport", "--debug"], ["coupons-hardware", "--ghost"], ["coupons-hardware", "--compact"], ["coupons-plate-wiring-engraving", "--debug"]])
 def test_the_view_command_refuses_arguments_that_do_not_fit_together(argv):
     with pytest.raises(SystemExit):
         run_view(argv, {})

@@ -5,22 +5,25 @@ foot and bridging behave like they will on the case. Print them all on one plate
 settings as the final case, then copy the winning values into the PrintProfile.
 
   A  switch plate     switch cutout size, with and without corner relief
-  B  plate in cavity  plate clearance (try each plate both ways round)
   C  insert pilots    heat-set insert pilot size
   D  pockets          XIAO pocket clearance and battery pocket clearance
   E  magnet pockets   magnet pocket size, and the skin that closes the pocket
   E  skin, mate       a second copy of the skin coupon, to feel the pull through two skins
 
-The wiring has its own plate, because the first plate is nearly full:
+The second plate holds the plate fit, the wiring and the wall emblems, because the first plate is full:
 
+  B  plate in cavity  plate clearance (try each plate both ways round)
   F  trenches         trench width and depth for the enamelled wire
   G  diode pockets    how much slack the pocket of a through-hole diode needs
+     wall slabs       depth, roof and pixel gap of the emblems (coupons_engraving.py)
+
+Both plates fit the usable area of a Bambu Lab A1 mini (BED_SIZE).
 
 The magnet coupons print with the skin on the bed and the pocket open upwards, like the keywell.
 The mate of the skin coupon has its pockets on the centre line. Turn it over about the long axis and the
 pockets of both coupons face each other, skin against skin.
 
-Run `task export -- coupons` to write build/coupons.stl and `task view -- coupons` to look at the plate in the OCP viewer.
+Run `task export-coupon` to write build/coupons/coupons_hardware.stl and the other plates and `task view -- coupons-hardware` to look at the first plate in the OCP viewer.
 """
 from dataclasses import replace
 
@@ -38,6 +41,7 @@ from duality_wave.models.xiao import Xiao
 LABEL_DEPTH = 0.4
 LABEL_SIZE = 2.2
 CORNER_RADIUS = 1.0
+BED_SIZE = 170.0
 
 
 def to_bed(shape: Shape, face_z: float) -> Shape:
@@ -362,11 +366,12 @@ def diode_pocket_coupon(
     return engrave(coupon.part, keyplate_z, labels, size=2.0)
 
 
-def arrange(parts: dict[str, Shape], max_width: float = 172.0, gap: float = 6.0) -> dict[str, Shape]:
-    """Pack the parts onto one print bed, turning a part by 90 degrees where that helps.
+def arrange(parts: dict[str, Shape], bed: float = BED_SIZE, gap: float = 6.0) -> dict[str, Shape]:
+    """Pack the parts onto one square print bed, turning a part by 90 degrees where that helps.
 
-    Several simple packing orders are tried and the lowest layout wins. The default width leaves
-    room on a 180 mm bed. A part wider than max_width gets a spot above the rest.
+    Several simple packing orders are tried and the lowest layout wins. The default bed is the usable
+    area of a 180 mm bed: it keeps the parts away from the edges, where the printer purges and wipes.
+    Raises ValueError when the parts do not fit.
     """
     sizes = {name: part.bounding_box().size for name, part in parts.items()}
     orders = [
@@ -389,7 +394,7 @@ def arrange(parts: dict[str, Shape], max_width: float = 172.0, gap: float = 6.0)
                 width, depth = (sizes[name].X, sizes[name].Y) if angle == 0 else (sizes[name].Y, sizes[name].X)
                 for y in sorted({0.0, *(other[3] + gap for other in taken)}):
                     for x in sorted({0.0, *(other[2] + gap for other in taken)}):
-                        if x + width > max_width and x > 0:
+                        if x + width > bed or y + depth > bed:
                             continue
                         if any(x < o[2] + gap and o[0] < x + width + gap and y < o[3] + gap and o[1] < y + depth + gap for o in taken):
                             continue
@@ -397,13 +402,16 @@ def arrange(parts: dict[str, Shape], max_width: float = 172.0, gap: float = 6.0)
                         if best is None or candidate[0] < best[0]:
                             best = candidate
             if best is None:
-                best = (None, 0, 0.0, height + gap if taken else 0.0, sizes[name].X, sizes[name].Y)
+                return None
             _, angle, x, y, width, depth = best
             layout[name] = (angle, x, y)
             taken.append((x, y, x + width, y + depth))
         return max(box[3] for box in taken), max(box[2] for box in taken), layout
 
-    _, _, layout = min((pack(order, score) for order in orders for score in scores), key=lambda r: r[:2])
+    packed = [result for order in orders for score in scores if (result := pack(order, score))]
+    if not packed:
+        raise ValueError(f"The parts do not fit on a {bed:g} x {bed:g} mm bed. Move a coupon to another plate.")
+    _, _, layout = min(packed, key=lambda r: r[:2])
     placed = {}
     for name, (angle, x, y) in layout.items():
         part = parts[name].rotate(Axis.Z, angle) if angle else parts[name]
@@ -415,12 +423,9 @@ def arrange(parts: dict[str, Shape], max_width: float = 172.0, gap: float = 6.0)
 def create_coupon_parts(switch: Switch, dims, profile: PrintProfile | None = None) -> dict[str, Shape]:
     """All coupon parts by name, arranged on one print bed."""
     profile = profile or dims.print_profile
-    cavity, plates = plate_fit_coupon(profile, dims.keyplate_z, dims.wall_thickness)
     skin = magnet_skin_coupon(profile, dims.magnet_d)
     parts = {
         "A switch plate": switch_plate_coupon(switch, profile, dims.keyplate_z),
-        "B cavity": cavity,
-        **{f"B plate {index + 1}": plate for index, plate in enumerate(plates)},
         "C insert pilots": insert_pilot_coupon(profile, dims.heat_insert_z),
         "D pockets": pocket_coupon(profile, dims.xiao_position.Z, dims.keyplate_z, dims.battery_pd.d),
         "E magnet pockets": magnet_pocket_coupon(profile, dims.magnet_d),
@@ -430,12 +435,18 @@ def create_coupon_parts(switch: Switch, dims, profile: PrintProfile | None = Non
     return arrange(parts)
 
 
-def create_wiring_coupon_parts(dims, diode: Diode | None = None, profile: PrintProfile | None = None) -> dict[str, Shape]:
-    """The coupons for the wiring by name, arranged on one print bed."""
+def create_wiring_coupon_parts(
+    dims, diode: Diode | None = None, profile: PrintProfile | None = None, extra: dict[str, Shape] | None = None,
+) -> dict[str, Shape]:
+    """The coupons for the wiring and the plate fit by name, and the extra parts, arranged on one print bed."""
     profile = profile or dims.print_profile
+    cavity, plates = plate_fit_coupon(profile, dims.keyplate_z, dims.wall_thickness)
     parts = {
+        "B cavity": cavity,
+        **{f"B plate {index + 1}": plate for index, plate in enumerate(plates)},
         "F trenches": trench_coupon(profile, dims.keyplate_z),
         "G diode pockets": diode_pocket_coupon(profile, diode or Diode(), dims.keyplate_z, dims.bottom_plate_z),
+        **(extra or {}),
     }
     return arrange(parts)
 

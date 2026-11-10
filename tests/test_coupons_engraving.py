@@ -4,8 +4,9 @@ import pytest
 from build123d import Vector
 
 from duality_wave.builders.wall_engraving import emblem_z
+from duality_wave.coupons import BED_SIZE, create_wiring_coupon_parts
 from duality_wave.coupons_engraving import (
-    MARGIN, create_engraving_coupon_parts, gap_sweep, wall_engraving_coupon)
+    MARGIN, engraving_coupon_slabs, gap_sweep, wall_engraving_coupon)
 from duality_wave.models.space_invader import PATTERN, SpaceInvader
 from tests.builds import make_context
 
@@ -76,11 +77,13 @@ def test_the_pixel_gaps_follow_the_line_width(ctx):
     assert gap_sweep(replace(profile, line_width=0.5))[-1] == 0.5
 
 
-def test_the_plate_has_a_slab_for_every_depth_and_roof_and_fits_on_a_small_bed(ctx):
-    parts = create_engraving_coupon_parts(ctx.dims)
-    assert len(parts) == 4
+def test_the_wiring_plate_has_a_slab_for_every_depth_and_roof_and_fits_on_a_small_bed(ctx):
+    slabs = engraving_coupon_slabs(ctx.dims)
+    assert len(slabs) == 4
+    parts = create_wiring_coupon_parts(ctx.dims, extra=slabs)
+    assert set(slabs) < set(parts)
     boxes = [part.bounding_box() for part in parts.values()]
-    assert max(max(box.max.X, box.max.Y) for box in boxes) <= SMALL_PRINT_BED
+    assert max(max(box.max.X, box.max.Y) for box in boxes) <= BED_SIZE < SMALL_PRINT_BED
     assert all(box.min.Z == pytest.approx(0, abs=1e-6) for box in boxes)
     for index, a in enumerate(boxes):
         for b in boxes[index + 1:]:
