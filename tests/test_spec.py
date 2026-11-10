@@ -3,7 +3,7 @@
 import re
 
 import pytest
-from build123d import Vector
+from build123d import Vector, export_step, import_step
 
 from duality_wave.models.xiao import Xiao
 from tests import PERF_FACTOR, ROOT
@@ -49,6 +49,29 @@ class TestFullCase:
                 part = getattr(side, name)
                 assert part.is_valid, name
                 assert len(part.solids()) == 1, name
+
+    def test_every_face_of_every_part_can_be_meshed(self, full):  # R-44
+        unmeshable = []
+        parts = [(f"{name}_{side.side.name}", getattr(side, name)) for side in (full.left, full.right) for name in PARTS]
+        parts.append(("magnet_spacer", full.magnet_spacer))
+        for name, part in parts:
+            for index, face in enumerate(part.faces()):
+                try:
+                    face.tessellate(0.01, 0.2)
+                except AttributeError:
+                    unmeshable.append((name, index, face.geom_type.name, round(face.area, 4)))
+        assert unmeshable == []
+
+    def test_every_step_file_reads_back_as_the_same_solid(self, full, tmp_path):  # R-45
+        parts = [(f"{name}_{side.side.name}", getattr(side, name)) for side in (full.left, full.right) for name in PARTS]
+        parts.append(("magnet_spacer", full.magnet_spacer))
+        for name, part in parts:
+            path = tmp_path / f"{name}.step"
+            export_step(part, str(path))
+            back = import_step(str(path))
+            assert len(back.solids()) == 1, name
+            assert len(back.faces()) == len(part.faces()), name
+            assert back.volume == pytest.approx(part.volume, rel=1e-6), name
 
     def test_parts_span_the_expected_heights(self, full):  # R-04
         dims = full.ctx.dims

@@ -34,6 +34,8 @@ class ResetButtonLeverDimensions:
     p: Vector = ComponentDimensions.reset_button_d.p
     d: RectDimensions = RectDimensions(2.1, 5)
     gap: float = 0.5
+    # the bump stays this far inside the head of the arm. A bump edge that runs along the edge of the head leaves a sliver that cannot be meshed
+    bump_margin: float = 0.1
 
 class Xiao:
     dims = BoardDimensions()
@@ -108,12 +110,29 @@ class Xiao:
 
         return reset_sketch.sketch
 
+    def _create_reset_button_arm_sketch(self):
+        """The arm in the slot of the lever. It is as wide as the lever without the gap and ends in the wall of the plate.
+
+        The head is an ellipse and no offset of the slot, because STEP files lose the faces that have an offset curve as edge.
+        """
+        width = self.reset_lever_dims.d.X
+        length = self.reset_lever_dims.d.Y
+        p = self.reset_lever_dims.p
+        with BuildSketch() as arm:
+            with BuildLine():
+                left = Line(p + (-width/2, 0), p + (-width/2, length))
+                right = Line(p + (width/2, 0), p + (width/2, length))
+                EllipticalCenterArc(p, width/2, width - self.reset_lever_dims.gap, start_angle=180, arc_size=180)
+                Line(left@1, right@1)
+            make_face()
+        return arm.sketch
+
     def _create_reset_button_bump(self):
         lever_width = self.reset_lever_dims.d.X
         p = self.reset_lever_dims.p
         with BuildSketch() as reset_bump:
             with Locations(p):
-                Ellipse(lever_width/2, 0.75*lever_width)
+                Ellipse(lever_width/2 - self.reset_lever_dims.bump_margin, 0.75*lever_width - self.reset_lever_dims.bump_margin)
 
         return reset_bump.sketch
 
@@ -164,9 +183,7 @@ class Xiao:
 
         with BuildPart() as addition:
             with BuildSketch(plane):
-                insert(offset(lever, amount=-self.reset_lever_dims.gap))
-                with Locations((0, self.reset_lever_dims.gap)):
-                    insert(offset(lever, amount=-self.reset_lever_dims.gap))
+                insert(self._create_reset_button_arm_sketch())
             extrude(dir=-plane.z_dir, amount=1.18)
 
             with BuildSketch(plane):

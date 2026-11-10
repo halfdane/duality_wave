@@ -18,6 +18,8 @@ Lengths are in millimetres. Times are in seconds.
 R-01: Each half has a switch for every key of the layout.
 R-02: The right half is the left half mirrored.
 R-03: Every part of every built half is one valid solid.
+R-44: Every face of every part of every built half can be meshed, so the exported mesh has no gap. A gap makes the slicer report reversed faces.
+R-45: A STEP file of a printable part reads back as the same solid: one solid, the same number of faces and the same volume. The slicer reads the STEP file, so a lost face leaves a hole in the part.
 
 ## Geometry
 
