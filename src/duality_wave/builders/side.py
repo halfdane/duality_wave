@@ -105,9 +105,17 @@ def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures
     keyplate_blank, bottom_blank = blanks.keyplate, blanks.bottom
     if wiring is not None:
         plan = wiring.side(side.name)
-        keyplate_blank = cut_keyplate(ctx, keyplate_blank, plan, wiring.diode)
-        bottom_blank = cut_bottom(ctx, bottom_blank, plan, wiring.diode)
 
+        try:
+            keyplate_blank = cut_keyplate(ctx, keyplate_blank, plan, wiring.diode)
+        except Exception as e:
+            print(f"Error while cutting keyplate or bottom for side {side.name}: {e}")
+
+        try:
+            bottom_blank = cut_bottom(ctx, bottom_blank, plan, wiring.diode)
+        except Exception as e:
+            print(f"Error while cutting keyplate or bottom for side {side.name}: {e}")
+    
     keyplate = xiao.add_large_usb_cutouts(side.mirrored(keyplate_blank), dims.clearance)
     viewer.push(keyplate, name=f"keyplate_{side.name}")
 
