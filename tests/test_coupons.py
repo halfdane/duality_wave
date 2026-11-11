@@ -22,7 +22,7 @@ from duality_wave.coupons import (
     switch_plate_coupon,
     trench_coupon,
 )
-from duality_wave.models.case_dimensions import CaseDimensions
+from duality_wave.case_dimensions import CaseDimensions
 from duality_wave.models.choc import Choc
 from duality_wave.models.diode import Diode, DiodeNotchSpec
 from duality_wave.models.xiao import Xiao

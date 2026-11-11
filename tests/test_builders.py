@@ -20,7 +20,7 @@ from duality_wave.models.choc import Choc
 from duality_wave.models.heat_set_insert import HeatSetInsert
 from duality_wave.models.keys import Point
 from duality_wave.models.model_types import PosAndDims, RectDimensions, RoundDimensions
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
 from tests import ROOT

@@ -5,11 +5,11 @@ from math import dist
 
 from build123d import Align, Axis, Cylinder, Plane, Vector, Vertex, extrude, offset
 
-from duality_wave.models.case_dimensions import CaseDimensions, CompactCaseDimensions
+from duality_wave.case_dimensions import CaseDimensions, CompactCaseDimensions
 from duality_wave.models.choc import Choc, PostDimensions
 from duality_wave.models.heat_set_insert import HeatSetInsert
 from duality_wave.models.power_switch import PowerSwitch
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 from duality_wave.models.rubber_bumper import BumperDimensions
 from duality_wave.models.screw import ScrewDimensions
 from duality_wave.models.xiao import Xiao

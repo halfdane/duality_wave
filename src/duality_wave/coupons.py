@@ -34,7 +34,7 @@ from duality_wave.builders.wiring_cuts import OVERSHOOT, trench_cutter
 from duality_wave.models.diode import Diode, DiodeNotchSpec
 from duality_wave.models.features import magnet_recess_cutter, switch_cutter, xiao_pocket_cutter
 from duality_wave.models.model_types import RectDimensions, RoundDimensions
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 from duality_wave.models.switch import Switch
 from duality_wave.models.xiao import Xiao
 

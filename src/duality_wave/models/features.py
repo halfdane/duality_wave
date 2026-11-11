@@ -1,7 +1,7 @@
 from build123d import *
 
 from duality_wave.models.model_types import RoundDimensions
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 from duality_wave.models.switch import Switch
 from duality_wave.models.xiao import Xiao
 

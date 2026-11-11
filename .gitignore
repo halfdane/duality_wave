@@ -9,8 +9,7 @@ __pycache__
 # Render meshes
 /build/
 
-# Personal notes
-/REVIEW.md
+.task
 .pytest_cache
 .ruff_cache
 docs/FLATBOARD_SALVAGE.md

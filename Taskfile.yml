@@ -8,27 +8,10 @@ tasks:
     desc: Start the OCP CAD Viewer in standalone (browser) mode on port 3939.
     summary: |
       Runs `python -m ocp_viewer` WITHOUT --backend, which serves the
-      three-cad-viewer at http://127.0.0.1:3939, then opens it in Firefox
-      (a new tab in the existing window). Leave this running, then run
-      `task view` in another shell.
+      three-cad-viewer at http://127.0.0.1:3939. 
+      Leave this running, then run `task view` in another shell.
     cmds:
-      - |
-        # Once the server is listening on 3939, open it in the existing
-        # Firefox window (new tab), then keep the server in the foreground.
-        if command -v firefox >/dev/null 2>&1; then
-          (
-            i=0
-            while [ "$i" -lt 50 ]; do
-              if python -c "import socket,sys; sys.exit(0 if socket.socket().connect_ex(('127.0.0.1', 3939)) == 0 else 1)" 2>/dev/null; then
-                firefox http://localhost:3939 >/dev/null 2>&1 &
-                break
-              fi
-              i=$((i + 1))
-              sleep 0.2
-            done
-          ) &
-        fi
-        exec python -m ocp_viewer --port 3939
+      - exec python -m ocp_viewer --port 3939
 
   view:
     desc: Show the case in a pose, or a coupon plate, in the viewer. Run `task view -- transport`.
@@ -44,6 +27,18 @@ tasks:
       - --debug: also push the intermediate shapes in a hidden group (assembled only)
     cmds:
       - python -m duality_wave.cli view {{.CLI_ARGS}}
+  
+  watch:
+    desc: Watch for changes in the source files and automatically run `view`.
+    summary: |
+      Monitors the source files for changes and triggers the `view` task.
+    watch: true
+    interval: '1000ms'
+    sources: 
+      - 'src/**'
+      - 'ergogen/**'
+    cmds:
+      - task view
 
   export-case:
     desc: Write the STEP files of the case to build/case and print their paths.

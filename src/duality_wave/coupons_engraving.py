@@ -24,7 +24,7 @@ from build123d import Shape
 from duality_wave.builders.wall_engraving import (
     WallSpot, emblem_sketch, emblem_z, engrave_wall)
 from duality_wave.coupons import LABEL_DEPTH, to_bed
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 from duality_wave.models.space_invader import SpaceInvader
 
 MARGIN = 3.0

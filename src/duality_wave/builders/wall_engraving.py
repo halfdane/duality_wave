@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from build123d import *
 from build123d import Shape
 
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 from duality_wave.models.space_invader import SpaceInvader
 from duality_wave.models.symbol import Symbol
 

@@ -7,7 +7,7 @@ from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
 from duality_wave.coupons import create_coupon_parts, create_wiring_coupon_parts
 from duality_wave.coupons_engraving import engraving_coupon_slabs
-from duality_wave.models.case_dimensions import CaseDimensions, CompactCaseDimensions
+from duality_wave.case_dimensions import CaseDimensions, CompactCaseDimensions
 from duality_wave.models.choc import Choc
 from duality_wave.models.keys import ErgoKeys, get_points
 from duality_wave.models.model_types import WaveDimensions

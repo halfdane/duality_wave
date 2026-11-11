@@ -7,7 +7,7 @@ from duality_wave.models.keys import ErgoKeys
 from duality_wave.models.model_types import PosAndDims, RectDimensions, RoundDimensions, WaveDimensions
 from duality_wave.models.outline import Outline
 from duality_wave.models.power_switch import PowerSwitch
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 from duality_wave.models.rubber_bumper import BumperDimensions
 from duality_wave.models.switch import Switch
 from duality_wave.models.xiao import Xiao

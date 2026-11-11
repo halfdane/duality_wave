@@ -13,7 +13,7 @@ import sys
 import time
 
 from duality_wave.case import WaveCase
-from duality_wave.models.case_dimensions import CaseDimensions, CompactCaseDimensions
+from duality_wave.case_dimensions import CaseDimensions, CompactCaseDimensions
 from duality_wave.models.choc import Choc
 from duality_wave.models.keys import ErgoKeys, get_points
 from duality_wave.models.outline import Outline

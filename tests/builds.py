@@ -8,12 +8,12 @@ from unittest.mock import patch
 
 from duality_wave.builders.common import CaseContext
 from duality_wave.case import WaveCase
-from duality_wave.models.case_dimensions import CaseDimensions, CompactCaseDimensions
+from duality_wave.case_dimensions import CaseDimensions, CompactCaseDimensions
 from duality_wave.models.choc import Choc
 from duality_wave.models.heat_set_insert import HeatSetInsert
 from duality_wave.models.keys import ErgoKeys, get_points
 from duality_wave.models.outline import Outline, OutlineSpec
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
 from duality_wave.paths import WIRING_FILE

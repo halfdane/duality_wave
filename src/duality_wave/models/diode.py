@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 
 
 @dataclass(frozen=True)

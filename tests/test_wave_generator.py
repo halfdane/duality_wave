@@ -11,7 +11,7 @@ from duality_wave.builders.bottom import add_switch_post_cutouts
 from duality_wave.models.choc import Choc
 from duality_wave.models.features import magnet_recess_cutter, switch_cutter
 from duality_wave.models.model_types import RoundDimensions
-from duality_wave.models.print_profile import PrintProfile
+from duality_wave.print_profile import PrintProfile
 from tests.builds import PARTS, build_case
 
 
