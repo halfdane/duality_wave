@@ -29,7 +29,6 @@ class CaseDimensions(WaveDimensions):
     # the wall of the keywell reaches this far above the keycaps
     wall_over_cap: float = 0.18
 
-    right_side_offset: float = 200
 
     bumper_base_offset = 2.5
     # the keyplate reaches this far below the switch housing
@@ -79,6 +78,9 @@ class CaseDimensions(WaveDimensions):
         # a loose disc, smaller than the pocket so it falls out on its own. It stands on the keyplate under the magnets.
         self.magnet_spacer: RoundDimensions = RoundDimensions(
             4, self.magnet_z - 2 * self.magnet_d.Z - profile.magnet_spacer_gap)
+
+        keyboard_width = outline.sketch.bounding_box().size.X
+        self.right_side_offset: float = 2*keyboard_width
 
         self.place_fixtures(switch, outline, keys)
 
