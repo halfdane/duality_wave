@@ -45,7 +45,7 @@ GROUPS: dict[str, PartGroup] = {group.name: group for group in (
 )}
 
 # the opacity of the see-through groups in the ghost style
-GHOST_ALPHA = 0.5
+GHOST_ALPHA = 0.3
 
 # how far the lightness of the right half differs from the left half
 SIDE_TINT = 0.07
