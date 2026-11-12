@@ -61,6 +61,17 @@ Write the record before a change and compare after it, to see what the change di
 The record is not kept in the repository.
 Tests do not pin these numbers.
 
+## Print tags
+
+Every print should get an annotated git tag named `print/<name>-<n>`, for example `print/coupons-1`.
+Commit your changes before you export and slice.
+Tag the commit that you exported from.
+Write the printer, the material, the fit values and the STL hashes in the tag message.
+Write what you learned from the print in the tag message of the next print, or in the commit that changes the values.
+Push the tag with `git push origin print/<name>-<n>`.
+Look up the values of a print with `git show print/<name>-<n>` and `git show print/<name>-<n>:src/duality_wave/models/print_profile.py`.
+The tag message holds the STL hashes that identify them.
+
 ## Debug mode
 
 `WaveCase(debug=True)` builds the accessory models and sends everything to the viewer.
