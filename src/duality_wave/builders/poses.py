@@ -8,6 +8,8 @@ from duality_wave.builders.parts import GROUPS, side_parts
 
 POSES = ("assembled", "transport", "exploded")
 EXPLODE_STEP = 26.0
+# an emblem ends flush with the face of its part. In the viewer it stands out this far, so the two faces do not flicker.
+EMBLEM_LIFT = 0.05
 
 
 def transport_location(dims) -> Location:
@@ -39,3 +41,18 @@ def pose_scene(case, pose: str) -> dict[str, Shape]:
         for name, shape in side_parts(case.right).items():
             scene[f"{name}_right"] = transported(shape, case.ctx.dims) if pose == "transport" else shape
     return scene
+
+
+def lifted_emblems(scene: dict[str, Shape], lift: float = EMBLEM_LIFT) -> dict[str, Shape]:
+    """The scene with every emblem moved out of its part by lift. Only the viewers use this, never the printed files.
+
+    The emblem lies on the face of its part that is further from the middle of the part, so that is the way out.
+    """
+    lifted = dict(scene)
+    for name, shape in scene.items():
+        group, side = name.rsplit("_", 1)
+        host = GROUPS[group].emblem_of
+        if host is not None and f"{host}_{side}" in scene:
+            outward = 1 if shape.center().Z > scene[f"{host}_{side}"].center().Z else -1
+            lifted[name] = shape.moved(Pos(0, 0, outward * lift))
+    return lifted

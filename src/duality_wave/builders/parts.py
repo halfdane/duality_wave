@@ -18,10 +18,16 @@ class PartGroup:
     shell: bool = False
     # the ghost style makes this group see-through
     see_through: bool = False
+    # the group of the part that carries this emblem. The emblem lies inside that part
+    emblem_of: str | None = None
 
+
+# orange stands out from the blue of the keywell and the grey of the bottom plate
+EMBLEM_COLOUR = "#ff7a00"
 
 GROUPS: dict[str, PartGroup] = {group.name: group for group in (
     PartGroup("keywell", "#307390", level=0, shell=True, see_through=True),
+    PartGroup("keywell_emblem", EMBLEM_COLOUR, level=0, emblem_of="keywell", see_through=True),
     PartGroup("magnets", "#ededf1", metallic=True, level=0.5),
     PartGroup("spacers", "#7d9bb0", level=0.5),
     PartGroup("inserts", "#b08d57", metallic=True, level=0.5),
@@ -33,12 +39,13 @@ GROUPS: dict[str, PartGroup] = {group.name: group for group in (
     PartGroup("usb", "#ededf1", metallic=True, level=1),
     PartGroup("power_switch", "#b9b9bd", level=1.5),
     PartGroup("bottom", "#595d61", level=2, shell=True, see_through=True),
+    PartGroup("bottom_emblem", EMBLEM_COLOUR, level=2, emblem_of="bottom", see_through=True),
     PartGroup("screws", "#9aa0a6", metallic=True, level=3),
     PartGroup("bumpers", "#202020", level=3),
 )}
 
 # the opacity of the see-through groups in the ghost style
-GHOST_ALPHA = 0.2
+GHOST_ALPHA = 0.5
 
 # how far the lightness of the right half differs from the left half
 SIDE_TINT = 0.07
@@ -72,6 +79,8 @@ def side_parts(built: BuiltSide) -> dict[str, Shape]:
         "keywell": built.keywell,
         "keyplate": built.keyplate,
         "bottom": built.bottom,
+        "keywell_emblem": built.emblems["keywell"],
+        "bottom_emblem": built.emblems["bottom"],
         "switches": built.accessories.switches,
         "keycaps": built.accessories.keycaps,
         "xiao": built.xiao.model - built.xiao.usb_connector,

@@ -50,6 +50,9 @@ class WaveDimensions:
 
     bumper_locations: list[Vector]
 
+    symbol_location: Location
+    invader_location: Location
+
     @property
     def clearance(self) -> float:
         return self.print_profile.clearance

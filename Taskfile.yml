@@ -45,6 +45,7 @@ tasks:
     summary: |
       Writes files and shows nothing (duality_wave.cli export-case).
       Each file is in its print orientation. Add `-- --compact` for the compact variant.
+      The symbol on the keywell and the invader on the bottom plate get their own file, in the same frame as their part: 01_keywell_left.step and 02_keywell_left_emblem.step.
     cmds:
       - python -m duality_wave.cli export-case {{.CLI_ARGS}}
 

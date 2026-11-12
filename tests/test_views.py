@@ -3,9 +3,10 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from build123d import Box, Color
+from build123d import Box, Color, Pos
 
 from duality_wave.builders.parts import GHOST_ALPHA, colour
+from duality_wave.builders.poses import EMBLEM_LIFT
 from duality_wave.builders.viewer import DebugScope, OcpViewer, SilentViewer
 from duality_wave.cli import view
 
@@ -79,6 +80,17 @@ def test_the_view_command_clears_the_viewer_then_pushes_every_part_in_its_colour
     assert colours == {
         "keywell": tuple(Color(colour("keywell", "left"))), "power_switch": tuple(Color(colour("power_switch", "right")))}
     assert scene["keywell_left"].color is None
+
+
+def test_the_emblems_are_lifted_and_shown_in_their_own_group_in_the_colour_of_their_group():
+    scene = {"keywell_left": Box(10, 10, 10), "keywell_emblem_left": Pos(0, 0, 4.7) * Box(2, 2, 0.6)}
+    calls, _, _, _ = run_view(["assembled"], scene)
+    parts = pushed_parts(calls)
+    assert parts["keywell_emblem"].bounding_box().max.Z == pytest.approx(5.0 + EMBLEM_LIFT)
+    assert tuple(parts["keywell_emblem"].color) == tuple(Color(colour("keywell_emblem", "left")))
+    (call,) = calls.push.call_args_list
+    assert set(call.args[0]) == {"keywell", "emblems"}
+    assert set(call.args[0]["emblems"]) == {"keywell_emblem"}
 
 
 def test_the_ghost_style_makes_only_the_see_through_groups_see_through():

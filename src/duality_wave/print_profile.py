@@ -49,6 +49,12 @@ class PrintProfile:
     # roof of every engraved pocket slopes at 45 degrees, so the pocket needs no bridge and no support
     engraving_roof_slope: bool = True
 
+    # the emblems on the bed faces are solids of this many layers that the slicer prints in a second colour
+    emblem_layers: int = 3
+    # height of the symbol on the keywell and of the invader on the bottom plate
+    symbol_height: float = 20.0
+    invader_height: float = 10.0
+
     # radius of the circles that relieve the corners of the switch cutouts (0 = no relief)
     switch_corner_relief: float = 0.3
 
@@ -74,6 +80,10 @@ class PrintProfile:
     @property
     def engraving_depth(self) -> float:
         return self.engraving_lines * self.line_width
+
+    @property
+    def emblem_depth(self) -> float:
+        return self.emblem_layers * self.layer_height
 
     @property
     def engraving_gap(self) -> float:

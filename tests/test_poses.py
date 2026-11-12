@@ -7,7 +7,7 @@ import pytest
 from build123d import Box, Plane, Pos, mirror
 
 from duality_wave.builders.parts import GHOST_ALPHA, GROUPS, SIDE_TINT, alpha, colour, side_parts
-from duality_wave.builders.poses import EXPLODE_STEP, exploded, pose_scene, transported
+from duality_wave.builders.poses import EXPLODE_STEP, exploded, lifted_emblems, pose_scene, transported
 from tests.builds import PARTS
 
 DIMS = SimpleNamespace(right_side_offset=200.0, above_z=9.0)
@@ -161,3 +161,32 @@ def test_only_the_see_through_groups_change_in_the_ghost_style():
         assert alpha(name) == 1.0
         assert alpha(name, ghost=True) == (GHOST_ALPHA if group.see_through else 1.0)
     assert 0 < GHOST_ALPHA < 1
+
+
+def test_an_emblem_stands_out_of_the_face_of_its_part_that_is_further_from_the_middle():
+    scene = {
+        "keywell_left": Box(10, 10, 10),
+        "keywell_emblem_left": Pos(0, 0, 4.7) * Box(2, 2, 0.6),
+        "bottom_left": Box(10, 10, 2),
+        "bottom_emblem_left": Pos(0, 0, -0.7) * Box(2, 2, 0.6),
+        "switches_left": Box(1, 1, 1),
+    }
+    lifted = lifted_emblems(scene, lift=0.05)
+    assert lifted["keywell_emblem_left"].bounding_box().max.Z == pytest.approx(5.0 + 0.05)
+    assert lifted["bottom_emblem_left"].bounding_box().min.Z == pytest.approx(-1.0 - 0.05)
+    assert lifted["keywell_left"] is scene["keywell_left"]
+    assert lifted["switches_left"] is scene["switches_left"]
+
+
+def test_an_emblem_without_its_part_in_the_scene_stays_where_it_is():
+    scene = {"keywell_emblem_left": Box(1, 1, 1)}
+    assert lifted_emblems(scene)["keywell_emblem_left"] is scene["keywell_emblem_left"]
+
+
+def test_every_emblem_group_belongs_to_a_case_part_and_moves_with_it_in_the_exploded_view():
+    emblems = {name: group for name, group in GROUPS.items() if group.emblem_of is not None}
+    assert emblems
+    for name, group in emblems.items():
+        assert GROUPS[group.emblem_of].shell, name
+        assert group.level == GROUPS[group.emblem_of].level, name
+        assert group.color != GROUPS[group.emblem_of].color, name

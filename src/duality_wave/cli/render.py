@@ -11,7 +11,7 @@ from pathlib import Path
 from build123d import export_stl
 
 from duality_wave.builders.parts import GROUPS, alpha, colour
-from duality_wave.builders.poses import POSES, pose_scene
+from duality_wave.builders.poses import POSES, lifted_emblems, pose_scene
 from duality_wave.builders.viewer import SilentViewer
 from duality_wave.cli.common import build_case
 from duality_wave.paths import BUILD_DIR
@@ -26,7 +26,7 @@ def manifest_entry(name: str) -> dict:
 
 
 def export_pose(case, pose: str, out_dir: Path) -> None:
-    scene = pose_scene(case, pose)
+    scene = lifted_emblems(pose_scene(case, pose))
     pose_dir = out_dir / pose
     os.makedirs(pose_dir, exist_ok=True)
     for name, shape in scene.items():

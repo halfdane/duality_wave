@@ -150,6 +150,12 @@ class CaseDimensions(WaveDimensions):
             (keys.finger_clusters[0][2][0].p + keys.finger_clusters[0][2][1].p) / 2 + (7, -3),
         ]
 
+        symbol_height = self.print_profile.symbol_height
+        self.symbol_location = Location(outline.top_left + Vector(0.65 * symbol_height, -0.6 * symbol_height))
+        self.invader_location = Location(
+            outline.cirque_recess_position + (outline.cirque_recess_radius + 4, outline.cirque_recess_radius + 8),
+            (0, 0, -40))
+
 
 @dataclass
 class CompactCaseDimensions(CaseDimensions):
@@ -182,5 +188,9 @@ class CompactCaseDimensions(CaseDimensions):
             outline.bottom_left + Vector(bumpers_radius, bumpers_radius-3),
             outline.top_left + Vector(bumpers_radius + 1, -bumpers_radius - 20),
         ]
+
+        symbol_height = self.print_profile.symbol_height
+        self.symbol_location = Location(outline.top_left + Vector(0.65 * symbol_height, -0.6 * symbol_height))
+        self.invader_location = Location((10, -6), (0, 0, -50))
 
         self.powerswitch_position += Vector(12.5, 0, 0)

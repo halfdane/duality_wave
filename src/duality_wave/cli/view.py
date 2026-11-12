@@ -8,7 +8,7 @@ import copy
 from build123d import Color, Shape
 
 from duality_wave.builders.parts import GROUPS, alpha, colour
-from duality_wave.builders.poses import POSES, pose_scene
+from duality_wave.builders.poses import POSES, lifted_emblems, pose_scene
 from duality_wave.builders.viewer import OcpViewer, SilentViewer, show_in_viewer
 from duality_wave.cli.common import COUPON_TARGETS, build_case, coupon_parts
 
@@ -24,13 +24,15 @@ def styled(scene: dict[str, Shape], ghost: bool) -> dict[str, Shape]:
 
 
 def grouped(scene: dict[str, Shape]) -> dict[str, dict]:
-    """One group for each half. It holds the case parts and an accessories group with all other parts."""
+    """One group for each half. It holds the case parts, an emblems group and an accessories group with all other parts."""
     halves: dict[str, dict] = {}
     for name, shape in scene.items():
         group, side = name.rsplit("_", 1)
         half = halves.setdefault(side, {})
         if GROUPS[group].shell:
             half[group] = shape
+        elif GROUPS[group].emblem_of is not None:
+            half.setdefault("emblems", {})[group] = shape
         else:
             half.setdefault("accessories", {})[group] = shape
     return halves
@@ -56,7 +58,7 @@ def main(argv: list[str] | None = None) -> None:
     viewer = OcpViewer()
     if is_pose:
         silent = SilentViewer(collect_debug=args.debug)
-        scene = pose_scene(build_case(compact=args.compact, viewer=silent), args.what)
+        scene = lifted_emblems(pose_scene(build_case(compact=args.compact, viewer=silent), args.what))
         groups = grouped(styled(scene, args.ghost))
     else:
         groups = {"coupons": coupon_parts(args.what)}

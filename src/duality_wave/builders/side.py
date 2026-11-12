@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 
 from build123d import *
+from build123d import Shape
 
 from duality_wave.builders.accessories import Accessories, Fixtures, build_switches
 from duality_wave.builders.bottom import add_switch_post_cutouts
 from duality_wave.builders.common import CaseContext
+from duality_wave.builders.face_emblems import face_emblems
 from duality_wave.builders.wall_engraving import WallSpot, engrave_emblem, find_wall_spot
 from duality_wave.builders.wiring_cuts import cut_bottom, cut_keyplate
 from duality_wave.models.xiao import Xiao
@@ -79,6 +81,7 @@ class BuiltSide:
     keyplate: Part
     bottom: Part
     accessories: Accessories | None
+    emblems: dict[str, Shape]
 
 
 def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures | None, viewer,
@@ -97,6 +100,8 @@ def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures
         switches, keycaps = build_switches(ctx, side.switch_locations)
         accessories = Accessories(switches, keycaps, xiao.model, side_fixtures)
         viewer.push(accessories.as_dict(side.suffix), name=f"accessories_{side.name}")
+
+    emblems = {name: side.mirrored(emblem) for name, emblem in face_emblems(ctx).items()}
 
     keywell = engrave_emblem(side.mirrored(blanks.keywell), dims, side.emblem_spot, side.emblem)
     keywell = xiao.add_usb_cutouts(keywell, dims.clearance)
@@ -126,4 +131,4 @@ def finish_side(ctx: CaseContext, side: Side, blanks: Blanks, fixtures: Fixtures
         bottom, side.xiao_plane.offset(dims.keyplate_z + dims.bottom_plate_z + dims.xiao_position.Z))
     viewer.push(bottom, name=f"bottom_{side.name}")
 
-    return BuiltSide(side, xiao, keywell, keyplate, bottom, accessories)
+    return BuiltSide(side, xiao, keywell, keyplate, bottom, accessories, emblems)

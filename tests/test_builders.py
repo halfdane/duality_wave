@@ -330,24 +330,25 @@ class PrintPoseTests(unittest.TestCase):
 class ExportTests(unittest.TestCase):
     def built_side(self, name):
         parts = {part: Box(1, 1, 1) for part in ("keywell", "keyplate", "bottom")}
-        return SimpleNamespace(side=SimpleNamespace(name=name), **parts)
+        return SimpleNamespace(side=SimpleNamespace(name=name), emblems={"keywell": Box(0.5, 0.5, 0.5)}, **parts)
 
     def test_exports_every_part_of_every_built_half(self):
         case = SimpleNamespace(left=self.built_side("left"), right=self.built_side("right"), magnet_spacer=Box(1, 1, 1))
         with tempfile.TemporaryDirectory() as tmp:
             written = export_steps(case, suffix="_x", out_dir=Path(tmp) / "nested")
-            self.assertEqual(len(written), 7)
+            self.assertEqual(len(written), 9)
             for path in written:
                 self.assertGreater(path.stat().st_size, 0)
             names = {path.name for path in written}
-            self.assertIn("keywell_right_x.step", names)
+            self.assertIn("01_keywell_right_x.step", names)
+            self.assertIn("02_keywell_right_emblem_x.step", names)
             self.assertIn("magnet_spacer_x.step", names)
 
     def test_skips_a_half_that_was_not_built(self):
         case = SimpleNamespace(left=self.built_side("left"), right=None, magnet_spacer=None)
         with tempfile.TemporaryDirectory() as tmp:
             written = export_steps(case, out_dir=tmp)
-            self.assertEqual({path.name for path in written}, {"keywell_left.step", "keyplate_left.step", "bottom_left.step"})
+            self.assertEqual({path.name for path in written}, {"01_keywell_left.step", "02_keywell_left_emblem.step", "keyplate_left.step", "bottom_left.step"})
 
 
 class HeadlessImportTests(unittest.TestCase):
@@ -359,7 +360,7 @@ class HeadlessImportTests(unittest.TestCase):
             "        if name.split('.')[0] == 'ocp_viewer':\n"
             "            raise ImportError('blocked ' + name)\n"
             "sys.meta_path.insert(0, Block())\n"
-            "import duality_wave.case, duality_wave.cli.render, duality_wave.layout, duality_wave.models.case_dimensions, duality_wave.builders.export\n"
+            "import duality_wave.case, duality_wave.cli.render, duality_wave.layout, duality_wave.case_dimensions, duality_wave.builders.export\n"
             "assert 'ocp_viewer' not in sys.modules\n"
         )
         result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, cwd=ROOT)

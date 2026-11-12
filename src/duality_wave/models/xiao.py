@@ -32,7 +32,7 @@ class ComponentDimensions:
 @dataclass
 class ResetButtonLeverDimensions:
     p: Vector = ComponentDimensions.reset_button_d.p
-    d: RectDimensions = RectDimensions(2.4, 6)
+    d: RectDimensions = RectDimensions(2.4, 5)
     gap: float = 0.5
     # how far the slot reaches from the centre of the button towards the outer wall
     head_length: float = 1.8
@@ -179,8 +179,6 @@ class Xiao:
         # from the current z, down to the bottom of the board
         # plus the height of the board and the reset button
         dist = plane.origin.Z - self.plane.origin.Z + self.dims.d.Z + self.components.reset_button_d.d.Z
-        # make bump a bit higher, so the lever is preloaded
-        dist += 0.1 
         lever = self._create_reset_button_lever_sketch()
         with BuildPart() as removal:
             with BuildSketch(plane):

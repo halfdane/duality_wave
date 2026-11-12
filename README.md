@@ -148,6 +148,16 @@ Both are shallow pockets in the outer wall, so the slicer needs no support for t
 The roof of each pocket slopes at 45 degrees.
 `engraving_lines` and `line_width` set the depth, `engraving_pitch` sets the size of a pixel and `engraving_roof_slope` turns the slope off.
 
+Each half also carries the symbol on the top of the keywell and the invader under the bottom plate.
+Both faces lie on the print bed.
+`task export-case` writes each emblem as its own STEP file next to the file of its part: `01_keywell_left.step` and `02_keywell_left_emblem.step`.
+Both files are in the same print orientation.
+The part has no pocket for the emblem, so the two overlap.
+Bambu Studio gives the overlap to the later part, so the emblem must come after the part in the object list.
+The prefixes make the file dialog list it last.
+Load both files together in Bambu Studio as one object with two parts and give the emblem part the second filament.
+`emblem_layers` sets the depth, and `symbol_height` and `invader_height` set the size.
+
 ## Build from source
 
 Run `direnv allow` or `nix develop`.
