@@ -66,19 +66,21 @@ def build_fixtures(ctx: CaseContext) -> Fixtures:
         .rotate(Axis.Z, dims.powerswitch_rotation.Z)\
         .translate(dims.powerswitch_position)
 
-    with BuildPart() as inserts:
-        with Locations([
-            Vector(position.X, position.Y, ctx.insert.dims.d.Z / 2)  # pressed in flush with the face at z=0
-            for position in dims.fastener_positions
-        ]):
-            insert(ctx.insert.model)
+    if ctx.dims.fastener_positions:
+        with BuildPart() as inserts:
+            with Locations([
+                Vector(position.X, position.Y, ctx.insert.dims.d.Z / 2)  # pressed in flush with the face at z=0
+                for position in dims.fastener_positions
+            ]):
+                insert(ctx.insert.model)
 
-    with BuildPart() as screws:
-        with Locations([
-            Vector(position.X, position.Y, -dims.below_z + ctx.screw.dims.shaft.Z / 2 + ctx.screw.dims.head.Z)
-            for position in dims.fastener_positions
-        ]):
-            insert(ctx.screw.model.rotate(Axis.X, 180))
+    if ctx.dims.fastener_positions:
+        with BuildPart() as screws:
+            with Locations([
+                Vector(position.X, position.Y, -dims.below_z + ctx.screw.dims.shaft.Z / 2 + ctx.screw.dims.head.Z)
+                for position in dims.fastener_positions
+            ]):
+                insert(ctx.screw.model.rotate(Axis.X, 180))
 
     battery = Box(dims.battery_pd.d.X, dims.battery_pd.d.Y, dims.battery_pd.d.Z).translate(dims.battery_pd.p)
 
@@ -99,8 +101,8 @@ def build_fixtures(ctx: CaseContext) -> Fixtures:
         bumpers=bumpers.part,
         power_switch=power_switch,
         battery=battery,
-        inserts=inserts.part,
-        screws=screws.part,
+        inserts=inserts.part if ctx.dims.fastener_positions else None,
+        screws=screws.part if ctx.dims.fastener_positions else None,
         magnets=magnets,
         spacers=spacers,
     )

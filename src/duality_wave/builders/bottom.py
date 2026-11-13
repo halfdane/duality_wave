@@ -36,6 +36,8 @@ def build_bottom(ctx: CaseContext, dbg=NullScope()) -> Part:
 
 
 def _cut_fasteners(ctx: CaseContext, dbg) -> None:
+    if not ctx.dims.fastener_positions:
+        return
     print("  fastener holes...")
     dims = ctx.dims
     profile = dims.print_profile

@@ -40,6 +40,8 @@ def _cut_cavity(ctx: CaseContext) -> None:
 
 
 def _cut_insert_pilots(ctx: CaseContext, dbg) -> None:
+    if not ctx.dims.fastener_positions:
+        return
     print("  heat-set insert pilots...")
     dims = ctx.dims
     insert_pilots = circle_sketch(dims.fastener_positions, dims.print_profile.insert_pilot_radius, Plane.XY.offset(dims.heat_insert_z))
@@ -48,6 +50,8 @@ def _cut_insert_pilots(ctx: CaseContext, dbg) -> None:
 
 
 def _cut_fastener_holes(ctx: CaseContext, dbg) -> None:
+    if not ctx.dims.fastener_positions:
+        return
     print("  fastener holes...")
     dims = ctx.dims
     hole_radius = ctx.screw.dims.shaft.radius + dims.print_profile.screw_clearance

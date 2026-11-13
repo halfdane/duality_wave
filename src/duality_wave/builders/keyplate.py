@@ -31,6 +31,8 @@ def build_keyplate(ctx: CaseContext, dbg=NullScope()) -> Part:
 
 
 def _cut_fasteners(ctx: CaseContext, dbg) -> None:
+    if not ctx.dims.fastener_positions:
+        return
     print("  fastener holes...")
     hole_radius = ctx.screw.dims.shaft.radius + ctx.dims.print_profile.screw_clearance
     fastener_holes = circle_sketch(ctx.dims.fastener_positions, hole_radius)
