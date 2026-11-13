@@ -82,11 +82,12 @@ def kinks(face) -> list[tuple[float, float]]:
 
 
 def test_keycaps_and_switches_lie_inside_the_cutout(outline):  # R-27
-    cutout = outline.keywell_sketch.faces()[0]
+    cutout = outline.keywell_sketch.faces()
     for key in outline.keys.keys:
         for box in (outline.switch.cap.d, outline.switch.above.d):
             footprint = rect_face(key.p, box.X, box.Y, key.r)
-            assert overlap_area(footprint, cutout) == pytest.approx(footprint.area, rel=1e-6), f"key at {key.p}"
+            overlap = sum(overlap_area(footprint, region) for region in cutout)
+            assert overlap == pytest.approx(footprint.area, rel=1e-6), f"key at {key.p}"
 
 
 def test_the_cutout_lies_inside_the_cavity(outline):  # R-27
@@ -104,8 +105,8 @@ def test_the_outlines_have_no_kinks(outline):  # R-26
 def test_the_corners_of_the_cutout_are_round(outline):  # R-26
     spec = outline.spec
     for cutout in outline.keywell_sketch.faces():
-        assert close_concave(cutout, spec.cutout_concave_radius).area == pytest.approx(cutout.area, abs=0.05)
-        assert round_convex(cutout, spec.cutout_convex_radius).area == pytest.approx(cutout.area, abs=0.05)
+        assert sum(f.area for f in close_concave(cutout, spec.cutout_concave_radius)) == pytest.approx(cutout.area, abs=0.05)
+        assert sum(f.area for f in round_convex(cutout, spec.cutout_convex_radius)) == pytest.approx(cutout.area, abs=0.05)
 
 
 def test_the_sweep_is_an_arc_on_the_right_wall(outline):  # R-29
@@ -132,8 +133,11 @@ def test_a_notch_is_cut_only_where_the_thumb_is_far_enough_from_the_keys():  # R
     width, height = 1.5 * first.d_x, 1.5 * first.d_y
     near = {"a_0_0": Point(Vector(0, 0)), "a_1_0": Point(Vector(width + 2, 0)), "thumb_0_0": Point(Vector(30, -3 * height))}
     far = {**near, "thumb_0_0": Point(Vector(30 + 2 * first.cirque_recess_radius, -3 * height))}
-    assert not make_outline(points=near).has_cirque_notch
-    outline = make_outline(points=far)
+    # the thumb key sits far below the fingers on purpose, which leaves the body a thin neck there.
+    # corner rounding is not what this test is about, so it is turned off to keep that neck intact.
+    spec = OutlineSpec(corner_radius=0)
+    assert not make_outline(spec=spec, points=near).has_cirque_notch
+    outline = make_outline(spec=spec, points=far)
     assert outline.has_cirque_notch
     notch = circle_face(outline.cirque_recess_position, outline.cirque_recess_radius)
     assert overlap_area(notch, outline.sketch.faces()[0]) < 0.01 * notch.area

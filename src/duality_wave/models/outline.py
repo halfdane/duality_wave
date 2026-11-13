@@ -75,9 +75,12 @@ class Outline:
         # the cells are 1.5 times the key dimensions, so there is no interference with the keycaps
         cells = [self._cell(key, 1.5) for key in self.keys.keys]
         regions = bridge_gaps(cells, self.spec.bridge_gap)
-        return sketch_of(*[
-            round_convex(close_concave(region, self.spec.cutout_concave_radius), self.spec.cutout_convex_radius)
-            for region in regions])
+        finished = [
+            rounded
+            for region in regions
+            for closed in close_concave(region, self.spec.cutout_concave_radius)
+            for rounded in round_convex(closed, self.spec.cutout_convex_radius)]
+        return sketch_of(*finished)
 
     def _overlaps_keywell(self, face: Face) -> bool:
         return any(overlap_area(face, cutout) > 1e-6 for cutout in self._raw_keywell.faces())
@@ -88,7 +91,8 @@ class Outline:
         # the right wall ends level with the thumb corner. The closing fills the corner between wall and cluster
         shoulder = Vector(self.right, self.thumb_top.Y)
         polygon = polygon_face([self.bottom_left, self.top_left, self.top_right, shoulder, self.thumb_top, self.thumb_bottom_left])
-        return close_concave(union_faces([polygon, *thumb_cells])[0], self.sweep_radius)
+        (body,) = close_concave(union_faces([polygon, *thumb_cells])[0], self.sweep_radius)
+        return body
 
     def _create_cirque_notch(self) -> tuple[Face, Vector] | None:
         """The round recess of the trackpad and its center, in the first place that fits between a key and the thumb cluster.
@@ -108,7 +112,9 @@ class Outline:
 
     @staticmethod
     def _round(face: Face, radius: float) -> Face:
-        return round_convex(close_concave(face, radius), radius)
+        rounded = [piece for closed in close_concave(face, radius) for piece in round_convex(closed, radius)]
+        (result,) = rounded
+        return result
 
     def _create_outer_face(self) -> Face:
         face = self._create_body()

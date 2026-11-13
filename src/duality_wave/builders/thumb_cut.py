@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from build123d import *
 
 from duality_wave.builders.viewer import NullScope
-from duality_wave.geometry2d import grow, merge_aligned_edges, round_convex
+from duality_wave.geometry2d import bridge_gaps, close_concave, grow, rect_face, round_convex, union_faces
 from duality_wave.models.keys import Point
 from duality_wave.models.switch import Switch
 
@@ -17,6 +17,8 @@ class ThumbCutSpec:
     while it rises to the top of the keywell, so it leaves the floor and meets the top tangentially.
     inset_* pulls the floor edge back towards the keys at the inner (-x) and the outer (+y) end.
     corner_radius rounds the corners of the zone in plan view. The slope is lofted through the given number of layers.
+    bridge_gap closes a gap between two keys' zones that is narrower than this, the same way the keywell cutout does.
+    A wider gap leaves the thumb cluster in more than one zone, which is a usage error.
     rim_chamfer is the chamfer on the outer edges of the keywell. 0 leaves them sharp. About 1 mm is the most that fits.
     """
 
@@ -25,6 +27,7 @@ class ThumbCutSpec:
     inset_outer: float = 1
     corner_radius: float = 2
     layers: int = 16
+    bridge_gap: float = 4.4
     rim_chamfer: float = 0.8
 
 
@@ -39,34 +42,44 @@ def thumb_depth(switch: Switch, top_z: float) -> float:
 
 
 def thumb_zone(switch: Switch, thumb_clusters: list[list[list[Point]]], spec: ThumbCutSpec = ThumbCutSpec()) -> Face:
-    """The floor of the thumb cut in plan view, at z = 0."""
-    with BuildSketch() as zone:
-        for thumb_cluster in thumb_clusters:
-            for column_index, column in enumerate(thumb_cluster):
-                for key_index, key in enumerate(column):
-                    x = switch.above.d.X * 1.5
-                    y = switch.above.d.Y * 0.75
-                    loc = Location(key.p + (0, -y), key.r)
-                    if key_index == 0 and column_index == 0:
-                        # this is the innermost key - start the cut further to the right
-                        loc.position += Vector(switch.above.d.X / 3, 0, 0).rotate(Axis.Z, key.r)
+    """The floor of the thumb cut in plan view, at z = 0.
 
-                    if key_index == 0:
-                        # this is the first key in the column - make the cut taller
-                        loc.position += Vector(0, -5, 0).rotate(Axis.Z, key.r)
-                        y += 10
+    Every key contributes a rectangle set back behind it, in its own rotated frame. The later taper growth
+    of thumb_cutter closes the remaining distance to the key. Keys that already touch fuse exactly, with
+    no rounding. Zones closer than bridge_gap but not touching fuse the same way the keywell cutout closes
+    a gap between key cells, which can round the corner where the bridge meets a zone.
+    """
+    raw_faces: list[Face] = []
+    for thumb_cluster in thumb_clusters:
+        for column_index, column in enumerate(thumb_cluster):
+            for key_index, key in enumerate(column):
+                x = switch.above.d.X * 1.5
+                y = switch.above.d.Y * 0.75
+                center = key.p + Vector(0, -y).rotate(Axis.Z, key.r)
 
-                    # only two edges of the zone matter: the inner end (-x) and the outer end (+y).
-                    # the other two edges lie outside the case.
-                    left = -spec.inset_inner if column_index == 0 else 0
-                    back = -spec.inset_outer if key_index == len(column) - 1 else 0
-                    loc.position += Vector(-left / 2, back / 2, 0).rotate(Axis.Z, key.r)
-                    with Locations(loc):
-                        Rectangle(x + left, y + back)
-    faces = merge_aligned_edges(zone.sketch).faces()
+                if key_index == 0 and column_index == 0:
+                    # this is the innermost key - start the cut further to the right
+                    center += Vector(switch.above.d.X / 3, 0, 0).rotate(Axis.Z, key.r)
+
+                if key_index == 0:
+                    # this is the first key in the column - make the cut taller
+                    center += Vector(0, -5, 0).rotate(Axis.Z, key.r)
+                    y += 10
+
+                # only two edges of the zone matter: the inner end (-x) and the outer end (+y).
+                # the other two edges lie outside the case.
+                left = -spec.inset_inner if column_index == 0 else 0
+                back = -spec.inset_outer if key_index == len(column) - 1 else 0
+                center += Vector(-left / 2, back / 2, 0).rotate(Axis.Z, key.r)
+                raw_faces.append(rect_face(center, x + left, y + back, key.r))
+
+    faces = union_faces(raw_faces)
     if len(faces) != 1:
-        raise ValueError(f"The thumb keys give {len(faces)} separate cut zones. They must form one region.")
-    return round_convex(faces[0], spec.corner_radius) if spec.corner_radius > 0 else faces[0]
+        faces = bridge_gaps(raw_faces, spec.bridge_gap)
+    if len(faces) != 1:
+        raise ValueError(f"The thumb keys give {len(faces)} zones more than {spec.bridge_gap} mm apart. They must form one region.")
+    (result,) = round_convex(faces[0], spec.corner_radius)
+    return result
 
 
 def thumb_cutter(
@@ -78,20 +91,28 @@ def thumb_cutter(
 ) -> Solid:
     """Cutter that spans from the thumb floor up to top_z and widens towards the top.
 
-    The loft needs sections with the same number of edges. When a large taper fills a notch of the zone,
-    the sections change their edge count and OCC may fail to loft. This does not happen with the layouts of the project.
+    The loft needs sections with the same number of edges. Growing the zone towards the full taper would
+    smooth away its concave notches gradually, changing a section's edge count partway through the loft
+    and leaving OCC to stitch together sections it cannot reconcile, which fragments the lofted wall.
+    Smoothing those notches by the full taper up front keeps every section at the same topology as the
+    fully grown one, so the taper only changes its size, never its shape. Below 1 mm, the growth itself
+    cannot meaningfully change the topology either, and the smoothing only adds numerical noise.
     """
     floor_z = thumb_floor_z(switch)
     depth = thumb_depth(switch, top_z)
     zone = thumb_zone(switch, thumb_clusters, spec)
     dbg.note("zone", zone)
+    if spec.taper > 1:
+        (section_zone,) = close_concave(zone, spec.taper * 1.001)
+    else:
+        section_zone = zone
 
     # The slope grows evenly with the layer number while the height follows a cosine ease.
     wires = []
     for layer in range(spec.layers + 1):
         progress = layer / spec.layers
         eased = 0.5 - 0.5 * math.cos(math.pi * progress)
-        section = grow(zone, spec.taper * progress) if layer else zone
+        section = grow(section_zone, spec.taper * progress) if layer else section_zone
         wires.append(section.outer_wire().moved(Location((0, 0, floor_z + depth * eased))))
     return Solid.make_loft(wires, ruled=False)
 

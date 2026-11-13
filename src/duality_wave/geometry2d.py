@@ -27,35 +27,64 @@ def upward(face: Face) -> Face:
     return face if face.normal_at().Z > 0 else -face
 
 
+def _offset_wire(face: Face, amount: float, join) -> BRepOffsetAPI_MakeOffset:
+    builder = BRepOffsetAPI_MakeOffset()
+    builder.Init(join)
+    builder.AddWire(face.outer_wire().wrapped)
+    builder.Perform(amount)
+    return builder
+
+
+def _grow_pieces(face: Face, amount: float, sharp: bool) -> list[Face]:
+    """The pieces of an outward (positive) or inward (negative) offset. Usually one, more if the offset splits the face.
+
+    A mitred offset can fail outright when it shrinks a concave corner tighter than its local reach allows.
+    When that happens, this falls back to a rounded corner there instead of raising.
+    """
+    builder = _offset_wire(face, amount, GeomAbs_Intersection if sharp else GeomAbs_Arc)
+    if not builder.IsDone() and sharp:
+        builder = _offset_wire(face, amount, GeomAbs_Arc)
+    if not builder.IsDone():
+        raise RuntimeError(f"2D offset failed with distance {amount}")
+    wires = Shape.cast(builder.Shape()).wires()
+    if not wires:
+        raise RuntimeError(f"2D offset by {amount} removed the whole face")
+    return [upward(Face(wire)) for wire in wires]
+
+
 def grow(face: Face, amount: float, sharp: bool = False) -> Face:
     """Offset a face outward (positive) or inward (negative).
 
     Convex corners are round by default. With sharp=True they keep straight, mitred edges.
     Holes of the face are ignored. When the offset splits the shape, the region with the largest area is kept.
     """
-    builder = BRepOffsetAPI_MakeOffset()
-    builder.Init(GeomAbs_Intersection if sharp else GeomAbs_Arc)
-    builder.AddWire(face.outer_wire().wrapped)
-    builder.Perform(amount)
-    if not builder.IsDone():
-        raise RuntimeError(f"2D offset failed with distance {amount}")
-    wires = Shape.cast(builder.Shape()).wires()
-    if not wires:
-        raise RuntimeError(f"2D offset by {amount} removed the whole face")
-    return upward(max((Face(wire) for wire in wires), key=lambda f: f.area))
+    return max(_grow_pieces(face, amount, sharp), key=lambda f: f.area)
 
 
-def round_convex(face: Face, radius: float) -> Face:
-    """Round all convex corners with at least the given radius (morphological opening)."""
-    return grow(grow(face, -radius), radius) if radius > 0 else face
+def round_convex(face: Face, radius: float) -> list[Face]:
+    """Round all convex corners with at least the given radius (morphological opening).
+
+    Erosion can sever a part that is attached through a neck narrower than radius. Every piece
+    erosion leaves grows back independently and the result is re-fused, so a thinly-attached
+    piece never disappears - it just keeps its thin neck instead of being rounded away there.
+    """
+    if radius <= 0:
+        return [face]
+    eroded = _grow_pieces(face, -radius, sharp=False)
+    return union_faces([grow(piece, radius) for piece in eroded])
 
 
-def close_concave(face: Face, radius: float) -> Face:
+def close_concave(face: Face, radius: float) -> list[Face]:
     """Round all concave corners with at least the given radius (morphological closing).
 
     A concave region that a disc of this radius cannot enter is filled. The fill follows an arc that touches both sides.
+    The dilation first can only ever grow the face into fewer, bigger pieces, never split it. The erosion after can still
+    sever a part that is attached through a neck narrower than radius; every piece that leaves is kept, see round_convex.
     """
-    return grow(grow(face, radius), -radius) if radius > 0 else face
+    if radius <= 0:
+        return [face]
+    grown = grow(face, radius)
+    return _grow_pieces(grown, -radius, sharp=False)
 
 
 def rect_face(center: VectorLike, width: float, height: float, rotation: float = 0.0) -> Face:
@@ -85,13 +114,14 @@ def bridge_gaps(faces: Sequence[Face], gap: float) -> list[Face]:
     """Fuse faces and close every gap that is narrower than gap. The edges of the bridge are straight.
 
     Each face grows by half the gap with mitred corners, the grown faces fuse, and the result shrinks again.
-    Two faces that stay at least gap apart stay separate regions.
+    Two faces that stay at least gap apart stay separate regions. The shrink can itself split a fused region
+    back apart, for example when it only touched another through a corner; every piece from that is kept.
     """
     if gap <= 0:
         return union_faces(faces)
     half = gap / 2
     regions = union_faces([grow(face, half, sharp=True) for face in faces])
-    return [grow(region, -half, sharp=True) for region in regions]
+    return [piece for region in regions for piece in _grow_pieces(region, -half, sharp=True)]
 
 
 def sketch_of(*faces: Face) -> Sketch:
