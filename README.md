@@ -30,6 +30,12 @@ The images are renders, not photos.
 
 ![The halves snap together for safe transport](docs/images/transport.jpg)
 
+## Other layouts
+
+The case generator also works with other key layouts, for example Corne, Absolem or layouts with extra rows, columns as well as double-rowed thumb clusters. See [docs/LAYOUTS.md](docs/LAYOUTS.md).
+
+![A large layout with extra rows and a big thumb cluster](docs/images/layouts/big_thumb_cluster.jpg)
+
 ## Bill of materials
 
 Quantities are for both halves.
