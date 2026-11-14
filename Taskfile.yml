@@ -109,3 +109,11 @@ tasks:
     cmds:
       - python -m duality_wave.cli render build/render
       - nix shell nixpkgs#blender --command blender -b -P scripts/render_blender.py -- build/render docs/images
+
+  z-chain:
+    desc: Draw the Z chain of one key into docs/images/z_chain.svg.
+    summary: |
+      Reads the heights from CaseDimensions and the switch model (duality_wave.cli z-chain).
+      Add a path after `--` to write the SVG somewhere else.
+    cmds:
+      - python -m duality_wave.cli z-chain {{.CLI_ARGS}}

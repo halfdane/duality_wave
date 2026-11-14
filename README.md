@@ -27,6 +27,15 @@ Oh, and if you don't like the layout, just bring your own [ergogen](https://ergo
 
 ![The two halves of the keyboard](docs/images/hero.jpg)
 
+## How it gets this thin
+
+Every part of the Z chain is as thin as the switch allows.
+The keyplate ends 0.8 mm below the switch housing, the bottom plate is only 1.6 mm, and the contacts are cut to 2 mm.
+The keywell wall stands just 0.2 mm over the highest point of the keycaps.
+
+![The Z chain of one key](docs/images/z_chain.svg)
+
+
 ## Status
 
 The case design is in progress, but nobody has printed or assembled the full case yet.
