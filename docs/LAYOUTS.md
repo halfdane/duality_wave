@@ -11,6 +11,7 @@ There is however enough space for all the necessary hardware in these cases, so 
 ![Corne small](images/layouts/corne_small.jpg)
 
 Small Corne-style layout with the outer column removed: 3 rows, 5 columns and 3 thumb keys per half.
+
 Inspired by [foostan's Corne (crkbd)](https://github.com/foostan/crkbd#chocolate).
 
 ## Corne full
@@ -18,6 +19,7 @@ Inspired by [foostan's Corne (crkbd)](https://github.com/foostan/crkbd#chocolate
 ![Corne full](images/layouts/corne_full.jpg)
 
 Full Corne-style layout: 3 rows, 6 columns and 3 thumb keys per half.
+
 Inspired by [foostan's Corne (crkbd)](https://github.com/foostan/crkbd#chocolate).
 
 ## Absolem
@@ -25,6 +27,7 @@ Inspired by [foostan's Corne (crkbd)](https://github.com/foostan/crkbd#chocolate
 ![Absolem](images/layouts/absolem.jpg)
 
 Absolem-style layout with a strong column stagger and the iconic angled thumb arc of 3 keys.
+
 Inspired by [MrZealot's Absolem](https://zealot.hu/absolem/), originally a unibody keyboard, now in a true split interpretation.
 
 ## A. dux (Architeuthis dux)
@@ -32,6 +35,7 @@ Inspired by [MrZealot's Absolem](https://zealot.hu/absolem/), originally a unibo
 ![Architeuthis dux](images/layouts/adux.jpg)
 
 A. dux-style layout: 3 rows, 5 columns and 2 thumb keys per half, with strongly splayed columns.
+
 Inspired by [tapioki's Architeuthis dux](https://github.com/tapioki/cephalopoda/tree/main/Architeuthis%20dux) 
 
 ## Ferris/Sweep
@@ -39,6 +43,7 @@ Inspired by [tapioki's Architeuthis dux](https://github.com/tapioki/cephalopoda/
 ![Ferris/Sweep](images/layouts/sweep_like.jpg)
 
 Ferris/Sweep-style layout: 3 rows, 5 columns and 2 thumb keys per half.
+
 Inspired by [pierrechevalier83's Ferris](https://github.com/pierrechevalier83/ferris) and [davidphilipbarr's Sweep](https://github.com/davidphilipbarr/sweep).
 
 ## Thorne-like
@@ -52,4 +57,5 @@ The Duality Wave layout with a rounded thumb cluster inspired by [halfdane's (my
 ![Big thumb cluster](images/layouts/big_thumb_cluster.jpg)
 
 An absolutely massive layout with 6 columns and extra rows for numbers and function keys.
+
 The thumb cluster is extra large with 2 rows of 3 keys each.
