@@ -3,7 +3,6 @@
 import xml.etree.ElementTree as ET
 
 import pytest
-import re
 from duality_wave.cli import z_chain
 from duality_wave.models.rubber_bumper import BumperDimensions
 from tests.builds import make_inputs
@@ -26,23 +25,16 @@ def test_the_levels_stack_up_from_the_table(compact):
     assert levels == sorted(levels)
 
 
-def test_the_svg_names_every_part_and_shows_the_two_headline_heights():
+def test_the_svg_shows_the_two_headline_heights_that_the_chain_computes():
     switch, _, dims, _ = make_inputs()
-    svg = z_chain.render_svg(switch, dims, BumperDimensions())
+    bumper = BumperDimensions()
+    chain = z_chain.ZChain.of(switch, dims, bumper)
+
+    svg = z_chain.render_svg(switch, dims, bumper)
 
     texts = {element.text for element in ET.fromstring(svg).iter("{http://www.w3.org/2000/svg}text")}
-
-    table_to_keycap_pattern = re.compile(r"Table to keycap top: \d\d.\d mm")
-    assert any(table_to_keycap_pattern.search(s) for s in texts), (
-        f"Expected at least one string matching {table_to_keycap_pattern.pattern!r}, "
-        f"but none matched in: {texts!r}"
-    )
-
-    bottom_plate_to_keywell_pattern = re.compile(r"Bottom plate to top of keywell: \d\d.\d mm")
-    assert any(bottom_plate_to_keywell_pattern.search(s) for s in texts), (
-        f"Expected at least one string matching {bottom_plate_to_keywell_pattern.pattern!r}, "
-        f"but none matched in: {texts!r}"
-    )
+    assert f"Table to keycap top: {z_chain.mm(chain.cap_top)} mm" in texts
+    assert f"Bottom plate to top of keywell: {z_chain.mm(chain.case_height)} mm" in texts
 
 
 def test_the_command_writes_the_svg(tmp_path, capsys):
