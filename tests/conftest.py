@@ -1,6 +1,12 @@
+import time
+
 import pytest
 
+from tests import PERF_FACTOR
 from tests.builds import compact_case, full_case, quiet_case
+
+UNIT_CPU_BUDGET = 1.0 * PERF_FACTOR
+BUDGET_EXEMPT_MARKERS = ("integration", "perf", "slow")
 
 
 def pytest_collection_modifyitems(items):
@@ -20,6 +26,23 @@ def unit_tests_build_no_case(request, monkeypatch):
         raise AssertionError("This test builds a whole case. Mark it with @pytest.mark.integration.")
 
     monkeypatch.setattr("duality_wave.case.WaveCase.__init__", refuse)
+
+
+@pytest.fixture(autouse=True)
+def unit_tests_stay_in_the_cpu_budget(request):
+    """A unit test uses at most UNIT_CPU_BUDGET seconds of CPU. Fixtures with a wider scope are shared and do not count."""
+    if any(request.node.get_closest_marker(name) is not None for name in BUDGET_EXEMPT_MARKERS):
+        yield
+        return
+    start = time.process_time()
+    yield
+    used = time.process_time() - start
+    if used > UNIT_CPU_BUDGET:
+        pytest.fail(
+            f"This unit test used {used:.1f} s of CPU. The budget is {UNIT_CPU_BUDGET:.1f} s. "
+            "Test a smaller shape or one builder alone. Do not add a marker or raise the budget.",
+            pytrace=False,
+        )
 
 
 @pytest.fixture

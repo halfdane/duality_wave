@@ -13,9 +13,20 @@ Use `task update` to upgrade the packages on purpose.
 ## Checks and tests
 
 - `task check` verifies `uv.lock`, runs `ruff` and runs the unit tests. It builds no case.
-- `task test` checks the lock file, runs `ruff`, runs all tests in parallel, then runs the tests with a time limit alone. This takes about 35 s.
+- `task test` checks the lock file, runs `ruff`, runs all tests in parallel, then runs the tests with a time limit alone.
+
+`AGENTS.md` holds the rules for new tests. Read it before you add a test.
 
 A unit test is fast and builds no case.
+A unit test uses at most 1 s of CPU time. `tests/conftest.py` fails a test that uses more.
+Set `WAVE_PERF_FACTOR` to scale the budget on a slow machine.
+`tests/test_hygiene.py` fails a test that compares the design with a number that it typed, and a test that expects a digit pattern in a string.
+Add `# literal-ok: <reason>` to the line only when the number is the requirement.
+
+A test with the marker `slow` is over the CPU budget and waits for a fix. This marker is temporary.
+Only the tests in `SLOW_BASELINE` in `tests/test_hygiene.py` may carry it. `task check` skips them.
+Fix a test, then remove its marker and its line in the baseline.
+When the baseline is empty, remove the marker, the exemption in `tests/conftest.py`, the filter in `Taskfile.yml` and the check in `tests/test_hygiene.py`.
 A test that builds a whole case or the coupons is an integration test. It carries `@pytest.mark.integration`.
 A test without that marker fails when it builds a case.
 Integration tests use the fixtures `full`, `compact` and `quiet` from `tests/conftest.py`.

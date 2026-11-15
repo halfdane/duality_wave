@@ -97,6 +97,7 @@ def test_a_net_that_misses_the_channel_or_a_terminal_is_reported(half):  # R-39
     assert any("no trench reaches the terminal" in p for p in check.check_nets(replace(half, nets=only_the_stub)))
 
 
+@pytest.mark.slow
 def test_no_wire_comes_near_a_contact_it_does_not_serve_or_runs_beside_another_net(half):  # R-40
     assert check.check_keepouts(half) == []
     assert check.check_parallel(half) == []

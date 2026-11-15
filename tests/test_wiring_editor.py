@@ -39,12 +39,14 @@ def state_of(document: dict, side: str = "left") -> dict:
     return {**document["sides"][side], "channel": document["channel"]}
 
 
+@pytest.mark.slow
 def test_the_file_survives_a_round_trip_through_the_vertices_of_the_editor(editor):  # R-43
     before = editor.path.read_text()
     editor.save(editor.document())
     assert editor.path.read_text() == before
 
 
+@pytest.mark.slow
 def test_saving_writes_the_moved_vertex_keeps_a_backup_and_leaves_the_rest(editor, tmp_path):  # R-43
     before = editor.path.read_text()
     document = editor.document()
@@ -57,6 +59,7 @@ def test_saving_writes_the_moved_vertex_keeps_a_backup_and_leaves_the_rest(edito
     assert len(changed) == 1
 
 
+@pytest.mark.slow
 def test_a_radius_is_written_only_for_a_corner_that_has_one(editor):  # R-43
     document = editor.document()
     path = document["sides"]["left"]["underside"]["col 3"][0]
@@ -75,6 +78,7 @@ def test_a_state_that_breaks_the_analysis_is_not_written(editor):  # R-43
     assert editor.path.read_text() == before
 
 
+@pytest.mark.slow
 def test_tidy_takes_away_repeated_and_straight_vertices_and_keeps_the_ends_and_the_corners(editor):  # R-43
     path = [[0, 0, None], [0, 0, None], [5, 0, None], [10, 0, 0.75], [10, 5, None], [10, 5, None], [10, 5, None]]
     assert tidy_path(path) == [[0, 0, None], [10, 0, 0.75], [10, 5, None]]
@@ -120,6 +124,7 @@ def test_the_notches_say_which_diodes_need_a_sleeve_and_how_far_a_diode_may_move
     assert editor.analyze("left", state, fast=True)["notches"]["matrix_index_top"]["sleeve"] != before
 
 
+@pytest.mark.slow
 def test_the_checks_of_the_editor_give_the_place_of_each_problem(editor):  # R-43
     document = editor.document()
     clean = editor.analyze("left", state_of(document))
@@ -209,6 +214,7 @@ def test_the_server_refuses_requests_without_the_guard_header_or_from_another_ho
         server.server_close()
 
 
+@pytest.mark.slow
 def test_a_corner_without_an_arc_is_sharp_and_does_not_break_the_checks(editor):  # R-43
     from duality_wave.wiring.rounded import normalize, sample
 

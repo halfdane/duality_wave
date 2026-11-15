@@ -11,6 +11,9 @@ A test does not need an ID.
 Every ID that a test cites exists in this file.
 `tests/test_spec.py` checks the last two rules.
 Retired IDs are not used again.
+Every requirement costs a test, so a requirement must earn its place.
+A requirement states a physical or printable outcome, for example a fit, a clearance or a valid solid.
+Tooling, viewer, debug and performance behaviour is not a requirement.
 Lengths are in millimetres. Times are in seconds.
 
 ## Scope

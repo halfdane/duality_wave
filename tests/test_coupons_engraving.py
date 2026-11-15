@@ -30,6 +30,7 @@ def pixel_center(ctx, row: int, column: int) -> tuple[float, float]:
     return x, middle - ((SpaceInvader.rows - 1) / 2 - row) * pitch
 
 
+@pytest.mark.slow
 def test_a_slab_is_one_valid_solid_as_high_as_the_keywell_wall(ctx):
     slab = wall_engraving_coupon(ctx.dims, ctx.dims.print_profile, lines=1, roof_slope=True)
     box = slab.bounding_box()
@@ -39,6 +40,7 @@ def test_a_slab_is_one_valid_solid_as_high_as_the_keywell_wall(ctx):
     assert box.min.Y == pytest.approx(-ctx.dims.wall_thickness)
 
 
+@pytest.mark.slow
 def test_the_top_row_of_an_emblem_is_next_to_the_bed_and_the_pockets_have_the_asked_depth(ctx):
     profile = ctx.dims.print_profile
     row = 0
@@ -55,6 +57,7 @@ def test_the_top_row_of_an_emblem_is_next_to_the_bed_and_the_pockets_have_the_as
         assert coupon.is_inside(Vector(blank_x, -0.05, z))
 
 
+@pytest.mark.slow
 def test_the_roof_is_the_side_that_prints_last_and_slopes_when_asked(ctx):
     profile = ctx.dims.print_profile
     depth = profile.engraving_depth
@@ -77,6 +80,7 @@ def test_the_pixel_gaps_follow_the_line_width(ctx):
     assert gap_sweep(replace(profile, line_width=0.5))[-1] == 0.5
 
 
+@pytest.mark.slow
 def test_the_wiring_plate_has_a_slab_for_every_depth_and_roof_and_fits_on_a_small_bed(ctx):
     slabs = engraving_coupon_slabs(ctx.dims)
     assert len(slabs) == 4

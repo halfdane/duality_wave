@@ -100,6 +100,7 @@ def test_the_stem_top_meets_the_roof_of_the_keycap_and_the_legs_stand_in_the_hol
     assert not body.is_inside(Vector(leg_x, 0, roof - 0.05)) and body.is_inside(Vector(0, 0, roof - 0.05))
 
 
+@pytest.mark.slow
 def test_the_top_of_the_keycap_is_a_dish_that_is_highest_at_the_corners():  # R-18
     switch = Choc()
     cap = switch.cap_model
@@ -284,6 +285,7 @@ def test_a_magnet_pocket_opens_into_the_cavity_and_a_skin_closes_the_top_face():
         assert solid(dims.magnet_z / 2, away=radius + 0.3), "the pocket has a wall"
 
 
+@pytest.mark.slow
 def test_a_spacer_disc_fills_the_pocket_and_the_keyplate_carries_it():  # R-33
     ctx = make_context()
     dims, profile = ctx.dims, ctx.dims.print_profile

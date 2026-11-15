@@ -10,12 +10,12 @@ from tests import PERF_FACTOR, ROOT
 from tests.builds import PARTS
 
 SPEC = ROOT / "docs" / "SPEC.md"
-ID = re.compile(r"R-\d{2}")
+ID = re.compile(r"R-\d{2}")  # literal-ok: matches requirement IDs, not a design value
 STAGE_LIMITS = {"keywell": 1.2, "keyplate": 1.6, "bottom": 0.7, "finish_left": 5.0, "finish_right": 5.0}
 
 
 def spec_ids() -> set[str]:
-    return {m.group(0) for line in SPEC.read_text().splitlines() if (m := re.match(r"R-\d{2}(?=:)", line))}
+    return {m.group(0) for line in SPEC.read_text().splitlines() if (m := re.match(r"R-\d{2}(?=:)", line))}  # literal-ok: matches requirement IDs, not a design value
 
 
 def test_every_requirement_has_a_test_and_every_cited_requirement_exists():

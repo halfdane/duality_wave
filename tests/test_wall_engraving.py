@@ -76,6 +76,7 @@ def test_the_emblem_ends_its_rows_on_layer_boundaries_and_clears_the_rim_chamfer
 
 
 @pytest.mark.parametrize("name", ["symbol", "invader"])
+@pytest.mark.slow
 def test_the_pocket_is_in_the_wall_and_as_deep_as_asked(ctx, blank, spot, name):  # R-34
     dims, profile = ctx.dims, ctx.dims.print_profile
     engraved = engrave_emblem(blank, dims, spot, name)
@@ -98,6 +99,7 @@ def test_the_pixels_are_one_line_apart(ctx):  # R-34
 
 
 @pytest.mark.parametrize("slope", [True, False])
+@pytest.mark.slow
 def test_the_roof_slopes_at_45_degrees(ctx, blank, spot, slope):  # R-34
     dims, profile = ctx.dims, ctx.dims.print_profile
     dims = type("Dims", (), {"print_profile": replace(profile, engraving_roof_slope=slope),
