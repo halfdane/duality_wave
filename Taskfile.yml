@@ -81,7 +81,7 @@ tasks:
     cmds:
       - uv lock --check
       - ruff check .
-      - pytest -q -m "not integration and not perf and not slow"
+      - pytest -q -m "not integration and not perf"
 
   update:
     desc: Upgrade all Python packages in uv.lock, then install them.

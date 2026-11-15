@@ -31,12 +31,9 @@ Test a smaller shape or one builder alone.
 `tests/test_hygiene.py` and `tests/conftest.py` enforce this and the number rules.
 
 Never do these without asking the user:
-- Add the `slow` marker or a line to `SLOW_BASELINE` or `LITERAL_BASELINE`.
+- Add a line to `LITERAL_BASELINE`.
 - Add `# literal-ok:` to a line.
 - Raise the CPU budget.
-
-The `slow` marker is temporary.
-It stays only on the tests in `SLOW_BASELINE` until they are fixed.
 
 ## Requirements
 

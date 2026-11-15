@@ -35,7 +35,6 @@ addopts = "--durations=10"
 markers = [
     "integration: builds a whole case or the coupons. The fast tier skips these tests.",
     "perf: checks a wall-clock limit. It runs alone, because load changes the times.",
-    "slow: TEMPORARY. A unit test over the CPU budget that still waits to be fixed. Only the tests in tests/test_hygiene.py may carry it.",
 ]
 
 [tool.ruff]

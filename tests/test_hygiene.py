@@ -18,30 +18,9 @@ DESIGN_NAMES = {
 TOLERANCE_KEYWORDS = {"abs", "rel", "delta", "places", "atol", "rtol"}
 SMALL_INTS = {-2, -1, 0, 1, 2}
 
-# TEMPORARY: unit tests over the CPU budget that wait for a fix. Fix a test, remove its marker and delete its line.
-# The marker and this list go away when the list is empty. Do not add a line.
-SLOW_BASELINE = {
-    "test_coupons_engraving.py::test_a_slab_is_one_valid_solid_as_high_as_the_keywell_wall",
-    "test_coupons_engraving.py::test_the_roof_is_the_side_that_prints_last_and_slopes_when_asked",
-    "test_coupons_engraving.py::test_the_top_row_of_an_emblem_is_next_to_the_bed_and_the_pockets_have_the_asked_depth",
-    "test_coupons_engraving.py::test_the_wiring_plate_has_a_slab_for_every_depth_and_roof_and_fits_on_a_small_bed",
-    "test_wall_engraving.py::test_the_pocket_is_in_the_wall_and_as_deep_as_asked",
-    "test_wall_engraving.py::test_the_roof_slopes_at_45_degrees",
-    "test_wiring.py::test_no_wire_comes_near_a_contact_it_does_not_serve_or_runs_beside_another_net",
-    "test_wiring_editor.py::test_a_corner_without_an_arc_is_sharp_and_does_not_break_the_checks",
-    "test_wiring_editor.py::test_a_radius_is_written_only_for_a_corner_that_has_one",
-    "test_wiring_editor.py::test_saving_writes_the_moved_vertex_keeps_a_backup_and_leaves_the_rest",
-    "test_wiring_editor.py::test_the_checks_of_the_editor_give_the_place_of_each_problem",
-    "test_wiring_editor.py::test_the_file_survives_a_round_trip_through_the_vertices_of_the_editor",
-    "test_wiring_editor.py::test_tidy_takes_away_repeated_and_straight_vertices_and_keeps_the_ends_and_the_corners",
-    "test_zstack.py::test_a_spacer_disc_fills_the_pocket_and_the_keyplate_carries_it",
-    "test_zstack.py::test_the_top_of_the_keycap_is_a_dish_that_is_highest_at_the_corners",
-}
-
 # Tests that already compare real design values with a literal number. Fix a test and delete its line. Do not add a line.
 LITERAL_BASELINE = {
     "test_builders.py::ThumbZoneTests.test_the_corners_are_round",
-    "test_coupons.py::CouponTests.test_battery_pockets_are_open_upwards_and_differ_by_their_clearance",
     "test_coupons.py::CouponTests.test_the_second_plate_holds_the_wiring_and_the_plate_fit_as_separate_solids",
     "test_spec.py::TestCompactCase.test_the_build_stays_inside_its_time_budget",
     "test_spec.py::TestFullCase.test_the_build_stays_inside_its_time_budget",
@@ -67,19 +46,6 @@ def definitions(tree):
                 yield from visit(child, prefix, owner)
 
     yield from visit(tree, "", None)
-
-
-def slow_marked(source: str, filename: str) -> set[str]:
-    tree = ast.parse(source)
-    marked, decorated = set(), set()
-    for qualname, node, _ in definitions(tree):
-        for decorator in node.decorator_list:
-            for part in ast.walk(decorator):
-                if isinstance(part, ast.Attribute) and part.attr == "slow":
-                    marked.add(f"{filename}::{qualname}")
-                    decorated.add(id(part))
-    elsewhere = any(isinstance(n, ast.Attribute) and n.attr == "slow" and id(n) not in decorated for n in ast.walk(tree))
-    return marked | ({f"{filename}::<slow outside a decorator>"} if elsewhere else set())
 
 
 def has_escape(lines: list[str], node) -> bool:
@@ -143,15 +109,6 @@ def digit_patterns(source: str, filename: str) -> list[str]:
 @cache
 def source_of(path: Path) -> str:
     return path.read_text()
-
-
-def test_only_the_baseline_tests_carry_the_slow_marker():
-    marked = set().union(*(slow_marked(source_of(path), path.name) for path in TEST_FILES))
-    assert marked <= SLOW_BASELINE, (
-        f"New slow tests: {sorted(marked - SLOW_BASELINE)}. A unit test must stay in the CPU budget. "
-        "Test a smaller shape or one builder alone. Do not add the marker."
-    )
-    assert SLOW_BASELINE <= marked, f"Delete these lines from SLOW_BASELINE, they are fixed: {sorted(SLOW_BASELINE - marked)}"
 
 
 def test_no_test_compares_the_design_with_a_number_that_it_typed():

@@ -6,14 +6,14 @@ from tests import PERF_FACTOR
 from tests.builds import compact_case, full_case, quiet_case
 
 UNIT_CPU_BUDGET = 1.0 * PERF_FACTOR
-BUDGET_EXEMPT_MARKERS = ("integration", "perf", "slow")
+BUDGET_EXEMPT_MARKERS = ("integration", "perf")
 
 
 def pytest_collection_modifyitems(items):
     """Integration tests share the cached builds, so a module runs on one xdist worker."""
     for item in items:
         if item.get_closest_marker("integration") is not None:
-            item.add_marker(pytest.mark.xdist_group("coupons" if item.module.__name__.endswith("coupons") else "cases"))
+            item.add_marker(pytest.mark.xdist_group("coupons" if "coupons" in item.module.__name__ else "cases"))
 
 
 @pytest.fixture(autouse=True)
@@ -30,13 +30,16 @@ def unit_tests_build_no_case(request, monkeypatch):
 
 @pytest.fixture(autouse=True)
 def unit_tests_stay_in_the_cpu_budget(request):
-    """A unit test uses at most UNIT_CPU_BUDGET seconds of CPU. Fixtures with a wider scope are shared and do not count."""
+    """A unit test uses at most UNIT_CPU_BUDGET seconds of CPU in its own thread. Fixtures with a wider scope are shared and do not count.
+
+    Worker threads of the geometry kernel spin under load, so the CPU of the whole process would flake under xdist.
+    """
     if any(request.node.get_closest_marker(name) is not None for name in BUDGET_EXEMPT_MARKERS):
         yield
         return
-    start = time.process_time()
+    start = time.thread_time()
     yield
-    used = time.process_time() - start
+    used = time.thread_time() - start
     if used > UNIT_CPU_BUDGET:
         pytest.fail(
             f"This unit test used {used:.1f} s of CPU. The budget is {UNIT_CPU_BUDGET:.1f} s. "

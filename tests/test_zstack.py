@@ -14,7 +14,6 @@ from duality_wave.models.rubber_bumper import BumperDimensions
 from duality_wave.models.screw import ScrewDimensions
 from duality_wave.models.xiao import Xiao
 from duality_wave.builders.bottom import add_switch_post_cutouts, build_bottom
-from duality_wave.builders.keyplate import build_keyplate
 from duality_wave.builders.keywell import build_keywell
 from duality_wave.geometry2d import rect_face
 from duality_wave.builders.side import Side
@@ -100,16 +99,23 @@ def test_the_stem_top_meets_the_roof_of_the_keycap_and_the_legs_stand_in_the_hol
     assert not body.is_inside(Vector(leg_x, 0, roof - 0.05)) and body.is_inside(Vector(0, 0, roof - 0.05))
 
 
-@pytest.mark.slow
 def test_the_top_of_the_keycap_is_a_dish_that_is_highest_at_the_corners():  # R-18
     switch = Choc()
     cap = switch.cap_model
+    coarse, resolution = 0.25, 0.01
 
     def top(x, y):
-        return max(z / 100 for z in range(300, 900) if cap.is_inside(Vector(x, y, z / 100)))
+        low = cap.bounding_box().max.Z
+        while not cap.is_inside(Vector(x, y, low)):
+            low -= coarse
+        high = low + coarse
+        while high - low > resolution:
+            middle = (low + high) / 2
+            low, high = (middle, high) if cap.is_inside(Vector(x, y, middle)) else (low, middle)
+        return low
 
     centre = top(0, 0)
-    assert centre == pytest.approx(switch.cap_start_z + switch.cap.dish_low)
+    assert centre == pytest.approx(switch.cap_start_z + switch.cap.dish_low, abs=resolution)
     assert top(6.5, 0) > centre and top(0, 6.5) > centre
     assert top(6.5, 5.5) == pytest.approx(switch.above.d.Z, abs=0.15)
 
@@ -285,20 +291,23 @@ def test_a_magnet_pocket_opens_into_the_cavity_and_a_skin_closes_the_top_face():
         assert solid(dims.magnet_z / 2, away=radius + 0.3), "the pocket has a wall"
 
 
-@pytest.mark.slow
-def test_a_spacer_disc_fills_the_pocket_and_the_keyplate_carries_it():  # R-33
+def test_a_spacer_disc_is_narrower_than_its_pocket_and_stacks_under_the_magnets():  # R-33
     ctx = make_context()
     dims, profile = ctx.dims, ctx.dims.print_profile
     spacer = dims.magnet_spacer
     assert spacer.radius < dims.magnet_d.radius + profile.magnet_clearance
     assert spacer.Z + 2 * dims.magnet_d.Z + profile.magnet_spacer_gap == pytest.approx(dims.magnet_z)
 
-    keyplate = build_keyplate(ctx)
+
+@pytest.mark.integration
+def test_the_keyplate_carries_the_whole_spacer_disc(full):  # R-33
+    dims = full.ctx.dims
+    spacer = dims.magnet_spacer
     for magnet in dims.magnet_positions:
         rim = [Vector(magnet.X, magnet.Y, -0.1)] + [
             Vector(magnet.X, magnet.Y, -0.1) + Vector(spacer.radius, 0).rotate(Axis.Z, angle) for angle in range(0, 360, 45)
         ]
-        assert all(keyplate.is_inside(point) for point in rim), f"no keyplate under the spacer at {magnet}"
+        assert all(full.left.keyplate.is_inside(point) for point in rim), f"no keyplate under the spacer at {magnet}"
 
 
 def test_a_height_snaps_to_whole_layers():  # R-24

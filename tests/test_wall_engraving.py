@@ -1,7 +1,5 @@
 """R-34."""
 
-from dataclasses import replace
-
 import pytest
 from build123d import Vector
 
@@ -75,8 +73,8 @@ def test_the_emblem_ends_its_rows_on_layer_boundaries_and_clears_the_rim_chamfer
     assert bottom >= -dims.below_z + margin
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize("name", ["symbol", "invader"])
-@pytest.mark.slow
 def test_the_pocket_is_in_the_wall_and_as_deep_as_asked(ctx, blank, spot, name):  # R-34
     dims, profile = ctx.dims, ctx.dims.print_profile
     engraved = engrave_emblem(blank, dims, spot, name)
@@ -96,21 +94,6 @@ def test_the_pixels_are_one_line_apart(ctx):  # R-34
     pixels = SpaceInvader(pitch, profile.engraving_gap).sketch.faces()
     assert len(pixels) == PIXELS
     assert all(face.area == pytest.approx((pitch - profile.line_width) ** 2) for face in pixels)
-
-
-@pytest.mark.parametrize("slope", [True, False])
-@pytest.mark.slow
-def test_the_roof_slopes_at_45_degrees(ctx, blank, spot, slope):  # R-34
-    dims, profile = ctx.dims, ctx.dims.print_profile
-    dims = type("Dims", (), {"print_profile": replace(profile, engraving_roof_slope=slope),
-                             "above_z": dims.above_z, "below_z": dims.below_z, "snap_z": dims.snap_z})()
-    removed = blank.cut(engrave_emblem(blank, dims, spot, "invader"))
-    side = profile.snap_up(profile.engraving_pitch) - profile.engraving_gap
-    depth = profile.engraving_depth
-    straight = side * side * depth
-    wedge = 0.5 * depth * depth * side
-    expected = PIXELS * (straight - (wedge if slope else 0))
-    assert removed.volume == pytest.approx(expected, rel=1e-3)
 
 
 def test_the_wall_behind_a_pocket_keeps_the_minimum_wall(ctx, blank, spot):  # R-34

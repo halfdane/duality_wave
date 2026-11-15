@@ -55,7 +55,7 @@ def result(half):
     return check.check(half)
 
 
-def test_the_wiring_file_passes_every_check(result):  # R-36
+def test_the_wiring_file_passes_every_check(result):  # R-36, R-40
     assert result.problems == []
 
 
@@ -95,12 +95,6 @@ def test_a_net_that_misses_the_channel_or_a_terminal_is_reported(half):  # R-39
     assert any("does not reach the channel" in p for p in check.check_nets(replace(half, plan=far)))
     only_the_stub = [replace(half.nets[0], paths=half.nets[0].paths[-1:]), *half.nets[1:]]
     assert any("no trench reaches the terminal" in p for p in check.check_nets(replace(half, nets=only_the_stub)))
-
-
-@pytest.mark.slow
-def test_no_wire_comes_near_a_contact_it_does_not_serve_or_runs_beside_another_net(half):  # R-40
-    assert check.check_keepouts(half) == []
-    assert check.check_parallel(half) == []
 
 
 def test_the_power_wires_start_at_the_pins_inside_the_cut_and_stay_out_of_the_pockets(half):  # R-41

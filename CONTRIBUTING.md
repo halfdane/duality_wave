@@ -23,10 +23,6 @@ Set `WAVE_PERF_FACTOR` to scale the budget on a slow machine.
 `tests/test_hygiene.py` fails a test that compares the design with a number that it typed, and a test that expects a digit pattern in a string.
 Add `# literal-ok: <reason>` to the line only when the number is the requirement.
 
-A test with the marker `slow` is over the CPU budget and waits for a fix. This marker is temporary.
-Only the tests in `SLOW_BASELINE` in `tests/test_hygiene.py` may carry it. `task check` skips them.
-Fix a test, then remove its marker and its line in the baseline.
-When the baseline is empty, remove the marker, the exemption in `tests/conftest.py`, the filter in `Taskfile.yml` and the check in `tests/test_hygiene.py`.
 A test that builds a whole case or the coupons is an integration test. It carries `@pytest.mark.integration`.
 A test without that marker fails when it builds a case.
 Integration tests use the fixtures `full`, `compact` and `quiet` from `tests/conftest.py`.
