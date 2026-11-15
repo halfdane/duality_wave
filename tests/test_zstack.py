@@ -33,28 +33,37 @@ def test_the_z_levels_derive_from_one_chain(compact):  # R-18
 
 
 def test_a_post_of_length_zero_does_not_exist():  # R-19
-    switch = Choc(pin_len=1.5, side_post_len=0)
+    datasheet = PostDimensions()
+    pin_len = datasheet.p1.d.Z / 2
+    switch = Choc(pin_len=pin_len, side_post_len=0)
     assert switch.posts.a1 not in switch.posts.posts and switch.posts.a2 not in switch.posts.posts
     assert switch.posts.center in switch.posts.posts
-    assert switch.below.d.Z == pytest.approx(switch.bottom_housing.d.Z + 1.5)
+    assert switch.below.d.Z == pytest.approx(switch.bottom_housing.d.Z + pin_len)
 
 
 def test_the_centre_post_keeps_its_length_and_does_not_set_the_depth_below_the_housing():  # R-19
-    for pin_len in (0.5, 2.0, 3.0):
+    datasheet = PostDimensions()
+    for fraction in (0.25, 0.5, 1):
+        pin_len = fraction * datasheet.p1.d.Z
         switch = Choc(pin_len=pin_len, side_post_len=0)
-        assert switch.posts.center.d.Z == pytest.approx(PostDimensions().center.d.Z)
+        assert switch.posts.center.d.Z == pytest.approx(datasheet.center.d.Z)
         assert switch.below.d.Z == pytest.approx(switch.bottom_housing.d.Z + pin_len)
 
 
 def test_the_longest_of_contact_and_side_post_sets_the_depth_below_the_housing():  # R-19
-    switch = Choc(pin_len=1.5, side_post_len=2.5)
-    assert len(switch.posts.posts) == len(PostDimensions().posts)
-    assert switch.below.d.Z == pytest.approx(switch.bottom_housing.d.Z + 2.5)
+    datasheet = PostDimensions()
+    longer = min(datasheet.p1.d.Z, datasheet.a1.d.Z)
+    shorter = longer / 2
+    for pin_len, side_post_len in ((longer, shorter), (shorter, longer)):
+        switch = Choc(pin_len=pin_len, side_post_len=side_post_len)
+        assert len(switch.posts.posts) == len(datasheet.posts)
+        assert switch.below.d.Z == pytest.approx(switch.bottom_housing.d.Z + longer)
 
 
 def test_a_post_is_never_longer_than_its_datasheet_value():  # R-19
-    switch = Choc(pin_len=9.0, side_post_len=9.0)
     datasheet = PostDimensions()
+    too_long = 2 * max(post.d.Z for post in datasheet.posts)
+    switch = Choc(pin_len=too_long, side_post_len=too_long)
     assert switch.posts.p1.d.Z == pytest.approx(datasheet.p1.d.Z)
     assert switch.posts.a1.d.Z == pytest.approx(datasheet.a1.d.Z)
 
@@ -115,9 +124,11 @@ def test_the_top_of_the_keycap_is_a_dish_that_is_highest_at_the_corners():  # R-
         return low
 
     centre = top(0, 0)
+    reach = switch.cap.edge_radius + switch.cap.corner_radius
+    half_x, half_y = switch.cap.d.X / 2 - reach, switch.cap.d.Y / 2 - reach
     assert centre == pytest.approx(switch.cap_start_z + switch.cap.dish_low, abs=resolution)
-    assert top(6.5, 0) > centre and top(0, 6.5) > centre
-    assert top(6.5, 5.5) == pytest.approx(switch.above.d.Z, abs=0.15)
+    assert top(half_x, 0) > centre and top(0, half_y) > centre
+    assert top(half_x, half_y) == pytest.approx(switch.above.d.Z, abs=switch.cap.edge_radius)
 
 
 @pytest.mark.parametrize("compact", [False, True])
@@ -310,14 +321,19 @@ def test_the_keyplate_carries_the_whole_spacer_disc(full):  # R-33
         assert all(full.left.keyplate.is_inside(point) for point in rim), f"no keyplate under the spacer at {magnet}"
 
 
-def test_a_height_snaps_to_whole_layers():  # R-24
-    profile = PrintProfile(layer_height=0.2)
-    assert profile.snap_up(2.0) == pytest.approx(2.0)
-    assert profile.snap_up(2.0 + 1e-12) == pytest.approx(2.0)
-    assert profile.snap_up(2.01) == pytest.approx(2.2)
-    assert profile.snap_down(2.19) == pytest.approx(2.0)
-    assert profile.snap_down(2.2 - 1e-12) == pytest.approx(2.2)
-    assert PrintProfile(layer_height=0.12).snap_up(1.0) == pytest.approx(1.08)
+@pytest.mark.parametrize("layer_height", [0.2, 0.12, 0.28])
+def test_a_height_snaps_to_whole_layers(layer_height):  # R-24
+    profile = PrintProfile(layer_height=layer_height)
+    whole_layers = 10
+    level = whole_layers * layer_height
+    noise = 1e-12
+    a_little = layer_height / 20
+    nearly_a_layer = layer_height - a_little
+    assert profile.snap_up(level) == pytest.approx(level)
+    assert profile.snap_up(level + noise) == pytest.approx(level)
+    assert profile.snap_up(level + a_little) == pytest.approx(level + layer_height)
+    assert profile.snap_down(level + nearly_a_layer) == pytest.approx(level)
+    assert profile.snap_down(level + layer_height - noise) == pytest.approx(level + layer_height)
 
 
 def bed_layers(dims, z):

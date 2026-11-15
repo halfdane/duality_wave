@@ -13,7 +13,7 @@ Use `task update` to upgrade the packages on purpose.
 ## Checks and tests
 
 - `task check` verifies `uv.lock`, runs `ruff` and runs the unit tests. It builds no case.
-- `task test` checks the lock file, runs `ruff`, runs all tests in parallel, then runs the tests with a time limit alone.
+- `task test` checks the lock file, runs `ruff` and runs all tests in parallel. This takes about 30 s.
 
 `AGENTS.md` holds the rules for new tests. Read it before you add a test.
 
@@ -29,10 +29,6 @@ Integration tests use the fixtures `full`, `compact` and `quiet` from `tests/con
 These three cases are built once per test process.
 Do not add a fourth build for a single check. Check it on one of the three, or test the builder alone with `make_context()`.
 The integration tests of the cases run on one xdist worker, so they share these builds. The coupon tests run on another.
-
-A test with a wall-clock limit carries `@pytest.mark.perf`. `task test` runs these tests alone at the end, because load changes the times.
-Set `WAVE_PERF_FACTOR` to scale all time limits, for example on a slow machine.
-The time limits are in `docs/SPEC.md`.
 
 `task layout` runs ergogen and writes `ergogen/*.points.yaml`.
 A test fails when a points file is out of date.

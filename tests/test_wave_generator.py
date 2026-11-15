@@ -10,9 +10,8 @@ from duality_wave.builders.bottom import add_switch_post_cutouts
 
 from duality_wave.models.choc import Choc
 from duality_wave.models.features import magnet_recess_cutter, switch_cutter
-from duality_wave.models.model_types import RoundDimensions
 from duality_wave.print_profile import PrintProfile
-from tests.builds import PARTS, build_case
+from tests.builds import PARTS, build_case, make_inputs
 
 
 def width_at(part, z):
@@ -20,6 +19,10 @@ def width_at(part, z):
 
 
 class FeatureTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        _, _, cls.dims, _ = make_inputs()
+
     def test_switch_cutter_widens_at_the_bed_side_mouth(self):
         profile = replace(PrintProfile(), switch_corner_relief=0)
         cutter = switch_cutter(Choc(), profile, [Location((0, 0, 0))], plate_z=2.9)
@@ -44,14 +47,17 @@ class FeatureTests(unittest.TestCase):
         self.assertTrue(relieved.is_inside(corner))
 
     def test_magnet_recess_cutter_holds_two_magnets(self):
-        magnet = RoundDimensions(2.5, 2)
-        profile = PrintProfile()
-        cutter = magnet_recess_cutter(magnet, profile, [Vector(0, 0, 8.3)], top_z=8.3)
+        magnet, profile, top_z = self.dims.magnet_d, self.dims.print_profile, self.dims.magnet_z
+        cutter = magnet_recess_cutter(magnet, profile, [Vector(0, 0, top_z)], top_z=top_z)
         box = cutter.bounding_box()
-        self.assertAlmostEqual(box.max.Z, 8.3, places=3)
+        recess_width = 2 * (magnet.radius + profile.magnet_clearance)
+        mouth_width = recess_width + 2 * profile.mouth_chamfer
+        just_below_the_top = top_z - 0.001
+        middle_of_the_straight_wall = top_z - (profile.mouth_chamfer + 2 * magnet.Z) / 2
+        self.assertAlmostEqual(box.max.Z, top_z, places=3)
         self.assertAlmostEqual(box.max.Z - box.min.Z, 2 * magnet.Z, places=3)
-        self.assertAlmostEqual(width_at(cutter, 8.299), 2 * (magnet.radius + profile.magnet_clearance + profile.mouth_chamfer), places=2)
-        self.assertAlmostEqual(width_at(cutter, 7.0), 2 * (magnet.radius + profile.magnet_clearance), places=3)
+        self.assertAlmostEqual(width_at(cutter, just_below_the_top), mouth_width, places=2)
+        self.assertAlmostEqual(width_at(cutter, middle_of_the_straight_wall), recess_width, places=3)
 
 
 def pushed_names(push_object):
@@ -156,46 +162,62 @@ def test_complete_case_terminal_clearance(full):  # R-06
 
 
 class SwitchPostCutoutTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.switch, _, cls.dims, _ = make_inputs()
+
+    def blank_at(self, position):
+        """A bottom plate blank around a switch: its top is the underside of the keyplate and its bottom is the bed face."""
+        dims = self.dims
+        size = 2 * self.switch.base.d.X
+        return Box(size, size, dims.bottom_plate_z).translate(position + Vector(0, 0, -dims.keyplate_z - dims.bottom_plate_z / 2))
+
     def test_physical_footprint_on_both_halves(self):  # R-06
+        switch, dims = self.switch, self.dims
+        housing_z, clearance = switch.bottom_housing.d.Z, dims.print_profile.post_clearance
+        just_inside_the_plate = -dims.keyplate_z - 0.1
+        reaching_the_plate = [post for post in switch.posts.posts if housing_z + post.d.Z > dims.keyplate_z]
+        mirrored_post = switch.posts.p2
         for angle in (0, 23, -37):
             for right in (False, True):
                 with self.subTest(angle=angle, right=right):
-                    position = Vector(170 if right else 30, 20, 0)
+                    position = Vector(dims.right_side_offset - 30 if right else 30, 20, 0)
                     rotation = -angle if right else angle
                     placement = Location(position, (0, 0, rotation))
-                    blank = Box(30, 30, 3).translate(position + Vector(0, 0, -4.4))
-                    bottom = add_switch_post_cutouts(blank, Choc, 2.9, [placement], PrintProfile().post_clearance)
+                    bottom = add_switch_post_cutouts(self.blank_at(position), switch, dims.keyplate_z, [placement], clearance)
                     self.assertTrue(bottom.is_valid)
                     self.assertEqual(len(bottom.solids()), 1)
-                    for post in (Choc.posts.center, Choc.posts.p1, Choc.posts.p2):
+                    for post in switch.posts.posts:
                         terminal = Solid.make_cylinder(
                             post.d.radius,
                             post.d.Z,
-                            Plane(origin=(post.p.X, -post.p.Y, -2.2), z_dir=(0, 0, -1)),
+                            Plane(origin=(post.p.X, -post.p.Y, -housing_z), z_dir=(0, 0, -1)),
                         ).rotate(Axis.Z, rotation).translate(position)
                         overlap = bottom & terminal
                         self.assertLess(sum(s.volume for s in overlap.solids()) if overlap else 0, 1e-7)
-                        center = Vector(post.p.X, -post.p.Y, -4).rotate(Axis.Z, rotation) + position
-                        edge = Vector(post.d.radius + PrintProfile().post_clearance + 0.01, 0, 0).rotate(Axis.Z, rotation)
-                        self.assertFalse(bottom.is_inside(center))
-                        self.assertTrue(bottom.is_inside(center + edge))
+                    for post in reaching_the_plate:
+                        centre = Vector(post.p.X, -post.p.Y).rotate(Axis.Z, rotation) + position
+                        edge = Vector(post.d.radius + clearance + 0.01, 0, 0).rotate(Axis.Z, rotation)
+                        self.assertFalse(bottom.is_inside(centre + Vector(0, 0, just_inside_the_plate)))
+                        self.assertTrue(bottom.is_inside(centre + edge + Vector(0, 0, just_inside_the_plate)))
+                        tip_z = -housing_z - post.d.Z
+                        if tip_z > -dims.below_z:
+                            self.assertTrue(bottom.is_inside(centre + Vector(0, 0, tip_z - 0.05)))
 
-                    mirrored_terminal = Vector(-Choc.posts.p2.p.X, -Choc.posts.p2.p.Y, -4)
-                    mirrored_terminal = mirrored_terminal.rotate(Axis.Z, rotation) + position
-                    self.assertTrue(bottom.is_inside(mirrored_terminal))
-                    self.assertTrue(bottom.is_inside(position + Vector(0, 0, -5.3)))
+                    mirrored = Vector(-mirrored_post.p.X, -mirrored_post.p.Y).rotate(Axis.Z, rotation) + position
+                    self.assertTrue(bottom.is_inside(mirrored + Vector(0, 0, just_inside_the_plate)))
 
     def test_post_clearance_sets_the_radius_of_the_hole(self):
+        switch, dims = self.switch, self.dims
         position = Vector(30, 20, 0)
-        blank = Box(30, 30, 3).translate(position + Vector(0, 0, -4.4))
-        post = Choc.posts.center
+        post = max(switch.posts.posts, key=lambda p: p.d.Z)
+        centre = Vector(post.p.X, -post.p.Y, -dims.keyplate_z - 0.1) + position
         for clearance in (0.05, 0.3):
             with self.subTest(clearance=clearance):
-                bottom = add_switch_post_cutouts(blank, Choc, 2.9, [Location(position)], clearance)
-                center = Vector(post.p.X, -post.p.Y, -4) + position
+                bottom = add_switch_post_cutouts(self.blank_at(position), switch, dims.keyplate_z, [Location(position)], clearance)
                 radius = post.d.radius + clearance
-                self.assertFalse(bottom.is_inside(center + Vector(radius - 0.02, 0, 0)))
-                self.assertTrue(bottom.is_inside(center + Vector(radius + 0.02, 0, 0)))
+                self.assertFalse(bottom.is_inside(centre + Vector(radius - 0.02, 0, 0)))
+                self.assertTrue(bottom.is_inside(centre + Vector(radius + 0.02, 0, 0)))
 
 
 if __name__ == "__main__":

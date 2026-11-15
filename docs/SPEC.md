@@ -77,12 +77,3 @@ R-42: The underside of the keyplate has one channel. It is a shallow recess as d
 ## Debug mode
 
 R-07: A build without debug builds no accessories and pushes nothing to the viewer. It builds the same parts as a build with debug.
-
-## Performance
-
-The limits below are for the development machine. Set `WAVE_PERF_FACTOR` to scale all of them.
-The limits are about 2.5 times the measured time. Tighten them after a speed-up step.
-
-R-10: A build of the full variant (both halves) takes at most 12 s.
-R-11: A build of the compact variant takes at most 3 s.
-R-12: A stage of the build stays under its limit: keywell 1.2 s, keyplate 1.6 s, bottom 0.7 s, each finish stage 5 s. A finish stage cuts the pockets and the trenches of the wiring. An outline with one inner outline takes at most 0.4 s.

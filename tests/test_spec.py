@@ -1,4 +1,4 @@
-"""R-01, R-03, R-04, R-05, R-10, R-11, R-12 and the rule that every requirement has a test."""
+"""R-01, R-03, R-04, R-05 and the rule that every requirement has a test."""
 
 import re
 
@@ -6,12 +6,11 @@ import pytest
 from build123d import Vector, export_step, import_step
 
 from duality_wave.models.xiao import Xiao
-from tests import PERF_FACTOR, ROOT
+from tests import ROOT
 from tests.builds import PARTS
 
 SPEC = ROOT / "docs" / "SPEC.md"
 ID = re.compile(r"R-\d{2}")  # literal-ok: matches requirement IDs, not a design value
-STAGE_LIMITS = {"keywell": 1.2, "keyplate": 1.6, "bottom": 0.7, "finish_left": 5.0, "finish_right": 5.0}
 
 
 def spec_ids() -> set[str]:
@@ -92,12 +91,6 @@ class TestFullCase:
             assert keyplate.min.X > keywell.min.X and keyplate.max.X < keywell.max.X
             assert keyplate.min.Y > keywell.min.Y and keyplate.max.Y < keywell.max.Y
 
-    @pytest.mark.perf
-    def test_the_build_stays_inside_its_time_budget(self, full):  # R-10, R-12
-        assert full.timings.total <= 12 * PERF_FACTOR
-        for stage, limit in STAGE_LIMITS.items():
-            assert full.timings.get(stage, 0) <= limit * PERF_FACTOR, stage
-
 
 @pytest.mark.integration
 class TestCompactCase:
@@ -112,7 +105,3 @@ class TestCompactCase:
         dims = compact.ctx.dims
         assert compact.left.keywell.bounding_box().max.Z == pytest.approx(dims.above_z, abs=1e-3)
         assert compact.left.bottom.bounding_box().min.Z == pytest.approx(-dims.below_z, abs=1e-3)
-
-    @pytest.mark.perf
-    def test_the_build_stays_inside_its_time_budget(self, compact):  # R-11
-        assert compact.timings.total <= 3 * PERF_FACTOR

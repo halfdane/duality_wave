@@ -18,20 +18,6 @@ DESIGN_NAMES = {
 TOLERANCE_KEYWORDS = {"abs", "rel", "delta", "places", "atol", "rtol"}
 SMALL_INTS = {-2, -1, 0, 1, 2}
 
-# Tests that already compare real design values with a literal number. Fix a test and delete its line. Do not add a line.
-LITERAL_BASELINE = {
-    "test_builders.py::ThumbZoneTests.test_the_corners_are_round",
-    "test_coupons.py::CouponTests.test_the_second_plate_holds_the_wiring_and_the_plate_fit_as_separate_solids",
-    "test_spec.py::TestCompactCase.test_the_build_stays_inside_its_time_budget",
-    "test_spec.py::TestFullCase.test_the_build_stays_inside_its_time_budget",
-    "test_wave_generator.py::FeatureTests.test_magnet_recess_cutter_holds_two_magnets",
-    "test_wave_generator.py::SwitchPostCutoutTests.test_physical_footprint_on_both_halves",
-    "test_zstack.py::test_a_height_snaps_to_whole_layers",
-    "test_zstack.py::test_a_post_of_length_zero_does_not_exist",
-    "test_zstack.py::test_the_longest_of_contact_and_side_post_sets_the_depth_below_the_housing",
-    "test_zstack.py::test_the_top_of_the_keycap_is_a_dish_that_is_highest_at_the_corners",
-}
-
 
 def definitions(tree):
     """Every function and class as (qualified name, node, enclosing class)."""
@@ -112,12 +98,8 @@ def source_of(path: Path) -> str:
 
 
 def test_no_test_compares_the_design_with_a_number_that_it_typed():
-    found = set().union(*(design_tests_with_literals(source_of(path), path.name) for path in TEST_FILES))
-    assert found <= LITERAL_BASELINE, (
-        f"These tests compare design values with a literal: {sorted(found - LITERAL_BASELINE)}. "
-        "Take the expected value from dims, switch, the specs or the layout."
-    )
-    assert LITERAL_BASELINE <= found, f"Delete these lines from LITERAL_BASELINE, they are fixed: {sorted(LITERAL_BASELINE - found)}"
+    found = sorted(set().union(*(design_tests_with_literals(source_of(path), path.name) for path in TEST_FILES)))
+    assert not found, f"These tests compare design values with a literal: {found}. Take the expected value from dims, switch, the specs or the layout."
 
 
 def test_no_test_expects_a_digit_pattern_or_a_number_in_a_string():

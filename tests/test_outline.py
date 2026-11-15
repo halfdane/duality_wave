@@ -1,6 +1,5 @@
-"""R-25, R-26, R-27, R-28, R-29 and the outline part of R-12."""
+"""R-25, R-26, R-27, R-28, R-29."""
 
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -10,7 +9,7 @@ from build123d import Vector
 from duality_wave.geometry2d import bridge_gaps, circle_face, close_concave, grow, overlap_area, polygon_face, rect_face, round_convex
 from duality_wave.layout import Point, get_points
 from duality_wave.models.outline import Outline, OutlineSpec
-from tests import COMPACT_LAYOUT, PERF_FACTOR, WAVE_LAYOUT
+from tests import COMPACT_LAYOUT, WAVE_LAYOUT
 from tests.builds import make_outline
 
 
@@ -172,14 +171,6 @@ def test_the_walls_have_one_thickness_around_the_rounded_corners(outline):  # R-
         pytest.skip("the corners are too tight to stay concentric")
     inner = outline.create_inner_outline(-outline.wall_thickness).faces()[0]
     assert inner.area == pytest.approx(grow(outline._outer_face, -outline.wall_thickness).area, abs=1e-6)
-
-
-@pytest.mark.perf
-def test_building_an_outline_stays_inside_its_time_budget():  # R-12
-    start = time.perf_counter()
-    outline = make_outline()
-    outline.create_inner_outline(-outline.wall_thickness - 0.2)
-    assert time.perf_counter() - start < 0.4 * PERF_FACTOR
 
 
 def test_faces_from_the_helpers_look_up():

@@ -34,7 +34,6 @@ testpaths = ["tests"]
 addopts = "--durations=10"
 markers = [
     "integration: builds a whole case or the coupons. The fast tier skips these tests.",
-    "perf: checks a wall-clock limit. It runs alone, because load changes the times.",
 ]
 
 [tool.ruff]

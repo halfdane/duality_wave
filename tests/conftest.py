@@ -6,7 +6,7 @@ from tests import PERF_FACTOR
 from tests.builds import compact_case, full_case, quiet_case
 
 UNIT_CPU_BUDGET = 1.0 * PERF_FACTOR
-BUDGET_EXEMPT_MARKERS = ("integration", "perf")
+BUDGET_EXEMPT_MARKERS = ("integration",)
 
 
 def pytest_collection_modifyitems(items):

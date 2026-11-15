@@ -31,7 +31,6 @@ Test a smaller shape or one builder alone.
 `tests/test_hygiene.py` and `tests/conftest.py` enforce this and the number rules.
 
 Never do these without asking the user:
-- Add a line to `LITERAL_BASELINE`.
 - Add `# literal-ok:` to a line.
 - Raise the CPU budget.
 

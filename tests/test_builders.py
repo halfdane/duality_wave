@@ -26,6 +26,12 @@ from duality_wave.models.screw import LowProfileScrew
 from tests import ROOT
 from tests.builds import make_context, make_inputs
 
+
+def convex_corner_count(rectilinear_face) -> int:
+    """A rectilinear outline has four more convex corners than concave ones."""
+    return (len(rectilinear_face.vertices()) + 4) // 2
+
+
 def section_area(part, z):
     return (part & Box(400, 400, 0.002).translate((0, 0, z))).volume / 0.002
 
@@ -111,11 +117,14 @@ class ThumbZoneTests(unittest.TestCase):
 
     def test_the_corners_are_round(self):  # R-16
         sharp = thumb_zone(self.switch, self.keys, self.sharp)
-        round_ = thumb_zone(self.switch, self.keys, replace(self.sharp, corner_radius=2))
+        size = sharp.bounding_box().size
+        radius = min(size.X, size.Y) / 10
+        round_ = thumb_zone(self.switch, self.keys, replace(self.sharp, corner_radius=radius))
         self.assertEqual({e.geom_type.name for e in sharp.edges()}, {"LINE"})
         corners = sum(e.geom_type.name == "CIRCLE" for e in round_.edges())
-        self.assertGreaterEqual(corners, 4)
-        self.assertAlmostEqual(sharp.area - round_.area, corners * 2**2 * (1 - math.pi / 4), delta=0.01)
+        missing_per_corner = radius**2 * (1 - math.pi / 4)
+        self.assertEqual(corners, convex_corner_count(sharp))
+        self.assertAlmostEqual(sharp.area - round_.area, corners * missing_per_corner, delta=0.01)
 
     def test_keys_that_do_not_touch_give_an_error(self):  # R-16
         far = thumb_keys((0, 0), (0, -300))

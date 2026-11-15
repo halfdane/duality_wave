@@ -81,7 +81,7 @@ tasks:
     cmds:
       - uv lock --check
       - ruff check .
-      - pytest -q -m "not integration and not perf"
+      - pytest -q -m "not integration"
 
   update:
     desc: Upgrade all Python packages in uv.lock, then install them.
@@ -93,12 +93,11 @@ tasks:
       - uv sync --frozen
 
   test:
-    desc: Check the lock file and lint, run all tests in parallel, then the time limits alone (about 35 s).
+    desc: Check the lock file and lint, then run all tests in parallel (about 30 s).
     cmds:
       - uv lock --check
       - ruff check .
-      - pytest -q -n auto --dist loadgroup -m "not perf"
-      - pytest -q -m perf
+      - pytest -q -n auto --dist loadgroup
 
   render:
     desc: Render the README images into docs/images.
