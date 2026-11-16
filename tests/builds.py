@@ -1,7 +1,4 @@
-"""Cases that several tests share. Each distinct case is built once per test process.
-
-The integration tests use only three builds: full_case, compact_case and quiet_case.
-"""
+"""The case that the integration tests share. It is built once per test process."""
 
 from functools import cache
 from unittest.mock import patch
@@ -46,24 +43,8 @@ def make_context(compact: bool = False, profile: PrintProfile | None = None) -> 
 
 
 @cache
-def build_case(debug: bool, both_sides: bool = True, compact: bool = False):
-    """Build a case once per test run. Returns the case and the mock that received its viewer pushes."""
-    switch, keys, dims, outline = make_inputs(compact)
-    with patch("ocp_viewer.push_object") as push_object, patch("ocp_viewer.status", return_value={}):
-        case = WaveCase(switch, keys, dims, outline, debug=debug, both_sides=both_sides, wiring=None if compact else WiringPlan.load(WIRING_FILE))
-    return case, push_object
-
-
 def full_case():
-    """The full variant, both halves, with debug. This is what `task view` shows."""
-    return build_case(debug=True)[0]
-
-
-def compact_case():
-    """The compact variant, left half only, with debug."""
-    return build_case(debug=True, both_sides=False, compact=True)[0]
-
-
-def quiet_case():
-    """The full variant, left half only, without debug."""
-    return build_case(debug=False, both_sides=False)
+    """The full variant, both halves, with debug. This is what `task view` shows. It is built once per test process."""
+    switch, keys, dims, outline = make_inputs()
+    with patch("ocp_viewer.push_object"), patch("ocp_viewer.status", return_value={}):
+        return WaveCase(switch, keys, dims, outline, debug=True, both_sides=True, wiring=WiringPlan.load(WIRING_FILE))

@@ -93,11 +93,17 @@ tasks:
       - uv sync --frozen
 
   test:
-    desc: Check the lock file and lint, then run all tests in parallel (about 30 s).
+    desc: Check the lock file and lint, then run all tests in parallel (about 20 s).
+    summary: |
+      Runs the tests on 80 % of the cores. The case is built once on every worker that runs a case test.
+      One worker per core is slower, because the workers then compete for the cores with each other.
+    vars:
+      WORKERS:
+        sh: echo $(( ($(nproc) * 4 + 4) / 5 ))
     cmds:
       - uv lock --check
       - ruff check .
-      - pytest -q -n auto --dist loadgroup
+      - pytest -q -n {{.WORKERS}}
 
   render:
     desc: Render the README images into docs/images.

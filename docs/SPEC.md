@@ -73,7 +73,3 @@ R-39: The trenches of a net join every terminal of the net, and the net ends in 
 R-40: No wire comes closer to a contact, a centre post or a lead tip of another net than its keep-out radius. Wires of different nets do not run side by side closer than 0.5 mm.
 R-41: Two trenches in the top face of the keyplate lead from two pins of the power switch to the XIAO window. The pins reach the top face through the pin zone, which is a cut through the keyplate. The trenches keep clear of the key cutouts, the pockets and the body of the switch.
 R-42: The underside of the keyplate has one channel. It is a shallow recess as deep as a trench. It runs along the top edge of the keyplate from the inner column to the XIAO pocket and opens into the pocket. The wires of all nets end in the channel. The channel keeps a wall of at least `MIN_WALL` to the outline, the screws, the diode pockets and the power switch.
-
-## Debug mode
-
-R-07: A build without debug builds no accessories and pushes nothing to the viewer. It builds the same parts as a build with debug.

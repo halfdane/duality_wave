@@ -13,7 +13,7 @@ Use `task update` to upgrade the packages on purpose.
 ## Checks and tests
 
 - `task check` verifies `uv.lock`, runs `ruff` and runs the unit tests. It builds no case.
-- `task test` checks the lock file, runs `ruff` and runs all tests in parallel. This takes about 30 s.
+- `task test` checks the lock file, runs `ruff` and runs all tests on 80 % of the cores. This takes about 20 s.
 
 `AGENTS.md` holds the rules for new tests. Read it before you add a test.
 
@@ -25,10 +25,12 @@ Add `# literal-ok: <reason>` to the line only when the number is the requirement
 
 A test that builds a whole case or the coupons is an integration test. It carries `@pytest.mark.integration`.
 A test without that marker fails when it builds a case.
-Integration tests use the fixtures `full`, `compact` and `quiet` from `tests/conftest.py`.
-These three cases are built once per test process.
-Do not add a fourth build for a single check. Check it on one of the three, or test the builder alone with `make_context()`.
-The integration tests of the cases run on one xdist worker, so they share these builds. The coupon tests run on another.
+Integration tests of the case use the fixture `full` from `tests/conftest.py`.
+This case is built once per test process.
+Do not add another build for a single check. Check it on `full`, or test the builder alone with `make_context()`.
+Every xdist worker that runs a case test builds the case once.
+Do not rely on `xdist_group` to share a build. xdist 3.8 writes the group name to `item._nodeid`, and pytest 9.2 no longer reads that attribute, so the marker has no effect here.
+`tests/geometry.py` finds overlaps between parts. It skips the boolean operation for solids whose bounding boxes are apart.
 
 `task layout` runs ergogen and writes `ergogen/*.points.yaml`.
 A test fails when a points file is out of date.

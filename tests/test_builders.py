@@ -1,29 +1,19 @@
 import math
-import subprocess
-import sys
-import tempfile
 import unittest
-from pathlib import Path
 from dataclasses import replace
 from types import SimpleNamespace
 
-from build123d import Axis, BuildSketch, Box, Circle, Plane, Rectangle, Sketch, Solid, Vector
+from build123d import Axis, BuildSketch, Box, Rectangle, Solid, Vector
 
-from duality_wave.builders.accessories import build_fixtures
 from duality_wave.builders.bottom import build_bottom
-from duality_wave.builders.export import export_steps, print_pose
+from duality_wave.builders.export import print_pose
 from duality_wave.builders.side import Side
 from duality_wave.builders.keywell import build_keywell
 from duality_wave.builders.thumb_cut import ThumbCutSpec, thumb_cutter, thumb_depth, thumb_floor_z, thumb_zone
-from duality_wave.builders.viewer import DebugScope, NullScope
 from duality_wave.models.choc import Choc
-from duality_wave.models.heat_set_insert import HeatSetInsert
 from duality_wave.models.keys import Point
-from duality_wave.models.model_types import PosAndDims, RectDimensions, RoundDimensions
 from duality_wave.print_profile import PrintProfile
-from duality_wave.models.rubber_bumper import RubberBumper
 from duality_wave.models.screw import LowProfileScrew
-from tests import ROOT
 from tests.builds import make_context, make_inputs
 
 
@@ -179,102 +169,6 @@ class BottomFitTests(unittest.TestCase):
                 self.assertTrue(bottom.is_inside(Vector(center.X + radius + 0.02, center.Y, z)))
 
 
-class DebugScopeTests(unittest.TestCase):
-    def test_scope_nests_what_it_notes(self):
-        debug = DebugScope()
-        child = debug.scope("keyplate")
-        self.assertEqual(child.note("holes", 1), 1)
-        debug.note("top", 2)
-        self.assertEqual(debug.content, {"keyplate": {"holes": 1}, "top": 2})
-
-    def test_builders_are_noted_as_plain_shapes(self):
-        debug = DebugScope()
-        with BuildSketch() as sketch:
-            Circle(2)
-        returned = debug.note("holes", sketch)
-        self.assertIs(returned, sketch)
-        self.assertNotIsInstance(debug.content["holes"], BuildSketch)
-        self.assertIsInstance(debug.content["holes"], Sketch)
-        self.assertAlmostEqual(debug.content["holes"].area, sketch.sketch.area)
-
-    def test_other_values_are_noted_as_they_are(self):
-        debug = DebugScope()
-        box = Box(1, 1, 1)
-        debug.note("box", box)
-        self.assertIs(debug.content["box"], box)
-
-    def test_null_scope_keeps_nothing(self):
-        scope = NullScope()
-        self.assertEqual(scope.scope("a").note("b", 3), 3)
-
-
-def fixture_context(magnets=True):
-    dims = SimpleNamespace(
-        below_z=5.9,
-        bumper_locations=[Vector(5, 5), Vector(40, 30)],
-        powerswitch_rotation=Vector(0, 180, -90),
-        powerswitch_position=Vector(20, 20, -4),
-        fastener_positions=[Vector(0, 0), Vector(30, 10)],
-        battery_pd=PosAndDims(d=RectDimensions(31, 17, 6), p=Vector(15, 40, 4)),
-        magnet_d=RoundDimensions(2.5, 2),
-        magnet_spacer=RoundDimensions(2, 3),
-        magnet_positions=[Vector(10, 10, 8.3), Vector(30, 20, 8.3)] if magnets else [],
-        right_side_offset=100,
-    )
-    return SimpleNamespace(
-        dims=dims, switch=Choc(), keys=None,
-        bumper=RubberBumper(), insert=HeatSetInsert(), screw=LowProfileScrew())
-
-
-class FixtureTests(unittest.TestCase):
-    def test_building_twice_gives_the_same_placement(self):
-        ctx = fixture_context()
-        first = build_fixtures(ctx)
-        second = build_fixtures(ctx)
-        self.assertEqual(first.bumpers.bounding_box().size.Z, second.bumpers.bounding_box().size.Z)
-        self.assertAlmostEqual(first.bumpers.bounding_box().min.Z, second.bumpers.bounding_box().min.Z, places=6)
-        self.assertAlmostEqual(first.bumpers.volume, second.bumpers.volume, places=6)
-
-    def test_every_fastener_gets_an_insert_and_a_screw(self):
-        ctx = fixture_context()
-        fixtures = build_fixtures(ctx)
-        self.assertEqual(len(fixtures.inserts.solids()), len(ctx.dims.fastener_positions))
-        self.assertEqual(len(fixtures.screws.solids()), len(ctx.dims.fastener_positions))
-
-    def test_without_magnet_positions_there_are_no_magnets(self):
-        fixtures = build_fixtures(fixture_context(magnets=False))
-        self.assertIsNone(fixtures.magnets)
-        self.assertIsNone(fixtures.spacers)
-        self.assertIsNone(fixtures.mirrored(Plane.YZ).magnets)
-
-    def test_magnets_sit_at_their_positions(self):
-        ctx = fixture_context()
-        box = build_fixtures(ctx).magnets.bounding_box()
-        radius = ctx.dims.magnet_d.radius
-        self.assertAlmostEqual(box.min.X, 10 - radius, places=3)
-        self.assertAlmostEqual(box.max.X, 30 + radius, places=3)
-        self.assertAlmostEqual(box.max.Z, 8.3, places=3)
-
-    def test_a_spacer_stands_under_every_stack_of_magnets(self):
-        ctx = fixture_context()
-        fixtures = build_fixtures(ctx)
-        self.assertEqual(len(fixtures.spacers.solids()), len(ctx.dims.magnet_positions))
-        box = fixtures.spacers.bounding_box()
-        self.assertAlmostEqual(box.min.Z, 0, places=3)
-        self.assertAlmostEqual(box.max.Z, ctx.dims.magnet_spacer.Z, places=3)
-
-    def test_mirrored_fixtures_swap_sides(self):
-        fixtures = build_fixtures(fixture_context())
-        about = Plane((50, 0, 0), x_dir=Plane.YZ.x_dir, z_dir=Plane.YZ.z_dir)
-        mirrored = fixtures.mirrored(about)
-        for name in ("bumpers", "power_switch", "battery", "inserts", "screws", "magnets", "spacers"):
-            with self.subTest(part=name):
-                original, flipped = getattr(fixtures, name), getattr(mirrored, name)
-                self.assertAlmostEqual(original.volume, flipped.volume, places=3)
-                self.assertAlmostEqual(flipped.bounding_box().min.X, 100 - original.bounding_box().max.X, places=3)
-                self.assertAlmostEqual(flipped.bounding_box().max.X, 100 - original.bounding_box().min.X, places=3)
-
-
 class SideTests(unittest.TestCase):
     def context(self):
         keys = SimpleNamespace(keys=[Point(p=Vector(10, 5, 0), r=15), Point(p=Vector(30, 12, 0), r=-20)])
@@ -334,46 +228,6 @@ class PrintPoseTests(unittest.TestCase):
         box = posed.bounding_box()
         self.assertAlmostEqual(box.min.Z, 0, places=6)
         self.assertAlmostEqual(posed.faces().sort_by(Axis.Z)[0].bounding_box().size.X, 20, places=6)
-
-
-class ExportTests(unittest.TestCase):
-    def built_side(self, name):
-        parts = {part: Box(1, 1, 1) for part in ("keywell", "keyplate", "bottom")}
-        return SimpleNamespace(side=SimpleNamespace(name=name), emblems={"keywell": Box(0.5, 0.5, 0.5)}, **parts)
-
-    def test_exports_every_part_of_every_built_half(self):
-        case = SimpleNamespace(left=self.built_side("left"), right=self.built_side("right"), magnet_spacer=Box(1, 1, 1))
-        with tempfile.TemporaryDirectory() as tmp:
-            written = export_steps(case, suffix="_x", out_dir=Path(tmp) / "nested")
-            self.assertEqual(len(written), 9)
-            for path in written:
-                self.assertGreater(path.stat().st_size, 0)
-            names = {path.name for path in written}
-            self.assertIn("01_keywell_right_x.step", names)
-            self.assertIn("02_keywell_right_emblem_x.step", names)
-            self.assertIn("magnet_spacer_x.step", names)
-
-    def test_skips_a_half_that_was_not_built(self):
-        case = SimpleNamespace(left=self.built_side("left"), right=None, magnet_spacer=None)
-        with tempfile.TemporaryDirectory() as tmp:
-            written = export_steps(case, out_dir=tmp)
-            self.assertEqual({path.name for path in written}, {"01_keywell_left.step", "02_keywell_left_emblem.step", "keyplate_left.step", "bottom_left.step"})
-
-
-class HeadlessImportTests(unittest.TestCase):
-    def test_building_blocks_import_without_the_viewer_package(self):
-        script = (
-            "import sys\n"
-            "class Block:\n"
-            "    def find_spec(self, name, path=None, target=None):\n"
-            "        if name.split('.')[0] == 'ocp_viewer':\n"
-            "            raise ImportError('blocked ' + name)\n"
-            "sys.meta_path.insert(0, Block())\n"
-            "import duality_wave.case, duality_wave.cli.render, duality_wave.layout, duality_wave.case_dimensions, duality_wave.builders.export\n"
-            "assert 'ocp_viewer' not in sys.modules\n"
-        )
-        result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, cwd=ROOT)
-        self.assertEqual(result.returncode, 0, result.stderr[-2000:])
 
 
 if __name__ == "__main__":

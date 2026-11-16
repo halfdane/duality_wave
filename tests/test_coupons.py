@@ -1,71 +1,32 @@
-import unittest
+"""The calibration coupons are separate, valid solids that stand on the print bed."""
 
 import pytest
+from build123d import Box
 
-from build123d import Box, Compound
+from duality_wave.cli.common import COUPON_TARGETS, coupon_parts
+from duality_wave.coupons import arrange
 
-from tests import WAVE_LAYOUT
 
-from duality_wave.coupons import (
-    BED_SIZE,
-    arrange,
-    create_coupon_parts,
-    create_coupons,
-    create_wiring_coupon_parts,
-)
-from duality_wave.case_dimensions import CaseDimensions
-from duality_wave.models.choc import Choc
-from duality_wave.models.keys import ErgoKeys, get_points
-from duality_wave.models.outline import Outline
-
-SMALL_PRINT_BED = 180
-EDGE_MARGIN = 5
+def apart_on_the_bed(a, b) -> bool:
+    return a.max.X < b.min.X or b.max.X < a.min.X or a.max.Y < b.min.Y or b.max.Y < a.min.Y
 
 
 @pytest.mark.integration
-class CouponTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.switch = Choc()
-        keys = ErgoKeys(get_points(WAVE_LAYOUT))
-        outline = Outline(switch=cls.switch, keys=keys, wall_thickness=CaseDimensions.wall_thickness)
-        cls.dims = CaseDimensions(switch=cls.switch, outline=outline, keys=keys)
-
-    def assertFitsSmallPrintBed(self, coupons):
-        box = coupons.bounding_box()
-        self.assertGreaterEqual(min(box.min.X, box.min.Y), -1e-6)
-        self.assertLessEqual(max(box.max.X, box.max.Y), SMALL_PRINT_BED - 2 * EDGE_MARGIN + 1e-6)
-
-    def test_the_second_plate_holds_the_wiring_and_the_plate_fit_as_separate_solids(self):
-        parts = create_wiring_coupon_parts(self.dims)
-        coupons = Compound(list(parts.values()))
-        self.assertEqual(len(coupons.solids()), len(parts))
-        self.assertFitsSmallPrintBed(coupons)
-
-    def test_all_coupons_fit_on_a_small_print_bed(self):
-        coupons = create_coupons(self.switch, self.dims)
-        self.assertEqual(len(coupons.solids()), len(create_coupon_parts(self.switch, self.dims)))
-        self.assertFitsSmallPrintBed(coupons)
-        self.assertAlmostEqual(coupons.bounding_box().min.Z, 0, places=6)
-
-    def test_arrange_refuses_parts_that_do_not_fit_the_bed(self):
-        with self.assertRaises(ValueError):
-            arrange({"a": Box(BED_SIZE, 10, 1), "b": Box(BED_SIZE, BED_SIZE, 1)})
-
-    def test_coupons_do_not_touch_each_other(self):
-        plates = (create_coupon_parts(self.switch, self.dims), create_wiring_coupon_parts(self.dims))
-        for plate in plates:
-            self.assertSeparated([part.bounding_box() for part in plate.values()])
-
-    def assertSeparated(self, boxes):
-        for index, a in enumerate(boxes):
-            for b in boxes[index + 1:]:
-                separated = (
-                    a.max.X + 5 <= b.min.X or b.max.X + 5 <= a.min.X
-                    or a.max.Y + 5 <= b.min.Y or b.max.Y + 5 <= a.min.Y
-                )
-                self.assertTrue(separated)
+@pytest.mark.parametrize("target", COUPON_TARGETS)
+def test_every_coupon_is_a_valid_solid_on_the_bed_and_apart_from_the_others(target):
+    parts = coupon_parts(target)
+    boxes = []
+    for name, part in parts.items():
+        assert part.is_valid and len(part.solids()) == 1, name
+        box = part.bounding_box()
+        assert box.min.Z == pytest.approx(0, abs=1e-6), name
+        boxes.append(box)
+    for index, a in enumerate(boxes):
+        for b in boxes[index + 1:]:
+            assert apart_on_the_bed(a, b)
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_arrange_refuses_parts_that_do_not_fit_the_bed():
+    bed = 50
+    with pytest.raises(ValueError):
+        arrange({"a": Box(bed, 10, 1), "b": Box(bed, bed, 1)}, bed=bed)

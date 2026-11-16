@@ -12,7 +12,7 @@ TEST_FILES = sorted(path for path in (ROOT / "tests").glob("test_*.py") if path.
 
 ESCAPE = "# literal-ok:"
 DESIGN_NAMES = {
-    "make_inputs", "make_context", "build_case", "full", "compact", "quiet",
+    "make_inputs", "make_context", "full_case", "full",
     "Choc", "CaseDimensions", "CompactCaseDimensions", "PrintProfile",
 }
 TOLERANCE_KEYWORDS = {"abs", "rel", "delta", "places", "atol", "rtol"}

@@ -14,8 +14,8 @@ Do not test colours, viewer output, debug output, constants, wording or file nam
 A new test is short, has one idea and states the rule in its name.
 A new test builds its input from small shapes in the test file.
 A new test does not use the real layout, unless the rule is about the finished case.
-Use the fixtures `full`, `compact` and `quiet` only for a rule about the finished case.
-Never add a fourth case build.
+Use the fixture `full` only for a rule about the finished case.
+Never add another case build.
 
 Take every expected value from `dims`, the switch, the specs or the layout.
 Never type a number that you read from the current design.

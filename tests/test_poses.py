@@ -1,20 +1,15 @@
-"""The poses and the colours of the part groups."""
+"""The transport position: the right half lies upside down on the left half."""
 
-import colorsys
 from types import SimpleNamespace
 
 import pytest
 from build123d import Box, Plane, Pos, mirror
 
-from duality_wave.builders.parts import GHOST_ALPHA, GROUPS, SIDE_TINT, alpha, colour, side_parts
-from duality_wave.builders.poses import EXPLODE_STEP, exploded, lifted_emblems, pose_scene, transported
-from tests.builds import PARTS
+from duality_wave.builders.parts import GROUPS
+from duality_wave.builders.poses import pose_scene, transported
+from tests.geometry import overlap_volume, solids_with_boxes
 
 DIMS = SimpleNamespace(right_side_offset=200.0, above_z=9.0)
-
-
-def hls(hex_colour: str):
-    return colorsys.rgb_to_hls(*(int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)))
 
 
 def test_the_transport_turns_a_point_of_the_right_half_to_its_mirror_image_above_the_left_half():
@@ -43,58 +38,6 @@ def test_the_transport_is_a_pure_move_that_keeps_the_volume():
     assert transported(box, DIMS).volume == pytest.approx(box.volume)
 
 
-def test_each_group_drops_by_its_level_times_the_step():
-    parts = {name: Box(1, 1, 1) for name in GROUPS}
-    for step in (EXPLODE_STEP, 10.0):
-        for name, shape in exploded(parts, step).items():
-            assert shape.center().Z == pytest.approx(-GROUPS[name].level * step)
-
-
-def test_the_layers_of_the_exploded_view_follow_the_stack_from_top_to_bottom():
-    levels = {name: group.level for name, group in GROUPS.items()}
-    assert levels["keywell"] < levels["keyplate"] < levels["bottom"] < levels["screws"]
-    assert levels["keyplate"] == levels["switches"] == levels["keycaps"]
-    assert levels["magnets"] < levels["keyplate"]
-
-
-@pytest.mark.parametrize("group", list(GROUPS))
-def test_the_right_half_has_a_slightly_different_tint_of_the_same_colour(group):
-    left, right = colour(group, "left"), colour(group, "right")
-    assert left == GROUPS[group].color
-    assert len(right) == 7 and right.startswith("#")
-    (hue_left, light_left, _), (hue_right, light_right, _) = hls(left), hls(right)
-    assert right != left
-    assert abs(light_left - light_right) == pytest.approx(SIDE_TINT, abs=0.02)
-    if 0.1 < light_left < 0.9:
-        assert abs(hue_left - hue_right) < 0.02
-
-
-def test_an_unknown_pose_is_refused():
-    with pytest.raises(ValueError):
-        pose_scene(None, "upside_down")
-
-
-@pytest.mark.integration
-def test_every_part_of_a_half_has_a_registered_group(full):
-    assert set(side_parts(full.left)) == set(GROUPS)
-    assert set(side_parts(full.right)) == set(GROUPS)
-
-
-@pytest.mark.integration
-def test_the_quiet_case_has_no_accessories_to_pose(quiet):
-    case, _ = quiet
-    with pytest.raises(ValueError):
-        pose_scene(case, "assembled")
-
-
-@pytest.mark.integration
-def test_the_assembled_pose_keeps_both_halves_where_they_are(full):
-    scene = pose_scene(full, "assembled")
-    assert scene["keywell_left"].bounding_box().min.X == pytest.approx(full.left.keywell.bounding_box().min.X)
-    assert scene["keywell_right"].bounding_box().max.X == pytest.approx(full.right.keywell.bounding_box().max.X)
-    assert {name.rsplit("_", 1)[1] for name in scene} == {"left", "right"}
-
-
 @pytest.mark.integration
 def test_the_transport_pose_leaves_the_left_half_and_flips_the_right_half_onto_it(full):
     scene = pose_scene(full, "transport")
@@ -105,34 +48,6 @@ def test_the_transport_pose_leaves_the_left_half_and_flips_the_right_half_onto_i
     # the keywell tops meet
     assert right.min.Z == pytest.approx(left.max.Z, abs=1e-3)
     assert left.max.Z == pytest.approx(full.ctx.dims.above_z, abs=1e-3)
-
-
-@pytest.mark.integration
-def test_the_exploded_pose_shows_only_the_left_half_with_the_bottom_below_the_keywell(full):
-    scene = pose_scene(full, "exploded")
-    assert all(name.endswith("_left") for name in scene)
-    assert scene["keywell_left"].bounding_box().max.Z == pytest.approx(full.left.keywell.bounding_box().max.Z)
-    assert scene["bottom_left"].bounding_box().max.Z < scene["keywell_left"].bounding_box().min.Z
-
-
-def solids_with_boxes(shape) -> list:
-    """The solids of a shape with a quick bounding box. The quick box is larger than the exact one, and it costs far less on curved solids."""
-    return [(solid, solid.bounding_box(optimal=False)) for solid in shape.solids()]
-
-
-def boxes_overlap(a, b, tolerance) -> bool:
-    return all(getattr(a.min, axis) < getattr(b.max, axis) - tolerance and getattr(b.min, axis) < getattr(a.max, axis) - tolerance for axis in "XYZ")
-
-
-def overlap_volume(first: list, second: list, tolerance=1e-6) -> float:
-    """The volume that two shapes share, given as solids with boxes. Only solids whose boxes overlap are intersected."""
-    volume = 0.0
-    for one, box_one in first:
-        for other, box_other in second:
-            if boxes_overlap(box_one, box_other, tolerance):
-                shared = one & other
-                volume += sum(solid.volume for solid in shared.solids()) if shared else 0.0
-    return volume
 
 
 def collisions(scene: dict) -> dict:
@@ -162,41 +77,3 @@ def test_the_collision_test_finds_parts_that_overlap_and_ignores_parts_that_only
         "bottom_right": Pos(0, 0, 10) * Box(10, 10, 10),
     }
     assert set(collisions(scene)) == {("keywell_left", "keywell_right")}
-
-
-def test_only_the_see_through_groups_change_in_the_ghost_style():
-    assert {name for name, group in GROUPS.items() if group.shell} == set(PARTS)
-    assert set(PARTS) <= {name for name, group in GROUPS.items() if group.see_through}
-    for name, group in GROUPS.items():
-        assert alpha(name) == 1.0
-        assert alpha(name, ghost=True) == (GHOST_ALPHA if group.see_through else 1.0)
-    assert 0 < GHOST_ALPHA < 1
-
-
-def test_an_emblem_stands_out_of_the_face_of_its_part_that_is_further_from_the_middle():
-    scene = {
-        "keywell_left": Box(10, 10, 10),
-        "keywell_emblem_left": Pos(0, 0, 4.7) * Box(2, 2, 0.6),
-        "bottom_left": Box(10, 10, 2),
-        "bottom_emblem_left": Pos(0, 0, -0.7) * Box(2, 2, 0.6),
-        "switches_left": Box(1, 1, 1),
-    }
-    lifted = lifted_emblems(scene, lift=0.05)
-    assert lifted["keywell_emblem_left"].bounding_box().max.Z == pytest.approx(5.0 + 0.05)
-    assert lifted["bottom_emblem_left"].bounding_box().min.Z == pytest.approx(-1.0 - 0.05)
-    assert lifted["keywell_left"] is scene["keywell_left"]
-    assert lifted["switches_left"] is scene["switches_left"]
-
-
-def test_an_emblem_without_its_part_in_the_scene_stays_where_it_is():
-    scene = {"keywell_emblem_left": Box(1, 1, 1)}
-    assert lifted_emblems(scene)["keywell_emblem_left"] is scene["keywell_emblem_left"]
-
-
-def test_every_emblem_group_belongs_to_a_case_part_and_moves_with_it_in_the_exploded_view():
-    emblems = {name: group for name, group in GROUPS.items() if group.emblem_of is not None}
-    assert emblems
-    for name, group in emblems.items():
-        assert GROUPS[group.emblem_of].shell, name
-        assert group.level == GROUPS[group.emblem_of].level, name
-        assert group.color != GROUPS[group.emblem_of].color, name

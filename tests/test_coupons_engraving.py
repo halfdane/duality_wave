@@ -2,13 +2,10 @@ import pytest
 from build123d import Vector
 
 from duality_wave.builders.wall_engraving import emblem_z
-from duality_wave.coupons import BED_SIZE, create_wiring_coupon_parts
-from duality_wave.coupons_engraving import (
-    MARGIN, engraving_coupon_slabs, wall_engraving_coupon)
+from duality_wave.coupons_engraving import MARGIN, wall_engraving_coupon
 from duality_wave.models.space_invader import PATTERN, SpaceInvader
 from tests.builds import make_context
 
-SMALL_PRINT_BED = 180
 NO_GAP_ONLY = (0.0,)
 
 
@@ -43,19 +40,3 @@ def test_the_roof_is_the_side_that_prints_last_and_slopes_when_asked(ctx):
     assert not sloped.is_inside(Vector(x, -0.05, roof))
     assert sloped.is_inside(Vector(x, -depth + 0.05, roof))
     assert not straight.is_inside(Vector(x, -depth + 0.05, roof))
-
-
-@pytest.mark.integration
-def test_the_wiring_plate_has_a_slab_for_every_depth_and_roof_and_fits_on_a_small_bed(ctx):
-    slabs = engraving_coupon_slabs(ctx.dims)
-    assert len(slabs) == 4
-    assert all(slab.is_valid and len(slab.solids()) == 1 for slab in slabs.values())
-    parts = create_wiring_coupon_parts(ctx.dims, extra=slabs)
-    assert set(slabs) < set(parts)
-    boxes = [part.bounding_box() for part in parts.values()]
-    assert max(max(box.max.X, box.max.Y) for box in boxes) <= BED_SIZE < SMALL_PRINT_BED
-    assert all(box.min.Z == pytest.approx(0, abs=1e-6) for box in boxes)
-    for index, a in enumerate(boxes):
-        for b in boxes[index + 1:]:
-            assert (a.max.X + 5 <= b.min.X or b.max.X + 5 <= a.min.X
-                    or a.max.Y + 5 <= b.min.Y or b.max.Y + 5 <= a.min.Y)

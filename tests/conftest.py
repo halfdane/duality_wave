@@ -3,17 +3,10 @@ import time
 import pytest
 
 from tests import PERF_FACTOR
-from tests.builds import compact_case, full_case, quiet_case
+from tests.builds import full_case
 
 UNIT_CPU_BUDGET = 1.0 * PERF_FACTOR
 BUDGET_EXEMPT_MARKERS = ("integration",)
-
-
-def pytest_collection_modifyitems(items):
-    """Integration tests share the cached builds, so a module runs on one xdist worker."""
-    for item in items:
-        if item.get_closest_marker("integration") is not None:
-            item.add_marker(pytest.mark.xdist_group("coupons" if "coupons" in item.module.__name__ else "cases"))
 
 
 @pytest.fixture(autouse=True)
@@ -52,15 +45,3 @@ def unit_tests_stay_in_the_cpu_budget(request):
 def full():
     """The full variant, both halves, with debug."""
     return full_case()
-
-
-@pytest.fixture
-def compact():
-    """The compact variant, left half only, with debug."""
-    return compact_case()
-
-
-@pytest.fixture
-def quiet():
-    """The full variant, left half only, without debug. Returns the case and the mock that got its viewer pushes."""
-    return quiet_case()

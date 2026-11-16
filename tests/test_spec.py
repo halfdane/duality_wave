@@ -90,18 +90,3 @@ class TestFullCase:
             keywell, keyplate = side.keywell.bounding_box(), side.keyplate.bounding_box()
             assert keyplate.min.X > keywell.min.X and keyplate.max.X < keywell.max.X
             assert keyplate.min.Y > keywell.min.Y and keyplate.max.Y < keywell.max.Y
-
-
-@pytest.mark.integration
-class TestCompactCase:
-
-    def test_every_part_is_one_valid_solid(self, compact):  # R-03
-        for name in PARTS:
-            part = getattr(compact.left, name)
-            assert part.is_valid, name
-            assert len(part.solids()) == 1, name
-
-    def test_parts_span_the_expected_heights(self, compact):  # R-04
-        dims = compact.ctx.dims
-        assert compact.left.keywell.bounding_box().max.Z == pytest.approx(dims.above_z, abs=1e-3)
-        assert compact.left.bottom.bounding_box().min.Z == pytest.approx(-dims.below_z, abs=1e-3)

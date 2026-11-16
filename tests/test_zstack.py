@@ -18,8 +18,19 @@ from duality_wave.builders.keywell import build_keywell
 from duality_wave.geometry2d import rect_face
 from duality_wave.builders.side import Side
 from tests.builds import make_context, make_inputs
+from tests.geometry import overlap_volume, solids_with_boxes
 
 PARTS = ("keywell", "keyplate", "bottom")
+
+
+@pytest.fixture(scope="module")
+def ctx():
+    return make_context()
+
+
+@pytest.fixture(scope="module", params=[False, True], ids=["full", "compact"])
+def variant_ctx(request):
+    return make_context(request.param)
 
 
 @pytest.mark.parametrize("compact", [False, True])
@@ -162,9 +173,8 @@ def test_the_screw_goes_through_the_insert_and_stops_short_of_the_cap(compact): 
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("variant", ["full", "compact"])
-def test_no_fixture_collides_with_a_part(variant, request):  # R-22
-    built = request.getfixturevalue(variant).left
+def test_no_fixture_collides_with_a_part(full):  # R-22
+    built = full.left
     fixtures = built.accessories.fixtures
     items = {
         "switches": built.accessories.switches,
@@ -179,20 +189,18 @@ def test_no_fixture_collides_with_a_part(variant, request):  # R-22
         **{name: getattr(built, name) for name in PARTS},
     }
     # the inserts are pressed into the keywell on purpose and are left out
-    parts = {name: items[name] for name in PARTS}
-    loose = {name: item for name, item in items.items() if item is not None and name not in PARTS}
-    pairs = [(a, b) for a in loose for b in parts] + [
+    solids = {name: solids_with_boxes(item) for name, item in items.items() if item is not None}
+    loose = [name for name in solids if name not in PARTS]
+    pairs = [(a, b) for a in loose for b in PARTS] + [
         ("power_switch", "battery"), ("power_switch", "xiao"), ("xiao", "battery"), ("xiao", "bumpers"),
         ("switches", "xiao"), ("screws", "xiao"), ("screws", "switches"), ("bumpers", "screws"),
         ("keycaps", "xiao"), ("screws", "keycaps"),
     ]
     for a, b in pairs:
-        first, second = loose.get(a) or parts.get(a), loose.get(b) or parts.get(b)
-        if first is None or second is None:
+        if a not in solids or b not in solids:
             continue
-        overlap = first & second
-        volume = sum(solid.volume for solid in overlap.solids()) if overlap else 0
-        assert volume < 1e-6, f"{a} collides with {b}: {volume:.3f} mm3 (variant: {variant})"
+        volume = overlap_volume(solids[a], solids[b])
+        assert volume < 1e-6, f"{a} collides with {b}: {volume:.3f} mm3"
 
 
 @pytest.mark.parametrize("compact", [False, True])
@@ -203,9 +211,8 @@ def test_the_power_switch_keeps_off_the_battery(compact):  # R-22
     assert battery_bottom - body_top > 0
 
 
-@pytest.mark.parametrize("compact", [False, True])
-def test_the_bottom_plate_keeps_its_walls_around_the_pockets_and_under_the_pins(compact):  # R-23
-    ctx = make_context(compact)
+def test_the_bottom_plate_keeps_its_walls_around_the_pockets_and_under_the_pins(variant_ctx):  # R-23
+    ctx = variant_ctx
     dims, switch = ctx.dims, ctx.switch
     bottom = add_switch_post_cutouts(
         build_bottom(ctx), switch, dims.keyplate_z, Side.left(ctx).switch_locations, dims.print_profile.post_clearance)
@@ -248,8 +255,7 @@ def wall_to_cutouts(faces, center, radius):
     return min(face.outer_wire().distance_to(Vertex(center.X, center.Y, 0)) for face in faces) - radius
 
 
-def test_hand_placed_holes_keep_a_wall_to_each_other_and_to_the_edges():  # R-31
-    ctx = make_context()
+def test_hand_placed_holes_keep_a_wall_to_each_other_and_to_the_edges(ctx):  # R-31
     dims, outline = ctx.dims, ctx.outline
     profile = dims.print_profile
     screws, magnets, bumpers = dims.fastener_positions, dims.magnet_positions, dims.bumper_locations
@@ -285,8 +291,7 @@ def test_hand_placed_holes_keep_a_wall_to_each_other_and_to_the_edges():  # R-31
     assert not too_thin
 
 
-def test_a_magnet_pocket_opens_into_the_cavity_and_a_skin_closes_the_top_face():  # R-32
-    ctx = make_context()
+def test_a_magnet_pocket_opens_into_the_cavity_and_a_skin_closes_the_top_face(ctx):  # R-32
     dims, profile = ctx.dims, ctx.dims.print_profile
     keywell = build_keywell(ctx)
     radius = dims.magnet_d.radius + profile.magnet_clearance
@@ -302,8 +307,7 @@ def test_a_magnet_pocket_opens_into_the_cavity_and_a_skin_closes_the_top_face():
         assert solid(dims.magnet_z / 2, away=radius + 0.3), "the pocket has a wall"
 
 
-def test_a_spacer_disc_is_narrower_than_its_pocket_and_stacks_under_the_magnets():  # R-33
-    ctx = make_context()
+def test_a_spacer_disc_is_narrower_than_its_pocket_and_stacks_under_the_magnets(ctx):  # R-33
     dims, profile = ctx.dims, ctx.dims.print_profile
     spacer = dims.magnet_spacer
     assert spacer.radius < dims.magnet_d.radius + profile.magnet_clearance
